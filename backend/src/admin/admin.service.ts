@@ -385,10 +385,8 @@ export class AdminService {
       throw new BadRequestException(`Invalid status: ${newStatus}`);
     }
 
-    // Find or create a system admin user for audit
-    let systemUserId: string | undefined;
-    const systemUser = await this.prisma.user.findFirst({ where: { email: 'system@forexmate.internal' } });
-    if (systemUser) systemUserId = systemUser.id;
+    // Find system user for audit history
+    const systemUserId = await this.getSystemUserId();
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const result = await tx.order.update({
@@ -433,9 +431,7 @@ export class AdminService {
       throw new BadRequestException('KYC already approved');
     }
 
-    let systemUserId: string | undefined;
-    const systemUser = await this.prisma.user.findFirst({ where: { email: 'system@forexmate.internal' } });
-    if (systemUser) systemUserId = systemUser.id;
+    const systemUserId = await this.getSystemUserId();
 
     const isBuy = order.productType === 'CASH' || order.productType === 'FOREX_CARD';
     const nextStatus = isBuy ? 'PAYMENT_PENDING' : 'KYC_APPROVED';
@@ -491,6 +487,18 @@ export class AdminService {
     });
 
     return { success: true, message: `KYC approved for order ${order.orderNumber}. Status: ${nextStatus}` };
+  }
+
+  private async getSystemUserId(): Promise<string> {
+    const admin = await this.prisma.user.findFirst({
+      where: { email: 'admin@forexmate.com' },
+      select: { id: true },
+    });
+    if (admin) return admin.id;
+
+    const anyUser = await this.prisma.user.findFirst({ select: { id: true } });
+    if (!anyUser) throw new Error('No user found for audit logs.');
+    return anyUser.id;
   }
 }
 
