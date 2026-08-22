@@ -124,6 +124,24 @@ export class WorkforceController {
   }
 
   @HttpCode(HttpStatus.OK)
+  @Post('orders/:id/approve-kyc')
+  @UseGuards(WorkforceJwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Approve KYC for an order (Branch Manager / KYC Staff)' })
+  approveKyc(@Param('id') id: string, @Body() body: { notes?: string }, @Request() req: any) {
+    return this.workforceService.approveKyc(id, req.user.id, body?.notes);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('orders/:id/reject-kyc')
+  @UseGuards(WorkforceJwtGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Reject KYC for an order with mandatory reason (Branch Manager / KYC Staff)' })
+  rejectKyc(@Param('id') id: string, @Body() body: { reason: string }, @Request() req: any) {
+    return this.workforceService.rejectKyc(id, req.user.id, body?.reason);
+  }
+
+  @HttpCode(HttpStatus.OK)
   @Post('orders/:id/manager-complete-pickup')
   @UseGuards(WorkforceJwtGuard)
   @ApiBearerAuth()

@@ -369,4 +369,128 @@ export class AdminService {
 
     return updatedUser;
   }
+
+  async updateOrderStatus(orderId: string, newStatus: string, reason?: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { profile: { include: { user: { select: { id: true, email: true, mobile: true, fullName: true } } } } },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    const allowedStatuses = [
+      'PENDING', 'KYC_SUBMITTED', 'KYC_APPROVED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED',
+      'DISPATCHED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'REJECTED',
+    ];
+    if (!allowedStatuses.includes(newStatus)) {
+      throw new BadRequestException(`Invalid status: ${newStatus}`);
+    }
+
+    // Find or create a system admin user for audit
+    let systemUserId: string | undefined;
+    const systemUser = await this.prisma.user.findFirst({ where: { email: 'system@forexmate.internal' } });
+    if (systemUser) systemUserId = systemUser.id;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.order.update({
+        where: { id: orderId },
+        data: { status: newStatus as any },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId,
+          status: newStatus as any,
+          changedById: systemUserId,
+          comments: reason
+            ? `Admin override: ${newStatus}. Reason: ${reason}`
+            : `Admin override: status changed to ${newStatus}`,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          action: 'ADMIN_ORDER_STATUS_OVERRIDE',
+          entityName: 'Order',
+          entityId: orderId,
+          newData: { newStatus, reason: reason || '', orderNumber: order.orderNumber },
+        },
+      });
+
+      return result;
+    });
+
+    return { success: true, order: updated, message: `Order status updated to ${newStatus}` };
+  }
+
+  async approveOrderKyc(orderId: string, notes?: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { profile: { include: { user: { select: { id: true, email: true, mobile: true, fullName: true } } } } },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+
+    if (order.complianceStatus === 'APPROVED') {
+      throw new BadRequestException('KYC already approved');
+    }
+
+    let systemUserId: string | undefined;
+    const systemUser = await this.prisma.user.findFirst({ where: { email: 'system@forexmate.internal' } });
+    if (systemUser) systemUserId = systemUser.id;
+
+    const isBuy = order.productType === 'CASH' || order.productType === 'FOREX_CARD';
+    const nextStatus = isBuy ? 'PAYMENT_PENDING' : 'KYC_APPROVED';
+    const nextStage = isBuy ? 'PAYMENT_STAGE' : 'FULFILLMENT_STAGE';
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          complianceStatus: 'APPROVED',
+          complianceCompletedAt: new Date(),
+          currentStage: nextStage,
+          status: nextStatus as any,
+        },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId,
+          status: nextStatus as any,
+          changedById: systemUserId,
+          comments: notes
+            ? `KYC approved by Admin. Notes: ${notes}`
+            : 'KYC approved by Admin (HQ override).',
+        },
+      });
+
+      await tx.branchTask.updateMany({
+        where: { orderId, taskType: 'KYC_REVIEW', status: 'PENDING' },
+        data: { status: 'COMPLETED' },
+      });
+
+      if (order.profile?.user?.id) {
+        await tx.inAppNotification.create({
+          data: {
+            userId: order.profile.user.id,
+            title: 'KYC Approved ✅',
+            message: `Your KYC for order ${order.orderNumber} was approved. ${isBuy ? 'Complete payment to proceed.' : 'Your order is now processing.'}`,
+            actionUrl: `/dashboard/orders/${order.id}`,
+            orderId: order.id,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          action: 'KYC_APPROVED',
+          entityName: 'Order',
+          entityId: orderId,
+          newData: { approvedBy: 'ADMIN_HQ', notes: notes || '', nextStatus, nextStage },
+        },
+      });
+    });
+
+    return { success: true, message: `KYC approved for order ${order.orderNumber}. Status: ${nextStatus}` };
+  }
 }
+

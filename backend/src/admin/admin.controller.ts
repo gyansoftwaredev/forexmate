@@ -33,6 +33,26 @@ export class AdminController {
     return this.adminService.getAllOrders(req.user);
   }
 
+  @Post('orders/:id/status')
+  @Permissions('orders:read:all')
+  @ApiOperation({ summary: 'Admin override: update order status with optional reason' })
+  updateOrderStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string; reason?: string },
+  ) {
+    return this.adminService.updateOrderStatus(id, body.status, body.reason);
+  }
+
+  @Post('orders/:id/approve-kyc')
+  @Permissions('orders:read:all')
+  @ApiOperation({ summary: 'Admin HQ override: approve KYC for an order' })
+  approveOrderKyc(
+    @Param('id') id: string,
+    @Body() body: { notes?: string },
+  ) {
+    return this.adminService.approveOrderKyc(id, body?.notes);
+  }
+
   @Get('branches')
   @Permissions('users:manage:all')
   getAllBranches() {

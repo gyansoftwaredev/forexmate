@@ -1407,9 +1407,37 @@ export default function BranchOperationsPortal() {
                   <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center gap-3">
                     <ShieldCheck size={20} className="text-indigo-400 shrink-0" />
                     <div>
-                      <h4 className="font-black text-indigo-300">STEP 1 OF 5: Review Central Compliance Package</h4>
+                      <h4 className="font-black text-indigo-300">STEP 1 OF 5: Review &amp; Approve KYC</h4>
                       <p className="text-[11px] text-slate-300">
-                        All compliance verification is performed by HQ Central Operations. Review document package (Read-Only).
+                        Verify the customer's documents below and approve or reject KYC. The order cannot proceed without KYC approval.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Live Compliance Status Banner */}
+                  <div className={`p-3 rounded-xl border flex items-center gap-3 ${
+                    selectedOrder.complianceStatus === 'APPROVED'
+                      ? 'bg-emerald-500/10 border-emerald-500/30'
+                      : selectedOrder.complianceStatus === 'REJECTED'
+                      ? 'bg-rose-500/10 border-rose-500/30'
+                      : 'bg-amber-500/10 border-amber-500/30'
+                  }`}>
+                    <span className="text-lg">
+                      {selectedOrder.complianceStatus === 'APPROVED' ? '✅' : selectedOrder.complianceStatus === 'REJECTED' ? '❌' : '⏳'}
+                    </span>
+                    <div>
+                      <p className={`font-black text-sm ${
+                        selectedOrder.complianceStatus === 'APPROVED' ? 'text-emerald-400' :
+                        selectedOrder.complianceStatus === 'REJECTED' ? 'text-rose-400' : 'text-amber-400'
+                      }`}>
+                        KYC Status: {selectedOrder.complianceStatus || 'PENDING'}
+                      </p>
+                      <p className="text-slate-400 text-[11px]">
+                        {selectedOrder.complianceStatus === 'APPROVED'
+                          ? 'KYC has been approved. You can proceed to the next step.'
+                          : selectedOrder.complianceStatus === 'REJECTED'
+                          ? 'KYC was rejected. Customer has been notified to re-upload documents.'
+                          : 'KYC pending your review. Approve or reject after verifying documents.'}
                       </p>
                     </div>
                   </div>
@@ -1420,10 +1448,10 @@ export default function BranchOperationsPortal() {
                     <div className="grid grid-cols-2 gap-3 text-slate-300">
                       <div>Name: <strong className="text-white block">{selectedOrder.profile?.user?.fullName || 'Rahul Kumar'}</strong></div>
                       <div>Phone: <strong className="text-white block">{selectedOrder.profile?.user?.mobile || '+91 9876543210'}</strong></div>
-                      <div>PAN Card: <strong className="font-mono text-emerald-400 block">ABCDE1234F</strong></div>
-                      <div>Passport Number: <strong className="font-mono text-emerald-400 block">Z9876543</strong></div>
-                      <div>Travel Destination: <strong className="text-white block">United States (USA)</strong></div>
-                      <div>Travel Purpose: <strong className="text-white block">Tourism / Business</strong></div>
+                      <div>Email: <strong className="text-white block">{selectedOrder.profile?.user?.email || '—'}</strong></div>
+                      <div>Product: <strong className="text-indigo-400 block">{selectedOrder.productType}</strong></div>
+                      <div>Amount: <strong className="text-emerald-400 block">₹{Number(selectedOrder.totalAmountInr).toLocaleString('en-IN')}</strong></div>
+                      <div>Stage: <strong className="text-white block">{selectedOrder.currentStage}</strong></div>
                     </div>
                   </div>
 
@@ -1447,22 +1475,78 @@ export default function BranchOperationsPortal() {
                     </div>
                   </div>
 
-                  {/* Operations Audit Notes */}
-                  <div className="p-4 bg-slate-800/40 rounded-2xl border border-slate-800 space-y-2">
-                    <h5 className="font-black text-slate-300 uppercase text-[10px]">HQ Operations Audit Notes</h5>
-                    <p className="p-2.5 bg-slate-900 rounded-xl text-slate-300">✓ Passport manually verified against travel visa ticket.</p>
-                    <p className="p-2.5 bg-slate-900 rounded-xl text-slate-300">✓ Customer payment received via Bank Settlement (TXN9872149).</p>
-                    <p className="p-2.5 bg-slate-900 rounded-xl text-slate-300">✓ Risk Assessment: <strong>LOW RISK (Tier-1 Verified)</strong>.</p>
-                  </div>
+                  {/* KYC Notes Input */}
+                  {selectedOrder.complianceStatus !== 'APPROVED' && selectedOrder.complianceStatus !== 'REJECTED' && (
+                    <div className="space-y-2">
+                      <label className="text-slate-400 font-bold uppercase text-[10px]">Review Notes (Optional)</label>
+                      <textarea
+                        value={quickActionReason}
+                        onChange={(e) => setQuickActionReason(e.target.value)}
+                        placeholder="Add notes about documents reviewed, any observations..."
+                        rows={2}
+                        className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-200 text-xs resize-none focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                  )}
 
-                  {/* Step 1 Action Button */}
-                  <button
-                    onClick={() => advanceStep(2)}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-600/30"
-                  >
-                    <span>Accept Compliance & Proceed to Step 2 (Inventory Check)</span>
-                    <ArrowRight size={14} />
-                  </button>
+                  {/* Step 1 Action Buttons */}
+                  {selectedOrder.complianceStatus !== 'APPROVED' && selectedOrder.complianceStatus !== 'REJECTED' ? (
+                    <div className="flex gap-3">
+                      <button
+                        disabled={actionLoading}
+                        onClick={async () => {
+                          setActionLoading(true);
+                          try {
+                            const res = await workforceFetch(`/orders/${selectedOrder.id}/reject-kyc`, {
+                              method: 'POST',
+                              body: JSON.stringify({ reason: quickActionReason || 'Documents could not be verified. Please re-upload.' }),
+                            }).then(workforceJson);
+                            setActionMessage({ type: 'success', text: 'KYC rejected. Customer has been notified.' });
+                            setSelectedOrder((prev: any) => ({ ...prev, complianceStatus: 'REJECTED', status: 'REJECTED' }));
+                            setQuickActionReason('');
+                          } catch (err: any) {
+                            setActionMessage({ type: 'error', text: err?.message || 'Failed to reject KYC.' });
+                          } finally {
+                            setActionLoading(false);
+                          }
+                        }}
+                        className="px-4 py-3 bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <XCircle size={14} /> Reject KYC
+                      </button>
+                      <button
+                        disabled={actionLoading}
+                        onClick={async () => {
+                          setActionLoading(true);
+                          try {
+                            const res = await workforceFetch(`/orders/${selectedOrder.id}/approve-kyc`, {
+                              method: 'POST',
+                              body: JSON.stringify({ notes: quickActionReason }),
+                            }).then(workforceJson);
+                            setActionMessage({ type: 'success', text: `KYC approved! Order advanced to ${res?.data?.nextStage || 'next stage'}.` });
+                            setSelectedOrder((prev: any) => ({ ...prev, complianceStatus: 'APPROVED', currentStage: res?.data?.nextStage || prev.currentStage }));
+                            setQuickActionReason('');
+                            advanceStep(2);
+                          } catch (err: any) {
+                            setActionMessage({ type: 'error', text: err?.message || 'Failed to approve KYC.' });
+                          } finally {
+                            setActionLoading(false);
+                          }
+                        }}
+                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/30"
+                      >
+                        {actionLoading ? '⏳ Processing...' : <><CheckCircle size={14} /> Approve KYC &amp; Proceed</>}
+                      </button>
+                    </div>
+                  ) : selectedOrder.complianceStatus === 'APPROVED' ? (
+                    <button
+                      onClick={() => advanceStep(2)}
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-600/30"
+                    >
+                      <span>Continue to Step 2 (Inventory Check)</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  ) : null}
                 </div>
               )}
 

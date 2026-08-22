@@ -252,9 +252,9 @@ export class WorkforceService {
       const managerBranchId = employee.branchId;
       const branch = managerBranchId ? await this.prisma.branch.findUnique({ where: { id: managerBranchId } }) : null;
 
-      const branchFilter = managerBranchId
-        ? { OR: [{ currentBranchId: managerBranchId }, { branchId: managerBranchId }] }
-        : {};
+      const branchCondition = managerBranchId
+        ? [{ OR: [{ currentBranchId: managerBranchId }, { branchId: managerBranchId }] }]
+        : [];
 
       const deliveryMethodFilter = {
         OR: [
@@ -275,18 +275,22 @@ export class WorkforceService {
       const [pickup, deliveries, reassigned, branchInventory, cityInventory] = await Promise.all([
         this.prisma.order.findMany({
           where: {
-            ...branchFilter,
-            ...pickupMethodFilter,
-            status: { notIn: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+            AND: [
+              ...branchCondition,
+              pickupMethodFilter,
+              { status: { notIn: ['COMPLETED', 'CANCELLED', 'REJECTED'] } },
+            ],
           },
           include: this.orderIncludes(),
           orderBy: { createdAt: 'desc' },
         }),
         this.prisma.order.findMany({
           where: {
-            ...branchFilter,
-            ...deliveryMethodFilter,
-            status: { notIn: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+            AND: [
+              ...branchCondition,
+              deliveryMethodFilter,
+              { status: { notIn: ['COMPLETED', 'CANCELLED', 'REJECTED'] } },
+            ],
           },
           include: this.orderIncludes(),
           orderBy: { createdAt: 'desc' },
@@ -1533,6 +1537,190 @@ export class WorkforceService {
       inventory: result,
       message: `Successfully received ${currencyCode} ${Number(dto.amount).toLocaleString()} into ${employee.branch?.branchName} vault.`,
     };
+  }
+
+  // ─── KYC Approval ─────────────────────────────────────────────────────────
+
+  async approveKyc(orderId: string, employeeId: string, notes?: string) {
+    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId }, include: { branch: true } });
+    if (!employee) throw new NotFoundException('Employee not found.');
+
+    if (!['BRANCH_MANAGER', 'MANAGER', 'BRANCH_KYC_STAFF', 'COMPLIANCE'].includes(employee.role)) {
+      throw new UnauthorizedException('Only KYC staff or Branch Managers can approve KYC.');
+    }
+
+    const order = await this.prisma.order.findFirst({
+      where: { OR: [{ id: orderId }, { orderNumber: orderId }] },
+      include: { profile: { include: { user: { select: { id: true, email: true, mobile: true, fullName: true } } } } },
+    });
+
+    if (!order) throw new NotFoundException('Order not found.');
+
+    if (order.complianceStatus === 'APPROVED') {
+      throw new BadRequestException('KYC has already been approved for this order.');
+    }
+
+    const systemUserId = await this.getSystemUserId();
+
+    // Determine next status based on product type
+    // Buy Cash → PAYMENT_PENDING (customer still needs to pay)
+    // Sell Forex / Remittance → KYC_APPROVED (ready for branch to handle)
+    const isBuy = order.productType === 'CASH' || order.productType === 'FOREX_CARD';
+    const nextStatus = isBuy ? 'PAYMENT_PENDING' : 'KYC_APPROVED';
+    const nextStage = isBuy ? 'PAYMENT_STAGE' : 'FULFILLMENT_STAGE';
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          complianceStatus: 'APPROVED',
+          complianceCompletedAt: new Date(),
+          currentStage: nextStage,
+          status: nextStatus as any,
+        },
+      });
+
+      await tx.customerProfile.update({
+        where: { id: order.profileId },
+        data: { kycOverallStatus: 'VERIFIED' },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          status: nextStatus as any,
+          changedById: systemUserId,
+          comments: notes
+            ? `KYC approved by ${employee.name} (${employee.employeeCode}). Notes: ${notes}`
+            : `KYC approved by ${employee.name} (${employee.employeeCode}).`,
+        },
+      });
+
+      // Complete any pending KYC_REVIEW branch tasks
+      await tx.branchTask.updateMany({
+        where: { orderId: order.id, taskType: 'KYC_REVIEW', status: 'PENDING' },
+        data: { status: 'COMPLETED' },
+      });
+
+      // Notify customer
+      const customerContact = order.profile?.user?.mobile || order.profile?.user?.email;
+      if (customerContact) {
+        await tx.notificationQueue.create({
+          data: {
+            channel: customerContact.includes('@') ? 'EMAIL' : 'SMS',
+            recipient: customerContact,
+            subject: 'KYC Approved — Your Order is Being Processed ✅',
+            body: `Hi ${order.profile?.user?.fullName || 'Customer'}, your KYC documents for order ${order.orderNumber} have been verified. ${isBuy ? 'Please complete your payment to proceed.' : 'Your order is now being processed by our branch team.'}`,
+            priority: 'HIGH',
+          },
+        });
+      }
+
+      // In-app notification
+      if (order.profile?.user?.id) {
+        await tx.inAppNotification.create({
+          data: {
+            userId: order.profile.user.id,
+            title: 'KYC Approved ✅',
+            message: `Your KYC for order ${order.orderNumber} has been verified. ${isBuy ? 'Complete payment to proceed.' : 'Your order is now being processed.'}`,
+            actionUrl: `/dashboard/orders/${order.id}`,
+            orderId: order.id,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          action: 'KYC_APPROVED',
+          entityName: 'Order',
+          entityId: order.id,
+          branchId: order.branchId,
+          newData: {
+            approvedBy: employee.name,
+            employeeCode: employee.employeeCode,
+            notes: notes || '',
+            nextStatus,
+            nextStage,
+          },
+        },
+      });
+    });
+
+    this.eventBus.publish('OrderKycApproved', {
+      orderId: order.id,
+      branchId: order.branchId,
+      userId: order.profileId,
+      nextStatus,
+    });
+
+    return {
+      success: true,
+      message: `KYC approved. Order ${order.orderNumber} has been advanced to ${nextStage}.`,
+      orderId: order.id,
+      nextStatus,
+      nextStage,
+    };
+  }
+
+  async rejectKyc(orderId: string, employeeId: string, reason: string) {
+    const employee = await this.prisma.employee.findUnique({ where: { id: employeeId } });
+    if (!employee) throw new NotFoundException('Employee not found.');
+
+    if (!reason?.trim()) throw new BadRequestException('A reason is required to reject KYC.');
+
+    const order = await this.prisma.order.findFirst({
+      where: { OR: [{ id: orderId }, { orderNumber: orderId }] },
+      include: { profile: { include: { user: { select: { id: true, email: true, mobile: true, fullName: true } } } } },
+    });
+
+    if (!order) throw new NotFoundException('Order not found.');
+    if (order.complianceStatus === 'REJECTED') throw new BadRequestException('KYC already rejected.');
+
+    const systemUserId = await this.getSystemUserId();
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          complianceStatus: 'REJECTED',
+          status: 'REJECTED' as any,
+          currentStage: 'KYC_STAGE',
+        },
+      });
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          status: 'REJECTED' as any,
+          changedById: systemUserId,
+          comments: `KYC rejected by ${employee.name} (${employee.employeeCode}). Reason: ${reason}`,
+        },
+      });
+
+      if (order.profile?.user?.id) {
+        await tx.inAppNotification.create({
+          data: {
+            userId: order.profile.user.id,
+            title: 'KYC Rejected ❌',
+            message: `Your KYC for order ${order.orderNumber} was rejected. Reason: ${reason}. Please re-upload your documents.`,
+            actionUrl: `/kyc?orderId=${order.id}`,
+            orderId: order.id,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          action: 'KYC_REJECTED',
+          entityName: 'Order',
+          entityId: order.id,
+          branchId: order.branchId,
+          newData: { rejectedBy: employee.name, reason },
+        },
+      });
+    });
+
+    return { success: true, message: `KYC rejected for order ${order.orderNumber}.` };
   }
 
   // ─── Helper ───────────────────────────────────────────────────────────────
