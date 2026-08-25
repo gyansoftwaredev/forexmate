@@ -1833,8 +1833,8 @@ export function ProductCalculatorStep() {
 
       {/* Know More Modal (Issue 19) */}
       {isKnowMoreOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 md:p-7 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 border border-slate-100">
             <div className="flex justify-between items-center border-b border-gray-100 pb-3">
               <h3 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
                 <span>✨</span> Product Details & Guarantee
@@ -1855,7 +1855,7 @@ export function ProductCalculatorStep() {
                 <p className="text-xs text-purple-700">Fully compliant under RBI Liberalized Remittance Scheme (LRS) and FEMA 1999 guidelines.</p>
               </div>
             </div>
-            <Button onClick={() => setIsKnowMoreOpen(false)} className="w-full bg-gray-900 hover:bg-black font-bold text-white py-2.5 rounded-xl">
+            <Button onClick={() => setIsKnowMoreOpen(false)} className="w-full bg-gray-900 hover:bg-black font-bold text-white py-2.5 rounded-xl cursor-pointer">
               Got It
             </Button>
           </div>
@@ -1864,8 +1864,8 @@ export function ProductCalculatorStep() {
 
       {/* Add Currency Modal (Issue 8) */}
       {showAddCurrencyModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 border border-slate-100">
             <div className="flex justify-between items-center border-b border-gray-100 pb-3">
               <h3 className="font-bold text-base text-gray-900">+ Add Secondary Currency</h3>
               <button onClick={() => setShowAddCurrencyModal(false)} className="text-gray-400 hover:text-gray-700 font-bold">✕</button>
@@ -1918,8 +1918,8 @@ export function ProductCalculatorStep() {
 
       {/* Add Country Modal (Issue 14) */}
       {showAddCountryModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 border border-slate-100">
             <div className="flex justify-between items-center border-b border-gray-100 pb-3">
               <h3 className="font-bold text-base text-gray-900">+ Add Destination Country</h3>
               <button onClick={() => setShowAddCountryModal(false)} className="text-gray-400 hover:text-gray-700 font-bold">✕</button>

@@ -17,7 +17,7 @@ export default function BookingPage() {
 
       <Navbar />
 
-      <main className="flex-grow max-w-5xl mx-auto w-full py-10 px-4 relative z-10">
+      <main className="flex-grow max-w-5xl mx-auto w-full py-10 px-4 relative">
         <Suspense fallback={<div className="text-center p-10 font-bold text-slate-400">Initializing Order Engine...</div>}>
           <div className="shadow-2xl rounded-3xl overflow-hidden bg-white border border-white/20 ring-1 ring-black/10">
             <OrderWizard />

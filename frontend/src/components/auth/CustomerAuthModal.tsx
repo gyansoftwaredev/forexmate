@@ -244,7 +244,7 @@ export default function CustomerAuthModal({ isOpen, onClose, onSuccess }: Custom
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[99999] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
       
       {/* Light Theme MTTPL Luxury Modal Card */}
       <div className="w-full max-w-[420px] bg-white rounded-3xl shadow-2xl p-8 relative z-10 animate-in zoom-in-95 duration-200 border border-slate-100">
