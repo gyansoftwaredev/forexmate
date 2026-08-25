@@ -155,9 +155,9 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
     <div className="w-full max-w-5xl mx-auto my-6 z-20 relative">
       
       {/* Dynamic Headline Based on Active Tab */}
-      <div className="text-center mb-6 space-y-2">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 text-xs font-black tracking-widest uppercase shadow-2xs">
-          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+      <div className="text-center mb-6 space-y-3">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-amber-300 text-xs font-black tracking-widest uppercase shadow-md backdrop-blur-md">
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
           <span>
             {activeTab === 'buy' && 'Buy Currency Cash • Doorstep Delivery'}
             {activeTab === 'sell' && 'Sell Foreign Notes • Instant Bank Credit'}
@@ -166,14 +166,22 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
           </span>
         </div>
 
-        <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight text-slate-900 drop-shadow-xs">
-          {activeTab === 'buy' && <>Exchange Foreign Currency at <span className="text-amber-600 font-extrabold">True Zero Margin</span> Rates</>}
-          {activeTab === 'sell' && <>Convert Leftover Foreign Cash to <span className="text-emerald-700 font-extrabold">INR Instantly</span></>}
-          {activeTab === 'remittance' && <>Send Money Abroad via <span className="text-blue-700 font-extrabold">Paperless SWIFT Wire</span></>}
-          {activeTab === 'card' && <>Get Platinum Forex Card with <span className="text-purple-700 font-extrabold">Zero ATM Markup</span></>}
+        <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white drop-shadow-md leading-tight">
+          {activeTab === 'buy' && (
+            <>Exchange Foreign Currency at <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-amber-400 to-yellow-400 font-black drop-shadow">True Zero Margin</span> Rates</>
+          )}
+          {activeTab === 'sell' && (
+            <>Convert Leftover Foreign Cash to <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-300 to-emerald-400 font-black drop-shadow">INR Instantly</span></>
+          )}
+          {activeTab === 'remittance' && (
+            <>Send Money Abroad via <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-blue-400 to-cyan-300 font-black drop-shadow">Paperless SWIFT Wire</span></>
+          )}
+          {activeTab === 'card' && (
+            <>Get Platinum Forex Card with <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-fuchsia-300 to-amber-300 font-black drop-shadow">Zero ATM Markup</span></>
+          )}
         </h1>
 
-        <p className="text-sm md:text-base text-slate-600 max-w-2xl mx-auto font-medium">
+        <p className="text-sm md:text-base text-slate-200/95 max-w-2xl mx-auto font-medium drop-shadow-sm leading-relaxed">
           {activeTab === 'buy' && 'Doorstep delivery in 2 hours across 150+ cities. Lock live interbank rates instantly.'}
           {activeTab === 'sell' && 'Highest buyback rates guaranteed. Free doorstep cash pickup or instant branch payout.'}
           {activeTab === 'remittance' && 'University fees, family maintenance & medical transfers to 150+ countries with MT103 proof.'}
