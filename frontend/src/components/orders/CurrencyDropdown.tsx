@@ -87,7 +87,7 @@ export function CurrencyDropdown({
   });
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative ${isOpen ? 'z-[120]' : 'z-10'} ${className}`} ref={dropdownRef}>
       {label && (
         <label className="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
           <span>{label}</span>
@@ -129,7 +129,7 @@ export function CurrencyDropdown({
 
       {/* Luxury Custom Popover Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200/90 rounded-2xl shadow-2xl z-[100] p-2.5 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200/90 rounded-3xl shadow-2xl z-[150] p-3 animate-in fade-in zoom-in-95 duration-150 ring-1 ring-black/10">
           
           {/* Search Header */}
           <div className="relative mb-2">

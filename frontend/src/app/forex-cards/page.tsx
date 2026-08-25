@@ -46,7 +46,7 @@ export default function ForexCardsPage() {
 
       {/* Embedded Full Forex Card Order Engine */}
       <main className="flex-grow px-4 md:px-6 relative pb-16">
-        <div className="max-w-4xl mx-auto text-left shadow-2xl rounded-3xl overflow-hidden bg-white border border-white/20 ring-1 ring-black/10">
+        <div className="max-w-4xl mx-auto text-left shadow-2xl rounded-3xl overflow-visible bg-white border border-white/20 ring-1 ring-black/10">
           <Suspense fallback={<div className="p-10 text-center font-bold text-slate-500">Loading Order Engine...</div>}>
             <OrderWizard />
           </Suspense>

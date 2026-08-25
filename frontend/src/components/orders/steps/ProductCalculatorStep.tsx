@@ -669,10 +669,10 @@ export function ProductCalculatorStep() {
   };
 
   return (
-    <div className="bg-white/95 rounded-b-xl border-t border-slate-200/80 p-0 sm:p-6 shadow-md min-h-screen sm:min-h-0 text-left relative overflow-hidden">
+    <div className="bg-white/95 rounded-b-xl border-t border-slate-200/80 p-0 sm:p-6 shadow-md min-h-screen sm:min-h-0 text-left relative overflow-visible">
       {/* Background Texture Overlay */}
       <div 
-        className="absolute inset-0 pointer-events-none bg-cover bg-center z-0 opacity-40"
+        className="absolute inset-0 pointer-events-none bg-cover bg-center z-0 opacity-40 rounded-b-xl"
         style={{ backgroundImage: `url('/card_bg.png')` }}
       />
 
@@ -745,7 +745,7 @@ export function ProductCalculatorStep() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Required Amount Card */}
-          <Card className="shadow-sm border-gray-200 rounded-2xl overflow-hidden">
+          <Card className="shadow-sm border-gray-200 rounded-2xl overflow-visible">
             <div className="p-6 pb-5">
               <h2 className="text-[17px] font-bold text-gray-900 mb-4">Required Amount</h2>
               
