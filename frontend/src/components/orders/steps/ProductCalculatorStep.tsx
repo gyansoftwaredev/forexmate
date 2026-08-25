@@ -770,7 +770,7 @@ export function ProductCalculatorStep() {
                     <CurrencyDropdown
                       value={currency}
                       onChange={(newCurr) => updateDraft({ currency: newCurr })}
-                      ratesData={ratesData}
+                      ratesData={rates}
                       rateType={isSell ? 'sell' : isRemittance ? 'remittance' : 'buy'}
                       label="Select Currency"
                     />
@@ -1866,7 +1866,7 @@ export function ProductCalculatorStep() {
                 <CurrencyDropdown
                   value={newCurrencyCode}
                   onChange={(code) => setNewCurrencyCode(code)}
-                  ratesData={ratesData}
+                  ratesData={rates}
                   rateType={isSell ? 'sell' : isRemittance ? 'remittance' : 'buy'}
                   label="Select Secondary Currency"
                 />
