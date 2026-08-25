@@ -82,8 +82,8 @@ export default function RatesRibbon() {
 
       {/* 40+ Currencies Rate Card Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 text-slate-900 space-y-4 shadow-2xl">
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-[99999] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-6 text-slate-900 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <span className="section-label text-[10px] text-amber-600">Real-Time Foreign Exchange</span>
@@ -91,7 +91,7 @@ export default function RatesRibbon() {
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center border border-slate-200"
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 flex items-center justify-center border border-slate-200 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -120,7 +120,7 @@ export default function RatesRibbon() {
             <div className="pt-2 flex justify-end">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="btn-gold px-5 py-2 rounded-xl font-black text-xs"
+                className="btn-gold px-5 py-2 rounded-xl font-black text-xs cursor-pointer"
               >
                 Close Card
               </button>

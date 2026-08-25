@@ -31,7 +31,7 @@ export default function Home() {
       </div>
 
       {/* Main Content Area */}
-      <div className="container mx-auto px-6 relative z-10 pt-3">
+      <div className="container mx-auto px-6 relative pt-3">
         
         <HeroForm />
         <RatesRibbon />
