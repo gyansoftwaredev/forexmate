@@ -14,6 +14,7 @@ import API_URL, { authFetch, apiJson } from '@/lib/api';
 import { ALL_CURRENCIES_LIST, ALL_CURRENCIES_MAP } from '@/lib/currencyMetadata';
 import { useAuth } from '@/context/AuthContext';
 import CustomerAuthModal from '@/components/auth/CustomerAuthModal';
+import { CurrencyDropdown } from '../CurrencyDropdown';
 
 
 
@@ -764,25 +765,15 @@ export function ProductCalculatorStep() {
               
               <div className="bg-gray-50/80 rounded-2xl p-4 sm:p-5 border border-gray-200/80 space-y-4 shadow-2xs">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                  {/* Currency Selector Dropdown */}
+                  {/* Luxury Currency Selector Dropdown */}
                   <div className="sm:col-span-6">
-                    <label className="block text-[11px] font-extrabold text-gray-600 uppercase tracking-wider mb-1.5">
-                      Select Currency
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={currency}
-                        onChange={(e) => updateDraft({ currency: e.target.value })}
-                        className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-xs cursor-pointer appearance-none pr-8"
-                      >
-                        {ALL_CURRENCIES_LIST.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.flag} {c.code} - {c.name}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none" />
-                    </div>
+                    <CurrencyDropdown
+                      value={currency}
+                      onChange={(newCurr) => updateDraft({ currency: newCurr })}
+                      ratesData={ratesData}
+                      rateType={isSell ? 'sell' : isRemittance ? 'remittance' : 'buy'}
+                      label="Select Currency"
+                    />
                   </div>
 
                   {/* Amount Input */}
@@ -1872,18 +1863,13 @@ export function ProductCalculatorStep() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Select Currency</label>
-                <select 
+                <CurrencyDropdown
                   value={newCurrencyCode}
-                  onChange={(e) => setNewCurrencyCode(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {ALL_CURRENCIES_LIST.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.flag} {c.code} - {c.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(code) => setNewCurrencyCode(code)}
+                  ratesData={ratesData}
+                  rateType={isSell ? 'sell' : isRemittance ? 'remittance' : 'buy'}
+                  label="Select Secondary Currency"
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">Required Amount</label>
