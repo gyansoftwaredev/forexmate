@@ -1,286 +1,266 @@
 "use client";
+
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { useState } from 'react';
-import { useGoogleLogin } from '@react-oauth/google';
-import API_URL, { apiJson } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { 
+  ShieldCheck, Lock, Smartphone, Mail, ArrowRight, Eye, EyeOff, 
+  X, CheckCircle2, Sparkles, AlertCircle, RefreshCw, User
+} from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import API_URL, { apiJson } from '@/lib/api';
 
-export default function Register() {
+export default function CustomerRegisterPage() {
+  const router = useRouter();
   const { login } = useAuth();
-  const [fullName, setFullName] = useState('');
-  const [mobile, setMobile] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [repeatPassword, setRepeatPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [regFullName, setRegFullName] = useState('');
+  const [regMobile, setRegMobile] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regShowPassword, setRegShowPassword] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (fullName.trim().length < 2 || fullName.trim().length > 50) {
-      setError("Full name must be between 2 and 50 characters long.");
+    setErrorMessage('');
+
+    if (regFullName.trim().length < 2) {
+      setErrorMessage('Please enter your full name.');
       return;
     }
 
-    const mobileRegex = /^[6-9]\d{9}$/;
-    if (!mobileRegex.test(mobile)) {
-      setError("Please enter a valid 10-digit Indian mobile number (e.g. 9876543210).");
+    const cleanMobile = regMobile.replace(/\D/g, '');
+    if (cleanMobile.length < 10) {
+      setErrorMessage('Please enter a valid 10-digit mobile number.');
       return;
     }
 
-    if (password !== repeatPassword) {
-      setError("Passwords do not match.");
+    if (regPassword.length < 6) {
+      setErrorMessage('Password must be at least 6 characters.');
       return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, mobile, email, password }),
+        body: JSON.stringify({
+          fullName: regFullName.trim(),
+          mobile: cleanMobile,
+          email: regEmail.trim().toLowerCase(),
+          password: regPassword,
+        }),
       });
 
-      await apiJson(res);
-      setSuccess(true);
+      try {
+        const payload = await apiJson<any>(res);
+        if (payload?.access_token && payload?.user) {
+          login(payload.access_token, payload.user);
+          setIsSuccess(true);
+          setTimeout(() => {
+            router.push('/');
+          }, 600);
+          return;
+        }
+      } catch (_) {}
+
+      const loginRes = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: regEmail.trim(), password: regPassword }),
+        credentials: 'include',
+      });
+
+      const loginPayload = await apiJson<{ access_token: string; user: any }>(loginRes);
+      login(loginPayload.access_token, loginPayload.user);
+
+      setIsSuccess(true);
+      setTimeout(() => {
+        router.push('/');
+      }, 600);
     } catch (err: any) {
-      setError(err.message);
+      setErrorMessage(err.message || 'Registration failed. Email or mobile may already exist.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      try {
-        setLoading(true);
-        const res = await fetch(`${API_URL}/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ credential: tokenResponse.access_token }),
-        });
-
-        const payload = await apiJson<{ access_token: string; user: { id: string; email: string; fullName: string; role: string } }>(res);
-
-        login(payload.access_token, payload.user);
-        window.location.href = '/';
-      } catch (err: any) {
-        setError(err.message);
-        setLoading(false);
-      }
-    },
-    onError: () => {
-      setError('Google Login Failed');
-    }
-  });
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-        <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none" />
-        <div className="w-full max-w-md backdrop-blur-md bg-slate-900/60 border border-slate-800 rounded-3xl shadow-2xl p-10 text-center relative z-10">
-          <div className="w-16 h-16 bg-emerald-950/60 text-emerald-400 border border-emerald-800/50 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
-            ✓
-          </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Account Created!</h2>
-          <p className="text-slate-400 mt-2 mb-8 text-sm">Your Forex account is ready. Please log in to complete verification.</p>
-          <Link
-            href="/login"
-            className="block w-full py-4 bg-orange-600 hover:bg-orange-500 text-white font-bold rounded-xl text-center transition-all uppercase tracking-wider text-sm shadow-lg shadow-orange-950/30"
-          >
-            Go to Sign In
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Decorative Gradients */}
-      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-orange-600/10 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 relative overflow-hidden">
+      
+      {/* Background Travel Wallpaper */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-40 scale-105"
+        style={{ backgroundImage: `url('/travel_hero.png')` }}
+      />
+      <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm pointer-events-none" />
 
-      <div className="w-full max-w-md backdrop-blur-md bg-slate-900/60 border border-slate-800 rounded-3xl shadow-2xl p-8 relative z-10 my-8">
-        {/* Header */}
-        <div className="flex items-center justify-between pb-6 border-b border-slate-800">
-          <div>
-            <h2 className="text-3xl font-extrabold text-white tracking-tight">Register</h2>
-            <p className="text-slate-400 text-sm mt-1">Create your secure client profile</p>
+      {/* Main Luxury Light Theme Card */}
+      <div className="w-full max-w-[420px] bg-white rounded-3xl shadow-2xl p-8 relative z-10 animate-in zoom-in-95 duration-200 border border-slate-100">
+        
+        {/* Back to Home Button */}
+        <Link
+          href="/"
+          className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+          title="Back to Home"
+        >
+          <X className="w-5 h-5" />
+        </Link>
+
+        {/* MTTPL Gold Pill Badge */}
+        <div className="text-center">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-amber-50 border border-amber-200/80 text-amber-800 text-[10px] font-extrabold tracking-wider uppercase shadow-2xs">
+            <Sparkles className="w-3 h-3 text-amber-600" />
+            <span>MTTPL FOREX MEMBER CLUB</span>
           </div>
-          <Link
-            href="/"
-            className="w-10 h-10 bg-slate-800/80 hover:bg-slate-700 text-white rounded-full flex items-center justify-center text-lg font-bold transition-all border border-slate-700/50"
-          >
-            ✕
-          </Link>
+
+          <h1 className="text-2xl font-serif font-bold text-slate-900 tracking-tight mt-3">
+            Create Account
+          </h1>
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Join to lock live zero margin interbank rates
+          </p>
         </div>
 
-        <div className="mt-6">
-          {error && (
-            <div className="mb-5 p-4 bg-red-950/40 border border-red-800/60 text-red-400 text-sm rounded-xl text-center backdrop-blur-sm">
-              {error}
-            </div>
-          )}
+        {/* Error / Success Banners */}
+        {errorMessage && (
+          <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-150">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label htmlFor="name" className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-2">
-                Full Name <span className="text-orange-500">*</span>
-              </label>
+        {isSuccess && (
+          <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in duration-150">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>Account created! Redirecting...</span>
+          </div>
+        )}
+
+        {/* Registration Form */}
+        <form onSubmit={handleRegister} className="mt-5 space-y-3.5">
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
+              Full Name
+            </label>
+            <div className="relative">
               <input
-                id="name"
-                name="name"
                 type="text"
                 required
-                autoComplete="name"
-                enterKeyHint="next"
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                placeholder="John Doe"
-                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-900/50 transition-all text-sm"
+                placeholder="Rahul Sharma"
+                value={regFullName}
+                onChange={(e) => setRegFullName(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
+                autoFocus
               />
+              <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
             </div>
-
-            {/* Mobile Number */}
-            <div>
-              <label htmlFor="tel" className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-2">
-                Mobile Number <span className="text-orange-500">*</span>
-              </label>
-              <div className="flex items-center bg-slate-950/50 border border-slate-800 rounded-xl focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-900/50 transition-all overflow-hidden">
-                <span className="bg-slate-900 px-4 py-3 text-slate-400 font-semibold border-r border-slate-800 text-sm">+91</span>
-                <input
-                  id="tel"
-                  name="tel"
-                  type="tel"
-                  required
-                  autoComplete="tel-national"
-                  enterKeyHint="next"
-                  inputMode="numeric"
-                  value={mobile}
-                  onChange={e => setMobile(e.target.value.replace(/\D/g, ''))}
-                  placeholder="9999999999"
-                  maxLength={10}
-                  className="flex-1 bg-transparent px-4 py-3 text-white placeholder-slate-600 focus:outline-none text-sm"
-                />
-              </div>
-            </div>
-
-            {/* Email Address */}
-            <div>
-              <label htmlFor="email" className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-2">
-                Email Address <span className="text-orange-500">*</span>
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                autoComplete="username"
-                enterKeyHint="next"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="john@example.com"
-                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-900/50 transition-all text-sm"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label htmlFor="new-password" className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-2">
-                Create Password <span className="text-orange-500">*</span>
-              </label>
-              <input
-                id="new-password"
-                name="password"
-                type="password"
-                required
-                autoComplete="new-password"
-                enterKeyHint="next"
-                minLength={6}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Minimum 6 characters"
-                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-900/50 transition-all text-sm"
-              />
-            </div>
-
-            {/* Repeat Password */}
-            <div>
-              <label htmlFor="confirm-password" className="block text-xs font-bold text-slate-400 tracking-wider uppercase mb-2">
-                Repeat Password <span className="text-orange-500">*</span>
-              </label>
-              <input
-                id="confirm-password"
-                name="password-confirm"
-                type="password"
-                required
-                autoComplete="new-password"
-                enterKeyHint="done"
-                value={repeatPassword}
-                onChange={e => setRepeatPassword(e.target.value)}
-                placeholder="Re-enter password"
-                className="w-full bg-slate-950/50 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-900/50 transition-all text-sm"
-              />
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full py-4 bg-orange-600 hover:bg-orange-500 text-white font-extrabold text-sm tracking-wider rounded-xl shadow-lg shadow-orange-950/30 transition-all uppercase mt-6 ${
-                loading ? 'opacity-70 cursor-not-allowed' : 'active:scale-[0.98]'
-              }`}
-            >
-              {loading ? 'Registering...' : 'Register'}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="flex items-center my-5">
-            <hr className="flex-1 border-slate-800" />
-            <span className="px-4 text-xs font-bold text-slate-500">OR</span>
-            <hr className="flex-1 border-slate-800" />
           </div>
 
-          {/* Google Sign Up */}
-          <button
-            onClick={() => handleGoogleLogin()}
-            type="button"
-            disabled={loading}
-            className="w-full flex items-center justify-center space-x-3 py-3 bg-slate-950/50 border border-slate-800 rounded-xl hover:bg-slate-900 text-slate-300 transition-all text-sm font-semibold hover:border-slate-700"
-          >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
+              Mobile Number
+            </label>
+            <div className="flex items-center bg-slate-50 border border-slate-200 focus-within:border-amber-500 focus-within:bg-white rounded-xl p-1 transition-all shadow-2xs">
+              <div className="px-2 py-1.5 bg-white rounded-lg border border-slate-200 flex items-center gap-1 text-xs font-bold text-slate-800">
+                <span>🇮🇳</span>
+                <span>+91</span>
+              </div>
+              <input
+                type="tel"
+                required
+                maxLength={10}
+                placeholder="9876543210"
+                value={regMobile}
+                onChange={(e) => setRegMobile(e.target.value)}
+                className="flex-1 px-2.5 py-1.5 text-xs font-bold text-slate-900 outline-none bg-transparent"
               />
-              <path
-                fill="#34A853"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              />
-            </svg>
-            <span>Sign Up with Google</span>
-          </button>
+            </div>
+          </div>
 
-          <p className="text-center text-sm text-slate-400 mt-6">
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
+              Email Address
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                required
+                placeholder="rahul.sharma@example.com"
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
+              />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={regShowPassword ? 'text' : 'password'}
+                required
+                placeholder="••••••••"
+                value={regPassword}
+                onChange={(e) => setRegPassword(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
+              />
+              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <button
+                type="button"
+                onClick={() => setRegShowPassword(!regShowPassword)}
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                {regShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading || !regFullName || !regMobile || !regEmail || !regPassword}
+            className="w-full bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold py-3.5 rounded-xl text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 shadow-md hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-50 cursor-pointer mt-1"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                <span>Creating Account...</span>
+              </>
+            ) : (
+              <>
+                <span>Create Account & Sign In</span>
+                <ArrowRight className="w-4 h-4 text-slate-950" />
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Switch to Sign In */}
+        <div className="mt-5 pt-3 border-t border-slate-100 text-center">
+          <p className="text-xs text-slate-500">
             Already have an account?{' '}
-            <Link href="/login" className="text-blue-400 font-bold hover:underline">
-              Sign In
+            <Link href="/login" className="text-amber-700 font-bold hover:underline">
+              Sign In →
             </Link>
           </p>
         </div>
+
+        {/* Footer Security Note */}
+        <div className="mt-4 text-center flex items-center justify-center gap-1.5 text-[11px] text-slate-400 font-medium">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Bank-Grade 256-Bit SSL Encryption</span>
+        </div>
+
       </div>
+
     </div>
   );
 }

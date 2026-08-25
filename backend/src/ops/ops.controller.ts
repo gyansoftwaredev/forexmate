@@ -1,5 +1,8 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, BadRequestException, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { OpsService } from './ops.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { BranchScopeGuard } from '../common/guards/branch-scope.guard';
@@ -170,5 +173,47 @@ export class OpsController {
     @Request() req: any
   ) {
     return this.opsService.smartAssignBranch(id, data, req.user);
+  }
+
+  @Post('leads/:id/verify-doc')
+  @ApiOperation({ summary: 'Staff manual verification of customer KYC document over call' })
+  verifyLeadDoc(
+    @Param('id') id: string,
+    @Body() data: { docType: string; status?: string; notes?: string },
+    @Request() req: any
+  ) {
+    return this.opsService.verifyLeadDoc(id, data, req.user);
+  }
+
+  @Post('leads/:id/upload-doc')
+  @ApiOperation({ summary: 'Staff upload and verify KYC document directly for lead' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads',
+        filename: (req, file, cb) => {
+          const randomName = Array(32)
+            .fill(null)
+            .map(() => Math.round(Math.random() * 16).toString(16))
+            .join('');
+          return cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+      },
+    }),
+  )
+  uploadLeadDoc(
+    @Param('id') id: string,
+    @Body('docType') docType: string,
+    @Body('notes') notes: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req: any
+  ) {
+    if (!file) throw new BadRequestException('File is required');
+    if (!docType) throw new BadRequestException('docType is required');
+    return this.opsService.uploadLeadDoc(id, docType, file, req.user, notes);
   }
 }

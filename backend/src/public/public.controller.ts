@@ -48,4 +48,11 @@ export class PublicController {
   getRemittanceCountries() {
     return this.publicService.getRemittanceCountries();
   }
+
+  @Get('products')
+  @ApiOperation({ summary: 'Get all configured forex products and active statuses' })
+  @ApiResponse({ status: 200, description: 'Products returned' })
+  getProducts() {
+    return this.publicService.getProducts();
+  }
 }

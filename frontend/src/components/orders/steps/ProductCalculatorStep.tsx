@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, usePathname, useRouter } from 'next/navigation';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { useQuoteStore } from '@/stores/quoteStore';
 import { useRates } from '@/hooks/useRates';
@@ -7,58 +7,48 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, MapPin, Calendar, Briefcase, Plus, Edit2, Info, CheckCircle2, Ticket, Globe, Landmark, User2, X, ChevronDown, Upload, FileText, AlertCircle } from 'lucide-react';
 import { CitySelectorModal } from '../CitySelectorModal';
+import { SameDayDeliveryModal } from '../SameDayDeliveryModal';
+import { calculateForexGst } from '@/lib/gstCalculator';
 import { getActiveBranches } from '@/lib/api-public';
-import { AddressSelector } from '../AddressSelector';
 import API_URL, { authFetch, apiJson } from '@/lib/api';
+import { ALL_CURRENCIES_LIST, ALL_CURRENCIES_MAP } from '@/lib/currencyMetadata';
+import { useAuth } from '@/context/AuthContext';
+import CustomerAuthModal from '@/components/auth/CustomerAuthModal';
 
-// ─── Travel Purpose Document Requirements ──────────────────────────────────
-const TRAVEL_PURPOSE_DOCS: Record<string, { label: string; docs: { id: string; name: string; accept: string; required: boolean }[] }> = {
-  TOURISM: {
-    label: 'Leisure / Tourism',
-    docs: [
-      { id: 'flight_ticket', name: 'Confirmed Flight Ticket / Air Itinerary', accept: '.pdf,.jpg,.jpeg,.png', required: true },
-      { id: 'hotel_booking', name: 'Hotel Booking / Accommodation Proof', accept: '.pdf,.jpg,.jpeg,.png', required: false },
-      { id: 'visa_copy', name: 'Valid Tourist Visa Copy', accept: '.pdf,.jpg,.jpeg,.png', required: false }
-    ],
-  },
-  BUSINESS: {
-    label: 'Business Travel',
-    docs: [
-      { id: 'business_invitation', name: 'Business Invitation Letter / Conference Pass', accept: '.pdf,.jpg,.jpeg,.png', required: true },
-      { id: 'business_visa', name: 'Valid Business Visa Copy', accept: '.pdf,.jpg,.jpeg,.png', required: true },
-      { id: 'company_deputation', name: 'Company Deputation Letter', accept: '.pdf,.jpg,.jpeg,.png', required: false }
-    ],
-  },
-  EDUCATION: {
-    label: 'Education Abroad',
-    docs: [
-      { id: 'admission_letter', name: 'University Offer / Admission Letter (I-20 / CAS)', accept: '.pdf,.jpg,.jpeg,.png', required: true },
-      { id: 'student_visa', name: 'Student Visa / Entry Permit Copy', accept: '.pdf,.jpg,.jpeg,.png', required: true },
-      { id: 'fee_invoice', name: 'University Fee Invoice / Demand Letter', accept: '.pdf,.jpg,.jpeg,.png', required: false }
-    ],
-  },
-  MEDICAL: {
-    label: 'Medical Treatment',
-    docs: [
-      { id: 'hospital_letter', name: 'Hospital Appointment / Doctor Invitation Letter', accept: '.pdf,.jpg,.jpeg,.png', required: true },
-      { id: 'doctor_referral', name: 'Doctor Referral / Medical Certificate', accept: '.pdf,.jpg,.jpeg,.png', required: true }
-    ],
-  },
-  EMPLOYMENT: {
-    label: 'Employment Abroad',
-    docs: [
-      { id: 'employment_contract', name: 'Job Offer Letter / Employment Contract', accept: '.pdf,.jpg,.jpeg,.png', required: true },
-      { id: 'work_visa', name: 'Work Permit / Employment Visa Copy', accept: '.pdf,.jpg,.jpeg,.png', required: true }
-    ],
-  },
-  EMIGRATION: {
-    label: 'Emigration',
-    docs: [
-      { id: 'emigration_visa', name: 'Permanent Residency (PR) / Emigration Visa Copy', accept: '.pdf,.jpg,.jpeg,.png', required: true },
-      { id: 'passport_copy', name: 'Passport Copy with Visa Stamp', accept: '.pdf,.jpg,.jpeg,.png', required: true }
-    ],
-  },
-};
+
+
+const DESTINATION_COUNTRIES = [
+  { name: 'United States', code: 'USA', flag: '🇺🇸' },
+  { name: 'Europe (Schengen Area)', code: 'Europe', flag: '🇪🇺' },
+  { name: 'United Kingdom', code: 'UK', flag: '🇬🇧' },
+  { name: 'United Arab Emirates', code: 'UAE', flag: '🇦🇪' },
+  { name: 'Singapore', code: 'Singapore', flag: '🇸🇬' },
+  { name: 'Canada', code: 'Canada', flag: '🇨🇦' },
+  { name: 'Australia', code: 'Australia', flag: '🇦🇺' },
+  { name: 'Thailand', code: 'Thailand', flag: '🇹🇭' },
+  { name: 'Japan', code: 'Japan', flag: '🇯🇵' },
+  { name: 'Switzerland', code: 'Switzerland', flag: '🇨🇭' },
+  { name: 'New Zealand', code: 'New Zealand', flag: '🇳🇿' },
+  { name: 'Saudi Arabia', code: 'Saudi Arabia', flag: '🇸🇦' },
+  { name: 'Qatar', code: 'Qatar', flag: '🇶🇦' },
+  { name: 'Hong Kong', code: 'Hong Kong', flag: '🇭🇰' },
+  { name: 'Malaysia', code: 'Malaysia', flag: '🇲🇾' },
+  { name: 'Vietnam', code: 'Vietnam', flag: '🇻🇳' },
+  { name: 'Indonesia (Bali)', code: 'Indonesia', flag: '🇮🇩' },
+  { name: 'South Korea', code: 'South Korea', flag: '🇰🇷' },
+  { name: 'Turkey', code: 'Turkey', flag: '🇹🇷' },
+  { name: 'Oman', code: 'Oman', flag: '🇴🇲' },
+  { name: 'Bahrain', code: 'Bahrain', flag: '🇧🇭' },
+  { name: 'Kuwait', code: 'Kuwait', flag: '🇰🇼' },
+  { name: 'Mauritius', code: 'Mauritius', flag: '🇲🇺' },
+  { name: 'Maldives', code: 'Maldives', flag: '🇲🇻' },
+  { name: 'Sri Lanka', code: 'Sri Lanka', flag: '🇱🇰' },
+  { name: 'Egypt', code: 'Egypt', flag: '🇪🇬' },
+  { name: 'South Africa', code: 'South Africa', flag: '🇿🇦' },
+  { name: 'Georgia', code: 'Georgia', flag: '🇬🇪' },
+  { name: 'Azerbaijan', code: 'Azerbaijan', flag: '🇦🇿' },
+  { name: 'Nepal', code: 'Nepal', flag: '🇳🇵' }
+];
 
 // ─── Remittance Types ───────────────────────────────────────────────────────
 interface TransferPurpose {
@@ -87,11 +77,68 @@ interface Beneficiary {
   country: string;
 }
 
+const DUMMY_OFFERS = [
+  {
+    code: 'ZEROCOMM',
+    title: '100% Zero Fee Waiver',
+    description: 'Flat ₹150 OFF on service charge',
+    minAmount: 25000,
+    discountAmount: 150,
+    tag: 'POPULAR',
+  },
+  {
+    code: 'FLYHIGH500',
+    title: 'Mega Travel Cashback',
+    description: 'Flat ₹500 instant order discount',
+    minAmount: 50000,
+    discountAmount: 500,
+    tag: 'BEST VALUE',
+  },
+  {
+    code: 'STUDENT1000',
+    title: 'Overseas Student Special',
+    description: 'Flat ₹1,000 off on orders over ₹1 Lakh',
+    minAmount: 100000,
+    discountAmount: 1000,
+    tag: 'STUDENT',
+  },
+  {
+    code: 'WELCOME250',
+    title: 'First Order Bonus',
+    description: 'Flat ₹250 off on first order over ₹15,000',
+    minAmount: 15000,
+    discountAmount: 250,
+    tag: 'NEW USER',
+  },
+];
+
 export function ProductCalculatorStep() {
   const { draftState, updateDraft, allowedActions, sessionId } = useTransactionStore();
   const { lockQuote, isLocking } = useQuoteStore();
   const { data: rates } = useRates();
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const handleTabSwitch = (newProduct: 'CASH' | 'CARD' | 'CASH_SELL' | 'REMITTANCE') => {
+    updateDraft({ product: newProduct });
+    const curr = draftState.currency || 'USD';
+    const amt = draftState.amount || '1000';
+    if (newProduct === 'CASH') {
+      router.replace(`/buy-forex?tab=buy&currency=${curr}&amount=${amt}`);
+    } else if (newProduct === 'CARD') {
+      router.replace(`/forex-cards?tab=card&type=card&currency=${curr}&amount=${amt}`);
+    } else if (newProduct === 'CASH_SELL') {
+      router.replace(`/sell-forex?tab=sell&currency=${curr}&amount=${amt}`);
+    } else if (newProduct === 'REMITTANCE') {
+      router.replace(`/remittance?tab=remittance&currency=${curr}&amount=${amt}`);
+    }
+  };
+
+  // Coupon / Offers state
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedOffer, setAppliedOffer] = useState<typeof DUMMY_OFFERS[0] | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const [deliveryDay, setDeliveryDay] = useState<'Today' | 'Tomorrow'>('Today');
   const [cutoffTimer, setCutoffTimer] = useState<string>('00h : 00m');
@@ -127,33 +174,48 @@ export function ProductCalculatorStep() {
   // Initialize draft state from URL parameters (always sync on searchParams change)
   useEffect(() => {
     if (sessionId && searchParams) {
-      const type = searchParams.get('type');
-      const tab = searchParams.get('tab');
-      const intent = searchParams.get('intent');
+      const tab = searchParams.get('tab')?.toLowerCase();
+      const type = searchParams.get('type')?.toLowerCase();
+      const intent = searchParams.get('intent')?.toUpperCase();
+      const productParam = searchParams.get('product')?.toUpperCase();
       const paramCurrency = searchParams.get('currency');
       const paramAmount = searchParams.get('amount');
+      const paramBeneficiary = searchParams.get('beneficiaryId');
       
       const updates: any = {};
       
       let targetProduct = draftState.product;
-      if (tab === 'sell' || intent === 'SELL') {
+      if (pathname === '/sell-forex' || tab === 'sell' || intent === 'SELL' || productParam === 'CASH_SELL') {
         targetProduct = 'CASH_SELL';
-      } else if (tab === 'transfer' || tab === 'remittance') {
+      } else if (pathname === '/remittance' || tab === 'transfer' || tab === 'remittance' || intent === 'REMITTANCE' || productParam === 'REMITTANCE') {
         targetProduct = 'REMITTANCE';
-      } else if (tab === 'buy' || type) {
-        targetProduct = type === 'card' ? 'CARD' : 'CASH';
+      } else if (pathname === '/forex-cards' || pathname === '/cards' || tab === 'card' || type === 'card' || intent === 'CARD' || productParam === 'CARD') {
+        targetProduct = 'CARD';
+      } else if (pathname === '/buy-forex' || tab === 'buy' || type === 'cash' || intent === 'CASH' || productParam === 'CASH') {
+        targetProduct = 'CASH';
       } else if (!draftState.product) {
         targetProduct = 'CASH';
       }
       
-      if (targetProduct && targetProduct !== draftState.product) {
+      if (targetProduct) {
         updates.product = targetProduct;
       }
       if (paramCurrency && paramCurrency.toUpperCase() !== draftState.currency) {
         updates.currency = paramCurrency.toUpperCase();
+        updates.checkoutStep = 1;
+        updates.status = 'CREATED';
       }
       if (paramAmount && paramAmount !== draftState.amount) {
         updates.amount = paramAmount;
+      }
+      if (paramBeneficiary && paramBeneficiary !== draftState.beneficiaryId) {
+        updates.beneficiaryId = paramBeneficiary;
+      }
+      
+      if (draftState.checkoutStep === 5 || draftState.status === 'CONVERTED') {
+        updates.checkoutStep = 1;
+        updates.status = 'CREATED';
+        updates.bookingRef = undefined;
       }
       
       if (Object.keys(updates).length > 0) {
@@ -162,16 +224,64 @@ export function ProductCalculatorStep() {
     }
   }, [sessionId, searchParams]);
 
+  // Persist default deliveryMethod to draftState immediately if not set,
+  // so BookMyForexCheckoutEngine always reads the correct value.
+  useEffect(() => {
+    if (sessionId && !draftState.deliveryMethod) {
+      updateDraft({ deliveryMethod: 'PICKUP' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
+
+  const { user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   const product = draftState.product || 'CASH'; // Default to CASH
   const isSell = product === 'CASH_SELL';
   const isRemittance = product === 'REMITTANCE';
-  const currency = draftState.currency || 'SGD';
+  const currency = draftState.currency || 'USD';
   const amount = draftState.amount || '';
   const branchId = draftState.branchId || '';
   const deliveryMethod = draftState.deliveryMethod || 'PICKUP';
 
+  const [productsStatus, setProductsStatus] = useState<Record<string, boolean>>({
+    CASH: true,
+    CASH_SELL: true,
+    REMITTANCE: true,
+    FOREX_CARD: true,
+    CARD: true,
+  });
+
+  useEffect(() => {
+    fetch('/api/v1/public/products')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const map: Record<string, boolean> = {};
+          data.forEach((p: any) => {
+            map[p.code] = p.isActive;
+            if (p.code === 'FOREX_CARD') map['CARD'] = p.isActive;
+          });
+          setProductsStatus(prev => ({ ...prev, ...map }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const isCurrentProductActive = 
+    product === 'CARD' ? productsStatus.FOREX_CARD !== false && productsStatus.CARD !== false :
+    productsStatus[product] !== false;
+
   const [isKnowMoreOpen, setIsKnowMoreOpen] = useState(false);
-  const [extraCurrencies, setExtraCurrencies] = useState<{ currency: string; amount: string }[]>([]);
+  const [extraCurrencies, setExtraCurrencies] = useState<{ currency: string; amount: string }[]>(
+    draftState.extraCurrencies || []
+  );
+
+  const updateExtraCurrencies = (newExtra: { currency: string; amount: string }[]) => {
+    setExtraCurrencies(newExtra);
+    updateDraft({ extraCurrencies: newExtra });
+  };
+
   const [showAddCurrencyModal, setShowAddCurrencyModal] = useState(false);
   const [newCurrencyCode, setNewCurrencyCode] = useState('EUR');
   const [newCurrencyAmount, setNewCurrencyAmount] = useState('500');
@@ -212,34 +322,7 @@ export function ProductCalculatorStep() {
     }
   };
 
-  // Travel Purpose Verification Document Uploads State
-  const [travelPurposeFiles, setTravelPurposeFiles] = useState<Record<string, { name: string; size: number }>>({});
 
-  const handleTravelDocUpload = (docId: string, file: File | null) => {
-    if (!file) return;
-    setTravelPurposeFiles(prev => ({
-      ...prev,
-      [docId]: { name: file.name, size: file.size }
-    }));
-    const currentDocs = draftState.travelDocs || {};
-    updateDraft({
-      travelDocs: {
-        ...currentDocs,
-        [docId]: file.name
-      }
-    });
-  };
-
-  const removeTravelDoc = (docId: string) => {
-    setTravelPurposeFiles(prev => {
-      const copy = { ...prev };
-      delete copy[docId];
-      return copy;
-    });
-    const currentDocs = { ...(draftState.travelDocs || {}) };
-    delete currentDocs[docId];
-    updateDraft({ travelDocs: currentDocs });
-  };
 
   const triggerDatePicker = (e: React.MouseEvent<HTMLInputElement>) => {
     try {
@@ -334,6 +417,7 @@ export function ProductCalculatorStep() {
 
   const [isEditingAmount, setIsEditingAmount] = useState(!amount);
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
+  const [isDeliveryPolicyOpen, setIsDeliveryPolicyOpen] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
 
   // Fetch active branches
@@ -421,19 +505,85 @@ export function ProductCalculatorStep() {
   
   const inrEquivalent = adjustedRate && amount ? (parseFloat(amount) * adjustedRate) : 0;
   
-  // Fee breakdown (mimicking the screenshot)
+  // Calculate rates and INR equivalents for extra currencies
+  const getEffectiveRateForCurrency = (currCode: string) => {
+    let bRate = 83.50;
+    if (Array.isArray(rates) && rates.length > 0) {
+      const found = rates.find((r: any) => r.currency?.code === currCode || r.currency === currCode);
+      if (found && (found.inrRate || found.rate)) {
+        bRate = Number(found.inrRate || found.rate);
+      }
+    } else {
+      const fallbacks: Record<string, number> = {
+        USD: 83.50, EUR: 89.20, GBP: 105.10, AED: 22.73, SGD: 61.80, CAD: 61.20, AUD: 54.80, THB: 2.45,
+        JPY: 0.56, CHF: 92.40, NZD: 50.10, SAR: 22.20, QAR: 22.80, HKD: 10.75, MYR: 18.50, CNY: 11.50
+      };
+      if (fallbacks[currCode]) bRate = fallbacks[currCode];
+    }
+
+    if (product === 'CASH_SELL') return Math.max(0.01, Math.round((bRate - 0.63) * 100) / 100);
+    if (product === 'CASH') return Math.round((bRate + 0.63) * 100) / 100;
+    return bRate;
+  };
+
+  const extraCurrenciesCalculated = extraCurrencies.map((item) => {
+    const itemRate = getEffectiveRateForCurrency(item.currency);
+    const itemAmt = parseFloat(item.amount) || 0;
+    const itemInr = itemAmt * itemRate;
+    return {
+      ...item,
+      rate: itemRate,
+      inrEquivalent: itemInr
+    };
+  });
+
+  const totalExtraInr = extraCurrenciesCalculated.reduce((sum, item) => sum + item.inrEquivalent, 0);
+  const totalCurrencyInrValue = (inrEquivalent || 0) + totalExtraInr;
+
+  // Fee breakdown
   const parsedAmount = parseFloat(amount) || 0;
-  const serviceCharge = parsedAmount > 0 ? 150 : 0;
-  const gst = parsedAmount > 0 ? (inrEquivalent ? Math.round(inrEquivalent * 0.0018) : 119) : 0;
-  const cashback = parsedAmount > 0 ? 300 : 0;
+  const hasAnyCurrency = parsedAmount > 0 || extraCurrenciesCalculated.some(c => parseFloat(c.amount) > 0);
+
+  const serviceCharge = hasAnyCurrency ? 150 : 0;
+  const gst = totalCurrencyInrValue > 0 ? calculateForexGst(totalCurrencyInrValue) : 0;
+
+  const appliedDiscount = appliedOffer ? appliedOffer.discountAmount : 0;
+
+  const basePayableAmount = product === 'CASH_SELL'
+    ? (totalCurrencyInrValue > 0 ? (totalCurrencyInrValue - serviceCharge - gst) : 0)
+    : (totalCurrencyInrValue > 0 ? (totalCurrencyInrValue + serviceCharge + gst) : 0);
 
   const payableAmount = product === 'CASH_SELL'
-    ? (parsedAmount > 0 && inrEquivalent ? (inrEquivalent - serviceCharge - gst) : 0)
-    : (parsedAmount > 0 && inrEquivalent ? (inrEquivalent + serviceCharge + gst) : 0);
+    ? basePayableAmount
+    : Math.max(0, basePayableAmount - appliedDiscount);
 
-  const netEffective = product === 'CASH_SELL'
-    ? (payableAmount > 0 ? payableAmount + cashback : 0) // Cashback bonus adds to received cash
-    : (payableAmount > 0 ? Math.max(0, payableAmount - cashback) : 0);
+  const handleSelectOffer = (offer: typeof DUMMY_OFFERS[0]) => {
+    const currentVal = totalCurrencyInrValue || 0;
+    if (currentVal < offer.minAmount) {
+      setCouponError(`Min order amount of ₹${offer.minAmount.toLocaleString('en-IN')} required for ${offer.code}`);
+      return;
+    }
+    setCouponError(null);
+    if (appliedOffer?.code === offer.code) {
+      setAppliedOffer(null);
+      setCouponInput('');
+    } else {
+      setAppliedOffer(offer);
+      setCouponInput(offer.code);
+    }
+  };
+
+  const handleApplyInputCoupon = () => {
+    setCouponError(null);
+    const codeToTest = couponInput.trim().toUpperCase();
+    if (!codeToTest) return;
+    const found = DUMMY_OFFERS.find(o => o.code === codeToTest);
+    if (!found) {
+      setCouponError(`Invalid promo code '${codeToTest}'. Choose an available offer below.`);
+      return;
+    }
+    handleSelectOffer(found);
+  };
 
   const handleQuote = async () => {
     if (!product || !currency || !amount) {
@@ -443,24 +593,35 @@ export function ProductCalculatorStep() {
     if (departureDate && returnDate && returnDate < departureDate) {
       updateDraft({ returnDate: departureDate });
     }
-    const { sessionId } = useTransactionStore.getState();
-    if (!sessionId) return;
-    
-    await lockQuote(sessionId, {
-      product,
-      currency,
-      amount: Number(amount),
-      branchId,
-    });
-    
-    const errorMsg = useQuoteStore.getState().lockError;
-    if (errorMsg && errorMsg.toLowerCase().includes('unauthorized')) {
-      useQuoteStore.getState().clearQuote();
-      window.location.href = `/login?redirect=/buy-forex`;
+    if (!isCurrentProductActive) {
+      alert('This product is temporarily disabled by administrator.');
       return;
     }
-    
-    await useTransactionStore.getState().fetchWorkflow();
+    updateDraft({ 
+      extraCurrencies,
+      totalCurrencyInrValue,
+      serviceCharge,
+      gst,
+      payableAmount,
+    });
+
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    updateDraft({ checkoutStep: 2 });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
+  const handleAuthSuccess = (authenticatedUser?: any) => {
+    setShowAuthModal(false);
+    updateDraft({ 
+      checkoutStep: 2,
+      travellerName: authenticatedUser?.fullName || draftState.travellerName || '',
+      phone: authenticatedUser?.phone || authenticatedUser?.mobile || draftState.phone || '',
+      email: authenticatedUser?.email || draftState.email || '',
+    });
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
@@ -520,7 +681,7 @@ export function ProductCalculatorStep() {
       <div className="flex flex-wrap border border-gray-200 mb-6 bg-gray-100/80 p-1.5 rounded-2xl gap-1 shadow-inner">
         <button
           type="button"
-          onClick={() => updateDraft({ product: 'CASH' })}
+          onClick={() => handleTabSwitch('CASH')}
           className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${
             product === 'CASH' ? 'bg-white text-blue-600 shadow-sm border border-gray-200 ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
           }`}
@@ -529,7 +690,7 @@ export function ProductCalculatorStep() {
         </button>
         <button
           type="button"
-          onClick={() => updateDraft({ product: 'CARD' })}
+          onClick={() => handleTabSwitch('CARD')}
           className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${
             product === 'CARD' ? 'bg-white text-blue-600 shadow-sm border border-gray-200 ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
           }`}
@@ -538,7 +699,7 @@ export function ProductCalculatorStep() {
         </button>
         <button
           type="button"
-          onClick={() => updateDraft({ product: 'CASH_SELL' })}
+          onClick={() => handleTabSwitch('CASH_SELL')}
           className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${
             product === 'CASH_SELL' ? 'bg-white text-emerald-600 shadow-sm border border-gray-200 ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
           }`}
@@ -547,34 +708,33 @@ export function ProductCalculatorStep() {
         </button>
         <button
           type="button"
-          onClick={() => updateDraft({ product: 'REMITTANCE' })}
+          onClick={() => handleTabSwitch('REMITTANCE')}
           className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${
             product === 'REMITTANCE' ? 'bg-white text-indigo-600 shadow-sm border border-gray-200 ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
           }`}
         >
-          <span>🌐</span> Remittance
+          <span>✈️</span> Send Remittance
         </button>
       </div>
 
       {/* Top Banner Info */}
+      {/* Top Doorstep Delivery Ribbon */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4 text-[13px] font-medium text-gray-700 bg-gray-50/80 p-3 rounded-xl border border-gray-100">
-        <div className="flex items-center">
-          <span className="mr-1.5 text-lg">🛵</span> Guaranteed Doorstep Delivery by <span className="font-bold text-gray-900 mx-1">{deliveryDay}, 9:00 PM</span> in 
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="mr-1 text-lg">🛵</span> Guaranteed Doorstep Delivery by <span className="font-bold text-gray-900 mx-0.5">{deliveryDay}, 9:00 PM</span> in 
           <span 
             className="text-blue-600 font-bold ml-1 cursor-pointer hover:underline bg-blue-50 px-2 py-0.5 rounded border border-blue-100"
             onClick={() => setIsCityModalOpen(true)}
           >
             {selectedCity} ▾
           </span>
-        </div>
-        
-        {/* Cutoff Timer Explanation & Tooltip (Issue 7) */}
-        <div className="flex items-center bg-orange-50 text-orange-700 px-3 py-1 rounded-full text-xs font-bold border border-orange-200/80 shadow-xs relative group cursor-help" title="Order before 1:00 PM for Guaranteed Same-Day Doorstep Delivery">
-          <span className="mr-1.5 opacity-80">⏱ Delivery Cutoff:</span> {cutoffTimer}
-          <Info className="w-3.5 h-3.5 ml-1.5 text-orange-500 opacity-80" />
-          <div className="pointer-events-none absolute right-0 top-full mt-2 w-64 bg-slate-900 text-white text-[11px] font-medium p-3 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity z-50 leading-relaxed border border-slate-700">
-            ⏰ <strong>Cutoff Policy:</strong> Place your order before 1:00 PM to receive doorstep delivery on the same day. Orders after 1:00 PM are delivered next morning.
-          </div>
+          <button
+            onClick={() => setIsDeliveryPolicyOpen(true)}
+            className="ml-1 text-base hover:scale-110 transition-transform cursor-pointer"
+            title="Click for Same-Day Delivery Policy"
+          >
+            👈
+          </button>
         </div>
       </div>
 
@@ -602,48 +762,102 @@ export function ProductCalculatorStep() {
                 </span>
               </div>
               
-              <div className="bg-gray-50/70 rounded-xl p-4 border border-gray-100 flex items-center justify-between">
-                <div className="flex items-center gap-4 w-full">
-                  <div className="font-bold text-gray-900 w-1/3 min-w-[140px] text-[15px]">{currencyName}</div>
-                  
-                  {isEditingAmount ? (
-                    <div className="flex-1 flex gap-2">
+              <div className="bg-gray-50/80 rounded-2xl p-4 sm:p-5 border border-gray-200/80 space-y-4 shadow-2xs">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                  {/* Currency Selector Dropdown */}
+                  <div className="sm:col-span-6">
+                    <label className="block text-[11px] font-extrabold text-gray-600 uppercase tracking-wider mb-1.5">
+                      Select Currency
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={currency}
+                        onChange={(e) => updateDraft({ currency: e.target.value })}
+                        className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-xs cursor-pointer appearance-none pr-8"
+                      >
+                        {ALL_CURRENCIES_LIST.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.flag} {c.code} - {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3 top-3.5 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Amount Input */}
+                  <div className="sm:col-span-5">
+                    <label className="block text-[11px] font-extrabold text-gray-600 uppercase tracking-wider mb-1.5">
+                      Forex Amount
+                    </label>
+                    <div className="relative">
                       <input 
                         type="number"
-                        className="border border-gray-300 rounded px-3 py-1.5 w-32 focus:outline-none focus:border-blue-500 font-medium bg-white"
+                        min="1"
+                        className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 pr-14 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-xs"
                         value={amount}
                         onChange={e => updateDraft({ amount: e.target.value })}
-                        placeholder="Amount"
-                        autoFocus
+                        placeholder="e.g. 1000"
                       />
-                      <span className="text-gray-500 self-center">{currency}</span>
-                      <Button size="sm" variant="outline" className="ml-2 bg-white" onClick={() => setIsEditingAmount(false)}>Save</Button>
+                      <span className="absolute right-3 top-3 text-xs font-black text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
+                        {currency}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="flex-1 text-gray-700 flex items-center font-medium">
-                      <span>{amount || 0} {currency} = <span className="font-bold text-gray-900">₹ {inrEquivalent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span></span>
-                      <button onClick={() => setIsEditingAmount(true)} className="ml-3 text-blue-600 text-xs font-bold flex items-center hover:underline">
-                        Edit
-                      </button>
-                    </div>
-                  )}
+                  </div>
+
+                  {/* Working Minus / Clear Button */}
+                  <div className="sm:col-span-1 flex items-center justify-end sm:justify-center">
+                    <button 
+                      type="button"
+                      title={extraCurrencies.length > 0 ? "Remove this currency" : "Clear amount"}
+                      onClick={() => {
+                        if (extraCurrencies.length > 0) {
+                          const nextPrimary = extraCurrencies[0];
+                          const remaining = extraCurrencies.slice(1);
+                          updateDraft({ 
+                            currency: nextPrimary.currency, 
+                            amount: nextPrimary.amount,
+                            extraCurrencies: remaining 
+                          });
+                          setExtraCurrencies(remaining);
+                        } else {
+                          updateDraft({ amount: '' });
+                        }
+                      }}
+                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 flex items-center justify-center font-bold text-sm transition-all shadow-2xs"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
-                
-                <button className="text-gray-400 hover:text-red-500 transition-colors ml-4 shrink-0">
-                  <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold">-</div>
-                </button>
+
+                {/* Live INR Conversion Result */}
+                <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between text-xs">
+                  <span className="text-gray-500 font-medium">
+                    {amount ? `${parseFloat(amount).toLocaleString('en-IN')} ${currency} @ ₹${adjustedRate?.toFixed(2)}` : 'Enter amount to calculate live total'}
+                  </span>
+                  <div className="text-right">
+                    <span className="text-gray-500 font-medium mr-1.5">INR Value:</span>
+                    <span className="font-black text-blue-700 text-sm sm:text-base">
+                      ₹ {inrEquivalent ? inrEquivalent.toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '0'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Additional Currencies List (Issue 8) */}
-              {extraCurrencies.map((c, idx) => (
-                <div key={idx} className="mt-3 bg-blue-50/40 rounded-xl p-3.5 border border-blue-100 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-gray-900 text-sm">{getCurrencyName(c.currency)}</span>
-                    <span className="text-xs font-medium text-gray-600">{c.amount} {c.currency}</span>
+              {/* Additional Currencies List */}
+              {extraCurrenciesCalculated.map((c, idx) => (
+                <div key={idx} className="mt-3 bg-gradient-to-r from-blue-50/70 to-indigo-50/40 rounded-xl p-3.5 border border-blue-100 flex items-center justify-between shadow-2xs">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="font-bold text-gray-900 text-sm">{getCurrencyName(c.currency)}</div>
+                    <span className="text-xs font-semibold text-gray-800 bg-white px-2.5 py-1 rounded-md border border-gray-200 shadow-2xs">
+                      {c.amount} {c.currency} = <strong className="text-blue-700">₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}</strong>
+                    </span>
+                    <span className="text-[11px] text-blue-600 font-bold">@ ₹{c.rate.toFixed(2)}</span>
                   </div>
                   <button 
-                    onClick={() => setExtraCurrencies(prev => prev.filter((_, i) => i !== idx))} 
-                    className="text-red-500 hover:text-red-700 text-xs font-bold"
+                    onClick={() => updateExtraCurrencies(extraCurrencies.filter((_, i) => i !== idx))} 
+                    className="text-red-500 hover:text-red-700 text-xs font-bold bg-white px-2.5 py-1 rounded-lg border border-red-200 hover:bg-red-50 transition-colors shadow-2xs shrink-0"
                   >
                     Remove
                   </button>
@@ -671,6 +885,7 @@ export function ProductCalculatorStep() {
                 </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {/* Branch Pickup / Visit */}
                   <div 
                     onClick={() => updateDraft({ deliveryMethod: 'PICKUP' })}
                     className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${deliveryMethod === 'PICKUP' ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}
@@ -683,6 +898,7 @@ export function ProductCalculatorStep() {
                     </div>
                   </div>
                   
+                  {/* Home Delivery / Home Collection */}
                   <div 
                     onClick={() => updateDraft({ deliveryMethod: 'HOME_DELIVERY' })}
                     className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${deliveryMethod === 'HOME_DELIVERY' ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}
@@ -695,6 +911,30 @@ export function ProductCalculatorStep() {
                     </div>
                   </div>
                 </div>
+
+                {/* Warning when Doorstep is selected but under ₹25,000 threshold */}
+                {deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
+                  <div className="bg-amber-50 border border-amber-300 text-amber-950 rounded-xl p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200 shadow-2xs">
+                    <div className="flex items-start gap-2.5">
+                      <span className="text-xl shrink-0">⚠️</span>
+                      <div className="text-xs space-y-0.5">
+                        <p className="font-extrabold text-amber-900">
+                          Doorstep Delivery requires a minimum order value of ₹25,000.
+                        </p>
+                        <p className="text-amber-800 font-medium">
+                          Your current order value is <strong>₹{Math.round(totalCurrencyInrValue).toLocaleString('en-IN')}</strong>. Please choose Branch Pickup (No minimum value) or add more currency.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => updateDraft({ deliveryMethod: 'PICKUP' })}
+                      className="whitespace-nowrap px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-lg transition-colors shadow-2xs"
+                    >
+                      Switch to Branch Pickup
+                    </button>
+                  </div>
+                )}
 
                 {deliveryMethod === 'PICKUP' ? (
                   <div className="space-y-2 animate-in fade-in duration-200">
@@ -713,12 +953,12 @@ export function ProductCalculatorStep() {
                     </select>
                   </div>
                 ) : (
-                  <div className="animate-in fade-in duration-200">
-                    <AddressSelector 
-                      value={draftState.deliveryAddress || ''}
-                      onChange={(compiled, addressId) => updateDraft({ deliveryAddress: compiled, addressId })}
-                    />
-                  </div>
+                  totalCurrencyInrValue >= 25000 && (
+                    <div className="bg-blue-50/70 border border-blue-200/60 rounded-xl p-3.5 flex items-center gap-2.5 text-xs text-blue-900 font-medium animate-in fade-in duration-200">
+                      <span className="text-base">🚚</span>
+                      <span>Guaranteed safe doorstep delivery. You will provide your delivery address and coordination contact in Step 4.</span>
+                    </div>
+                  )
                 )}
               </div>
             </Card>
@@ -1188,16 +1428,14 @@ export function ProductCalculatorStep() {
                           <select 
                             value={destination}
                             onChange={(e) => updateDraft({ destination: e.target.value })}
-                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold focus:border-blue-500 outline-none"
+                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold focus:border-blue-500 outline-none max-w-xs"
                           >
                             <option value="">Select Primary Country</option>
-                            <option value="Singapore">Singapore</option>
-                            <option value="USA">United States</option>
-                            <option value="UAE">United Arab Emirates</option>
-                            <option value="UK">United Kingdom</option>
-                            <option value="Europe">Europe</option>
-                            <option value="Thailand">Thailand</option>
-                            <option value="Australia">Australia</option>
+                            {DESTINATION_COUNTRIES.map((c) => (
+                              <option key={c.code} value={c.code}>
+                                {c.flag} {c.name}
+                              </option>
+                            ))}
                           </select>
                         )}
                         
@@ -1240,8 +1478,10 @@ export function ProductCalculatorStep() {
                         </div>
                       </div>
                       <div className="flex flex-col md:flex-row md:items-center justify-between text-[11.5px] text-gray-500 pt-1">
-                        <p className="text-orange-700 font-semibold">⚠️ Travel departure date must be within 60 days of order date as per RBI LRS rules.</p>
-                        <label className="flex items-center mt-3 md:mt-0 cursor-pointer">
+                        {!departureDate && (
+                          <p className="text-orange-700 font-semibold">⚠️ Travel departure date must be within 60 days of order date as per RBI LRS rules.</p>
+                        )}
+                        <label className={`flex items-center cursor-pointer ${!departureDate ? 'mt-3 md:mt-0' : ''}`}>
                           <input 
                             type="checkbox" 
                             checked={noReturnDate}
@@ -1271,70 +1511,7 @@ export function ProductCalculatorStep() {
                       </select>
                     </div>
 
-                    {/* Purpose Verification Document Upload Section */}
-                    {purpose && TRAVEL_PURPOSE_DOCS[purpose] && (
-                      <div className="mt-6 pt-5 border-t border-gray-200 space-y-4 animate-in fade-in duration-300">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="text-sm font-extrabold text-gray-900 flex items-center gap-2">
-                              <span>📎</span> Travel Verification Documents
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              As per RBI / FEMA compliance, please upload supporting evidence for <strong className="text-gray-900">{TRAVEL_PURPOSE_DOCS[purpose].label}</strong>.
-                            </p>
-                          </div>
-                          <span className="text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full uppercase tracking-wider">
-                            RBI Required
-                          </span>
-                        </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                          {TRAVEL_PURPOSE_DOCS[purpose].docs.map((doc) => {
-                            const attached = travelPurposeFiles[doc.id] || (draftState.travelDocs?.[doc.id] ? { name: draftState.travelDocs[doc.id] } : null);
-                            return (
-                              <div key={doc.id} className={`p-4 rounded-xl border transition-all ${attached ? 'bg-emerald-50/60 border-emerald-300 shadow-2xs' : 'bg-gray-50/80 border-gray-200 hover:border-blue-400 hover:bg-white'}`}>
-                                <div className="flex items-start justify-between mb-2">
-                                  <div>
-                                    <span className="text-xs font-bold text-gray-900 block">
-                                      {doc.name} {doc.required ? <span className="text-red-500 font-bold">*</span> : <span className="text-gray-400 text-[10px] font-normal">(Optional)</span>}
-                                    </span>
-                                    <span className="text-[10px] text-gray-500">PDF, JPG, PNG (Max 10MB)</span>
-                                  </div>
-                                  {attached && <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-0.5 rounded-full">✓ Uploaded</span>}
-                                </div>
-
-                                {attached ? (
-                                  <div className="flex items-center justify-between bg-white p-2.5 rounded-lg border border-emerald-300 text-xs mt-2 shadow-2xs">
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                      <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
-                                      <span className="font-bold text-gray-800 truncate">{attached.name}</span>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeTravelDoc(doc.id)}
-                                      className="text-red-500 hover:text-red-700 font-bold text-xs ml-2 shrink-0"
-                                    >
-                                      Remove
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <label className="flex items-center justify-center gap-2 border border-dashed border-blue-300 bg-blue-50/40 hover:bg-blue-50 hover:border-blue-500 p-2.5 rounded-lg text-xs font-bold text-blue-600 cursor-pointer transition-colors mt-2">
-                                    <Upload className="w-4 h-4 text-blue-600" />
-                                    <span>Choose Document File</span>
-                                    <input
-                                      type="file"
-                                      accept={doc.accept}
-                                      className="hidden"
-                                      onChange={(e) => handleTravelDocUpload(doc.id, e.target.files?.[0] || null)}
-                                    />
-                                  </label>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
 
                   </div>
                 </div>
@@ -1346,7 +1523,6 @@ export function ProductCalculatorStep() {
             <Button 
               onClick={handleQuote} 
               disabled={
-                !canGetQuote || 
                 isLocking || 
                 !amount || 
                 (isRemittance ? (
@@ -1357,7 +1533,7 @@ export function ProductCalculatorStep() {
                   !destination || 
                   (!isSell && (!departureDate || !purpose)) ||
                   (deliveryMethod === 'PICKUP' && !branchId) ||
-                  (deliveryMethod === 'HOME_DELIVERY' && !draftState.deliveryAddress)
+                  (deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue < 25000)
                 ))
               }
               className={`w-full md:w-1/3 text-white font-bold py-6 rounded-lg text-sm shadow-sm transition-all tracking-wider disabled:opacity-50 ${
@@ -1366,6 +1542,12 @@ export function ProductCalculatorStep() {
             >
               {isLocking ? 'PROCESSING...' : 'CONTINUE'}
             </Button>
+
+            {!isRemittance && deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
+              <p className="text-[12px] font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg p-2.5 max-w-md shadow-2xs">
+                ⚠️ Doorstep Delivery requires min. ₹25,000 order value. Please switch to Branch Pickup (No minimum value) or add more currency to proceed.
+              </p>
+            )}
 
             {isRemittance && (!amount || !draftState.countryCode || !draftState.purposeCode || !draftState.beneficiaryId) && (
               <p className="text-[12px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2.5 max-w-md">
@@ -1455,12 +1637,18 @@ export function ProductCalculatorStep() {
                 <>
                   <div className="flex justify-between items-center text-[13px]">
                     <span className="text-gray-900 font-medium">Total Currency Value</span>
-                    <span className="font-bold text-gray-900">₹ {inrEquivalent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    <span className="font-bold text-gray-900">₹ {Math.round(totalCurrencyInrValue).toLocaleString('en-IN')}</span>
                   </div>
                   <div className="flex justify-between items-center text-[11px] text-gray-500 pl-2">
                     <span>• {amount || 0} {currency} @ {adjustedRate?.toFixed(2) || '0.00'}</span>
                     <span>₹ {inrEquivalent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                   </div>
+                  {extraCurrenciesCalculated.map((c, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-[11px] text-blue-600 font-medium pl-2">
+                      <span>• {c.amount} {c.currency} @ {c.rate.toFixed(2)}</span>
+                      <span>₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}</span>
+                    </div>
+                  ))}
                   
                   <div className="flex justify-between items-center text-[13px] pt-1">
                     <span className="text-gray-900 font-medium">Service Charge</span>
@@ -1472,6 +1660,15 @@ export function ProductCalculatorStep() {
                     <span className="font-bold text-gray-900">₹ {gst}</span>
                   </div>
 
+                  {appliedDiscount > 0 && (
+                    <div className="flex justify-between items-center text-[13px] text-emerald-700 font-extrabold pt-1">
+                      <span className="flex items-center gap-1">
+                        <span>Promo Code ({appliedOffer?.code})</span>
+                      </span>
+                      <span>- ₹ {appliedDiscount}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center pt-1.5 pb-1">
                     <div>
                       <span className="text-gray-900 font-bold block text-[13px]">
@@ -1481,22 +1678,8 @@ export function ProductCalculatorStep() {
                         {product === 'CASH_SELL' ? 'After GST & Service charge' : 'Incl GST & Service charge'}
                       </span>
                     </div>
-                    <span className="font-extrabold text-gray-900 text-[17px]">₹ {payableAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    <span className="font-extrabold text-gray-900 text-[18px]">₹ {payableAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                   </div>
-
-                  {/* Cashback Banner */}
-                  {cashback > 0 && (
-                    <div className="mt-3 bg-[#e6fcf5] border border-[#b2f2d9] rounded-lg p-3">
-                      <div className="flex justify-between items-center text-[#087f5b] font-bold text-[12px] mb-2">
-                        <span className="flex items-center">{product === 'CASH_SELL' ? 'Bonus Applied!' : 'Cashback Applied!'} <CheckCircle2 className="w-3.5 h-3.5 ml-1 inline text-[#0ca678]" /></span>
-                        <span>₹{cashback}</span>
-                      </div>
-                      <div className="flex justify-between items-center font-bold text-gray-900 text-[12px]">
-                        <span>{product === 'CASH_SELL' ? 'Net amount including bonus' : 'Net effective price after cashback'}</span>
-                        <span className="text-[15px]">₹{netEffective.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
             </div>
@@ -1506,21 +1689,134 @@ export function ProductCalculatorStep() {
             </div>
           </Card>
 
-          {/* Offers */}
-          <Card className="shadow-sm border-gray-200 rounded-xl">
-            <div className="p-4 border-b border-gray-100">
-              <h3 className="font-extrabold text-gray-900 text-[15px]">Available Offers</h3>
+          {/* Offers Card */}
+          <Card className="shadow-sm border-gray-200 rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-extrabold text-gray-900 text-[15px] flex items-center gap-1.5">
+                <Ticket className="w-4 h-4 text-amber-500 transform -rotate-45" />
+                <span>Available Offers & Coupons</span>
+              </h3>
+              {appliedOffer && (
+                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  Coupon Applied
+                </span>
+              )}
             </div>
-            <div className="p-4">
-              <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1 bg-gray-50/50 hover:bg-white transition-colors focus-within:border-gray-300 focus-within:bg-white">
-                <div className="pl-2 opacity-40"><Ticket className="w-4 h-4 text-gray-600 transform -rotate-45" /></div>
+
+            <div className="p-4 space-y-3.5">
+              {/* Input bar */}
+              <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1 bg-gray-50/50 hover:bg-white transition-colors focus-within:border-amber-500 focus-within:bg-white">
+                <div className="pl-2 opacity-50"><Ticket className="w-4 h-4 text-gray-600 transform -rotate-45" /></div>
                 <input 
                   type="text" 
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                   placeholder="Enter Coupon Code" 
-                  className="bg-transparent flex-1 min-w-0 py-1.5 px-1 text-[13px] focus:outline-none placeholder:text-gray-400"
+                  className="bg-transparent flex-1 min-w-0 py-1.5 px-1 text-[12px] font-mono font-bold focus:outline-none uppercase placeholder:font-sans placeholder:font-normal placeholder:text-gray-400 text-gray-900"
                 />
-                <button className="text-gray-400 font-bold text-[11.5px] px-2 hover:text-gray-700 transition-colors uppercase shrink-0">Apply</button>
+                <button 
+                  onClick={handleApplyInputCoupon}
+                  className="bg-slate-900 hover:bg-amber-600 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-md transition-colors uppercase shrink-0"
+                >
+                  {appliedOffer?.code === couponInput ? 'APPLIED ✓' : 'APPLY'}
+                </button>
               </div>
+
+              {/* Notice error message */}
+              {couponError && (
+                <p className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 p-2.5 rounded-lg flex items-center gap-1.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{couponError}</span>
+                </p>
+              )}
+
+              {/* Applied coupon success badge */}
+              {appliedOffer && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs text-emerald-900">
+                  <div>
+                    <span className="font-black font-mono block text-emerald-950">{appliedOffer.code} Applied</span>
+                    <span className="text-[11px] text-emerald-700 font-medium">{appliedOffer.description}</span>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setAppliedOffer(null);
+                      setCouponInput('');
+                      setCouponError(null);
+                    }}
+                    className="text-rose-600 font-bold hover:underline text-[11px] ml-2"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+
+              {/* Selectable Dummy Offers */}
+              <div className="space-y-2.5 pt-1">
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">
+                  Select an Offer Below
+                </span>
+
+                {DUMMY_OFFERS.map((offer) => {
+                  const currentInrVal = inrEquivalent || 0;
+                  const isEligible = currentInrVal >= offer.minAmount;
+                  const isSelected = appliedOffer?.code === offer.code;
+
+                  return (
+                    <div 
+                      key={offer.code}
+                      className={`p-3 rounded-xl border transition-all text-left ${
+                        isSelected
+                          ? 'bg-amber-50/80 border-amber-500 ring-1 ring-amber-500/30'
+                          : isEligible
+                            ? 'bg-white border-gray-200 hover:border-amber-400 hover:shadow-xs cursor-pointer'
+                            : 'bg-gray-50/60 border-gray-200/70 opacity-70'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-black text-xs bg-slate-900 text-amber-400 px-2 py-0.5 rounded border border-slate-800">
+                            {offer.code}
+                          </span>
+                          <span className="text-[9px] font-extrabold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded uppercase">
+                            {offer.tag}
+                          </span>
+                        </div>
+
+                        {isEligible ? (
+                          <button
+                            onClick={() => handleSelectOffer(offer)}
+                            className={`text-[11px] font-black px-3 py-1 rounded-lg transition-all ${
+                              isSelected
+                                ? 'bg-emerald-600 text-white shadow-2xs'
+                                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-2xs'
+                            }`}
+                          >
+                            {isSelected ? 'APPLIED ✓' : 'APPLY'}
+                          </button>
+                        ) : (
+                          <span className="text-[10px] font-bold text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
+                            Locked
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-xs font-bold text-gray-900 mt-1">
+                        {offer.title}
+                      </div>
+                      <p className="text-[11px] text-gray-500 font-medium">
+                        {offer.description}
+                      </p>
+
+                      {!isEligible && (
+                        <div className="mt-1.5 text-[10px] font-bold text-amber-700 flex items-center gap-1">
+                          <span>🔒 Add ₹ {(offer.minAmount - currentInrVal).toLocaleString('en-IN')} more to unlock</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
             </div>
           </Card>
 
@@ -1580,13 +1876,13 @@ export function ProductCalculatorStep() {
                 <select 
                   value={newCurrencyCode}
                   onChange={(e) => setNewCurrencyCode(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-semibold text-gray-800"
+                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="EUR">EUR - Euro</option>
-                  <option value="GBP">GBP - British Pound</option>
-                  <option value="THB">THB - Thai Baht</option>
-                  <option value="AED">AED - UAE Dirham</option>
-                  <option value="SGD">SGD - Singapore Dollar</option>
+                  {ALL_CURRENCIES_LIST.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.flag} {c.code} - {c.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -1604,7 +1900,7 @@ export function ProductCalculatorStep() {
               <Button 
                 onClick={() => {
                   if (newCurrencyAmount && Number(newCurrencyAmount) > 0) {
-                    setExtraCurrencies(prev => [...prev, { currency: newCurrencyCode, amount: newCurrencyAmount }]);
+                    updateExtraCurrencies([...extraCurrencies, { currency: newCurrencyCode, amount: newCurrencyAmount }]);
                     setShowAddCurrencyModal(false);
                   }
                 }}
@@ -1633,15 +1929,13 @@ export function ProductCalculatorStep() {
               <select 
                 value={selectedExtraCountry}
                 onChange={(e) => setSelectedExtraCountry(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-2.5 text-sm font-semibold text-gray-800"
+                className="w-full border border-gray-300 rounded-xl p-3 text-sm font-bold text-gray-800 focus:border-blue-500 outline-none"
               >
-                <option value="Europe">Europe (Schengen)</option>
-                <option value="USA">United States</option>
-                <option value="UK">United Kingdom</option>
-                <option value="Singapore">Singapore</option>
-                <option value="UAE">United Arab Emirates</option>
-                <option value="Thailand">Thailand</option>
-                <option value="Australia">Australia</option>
+                {DESTINATION_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.name}>
+                    {c.flag} {c.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex gap-2 pt-2">
@@ -1663,6 +1957,19 @@ export function ProductCalculatorStep() {
           </div>
         </div>
       )}
+
+      {/* Same Day Delivery Policy Modal */}
+      <SameDayDeliveryModal 
+        isOpen={isDeliveryPolicyOpen} 
+        onClose={() => setIsDeliveryPolicyOpen(false)} 
+      />
+
+      {/* MTTPL Customer Fast Login / OTP Modal */}
+      <CustomerAuthModal 
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
     </div>
   );
 }

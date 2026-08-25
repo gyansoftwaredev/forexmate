@@ -77,18 +77,30 @@ export function OrdersList() {
           </TableHeader>
           <TableBody>
             {orders.map((order) => {
-              const productName = order.items?.[0]?.product?.name || 'Unknown Product';
-              const foreignAmount = order.items?.[0]?.amount || order.quote?.amountForeign || '0';
-              const currency = order.items?.[0]?.currency?.code || order.quote?.currency?.code || '';
+              const hasMultipleItems = order.items && order.items.length > 1;
+              const productName = hasMultipleItems
+                ? order.items.map((it: any) => `${it.amount} ${it.currency?.code || it.currency || ''}`).join(' + ') + ' Notes'
+                : (order.items?.[0]?.product?.name || 'Unknown Product');
+              
+              const foreignSummary = hasMultipleItems
+                ? order.items.map((it: any) => `${it.amount} ${it.currency?.code || it.currency || ''}`).join(' • ')
+                : `${order.items?.[0]?.amount || order.quote?.amountForeign || '0'} ${order.items?.[0]?.currency?.code || order.quote?.currency?.code || ''}`;
               
               return (
                 <TableRow key={order.id} className="cursor-pointer hover:bg-blue-50/50 transition-colors" onClick={() => window.location.href = `/dashboard/orders/${order.id}`}>
                   <TableCell className="p-4 font-bold text-blue-600">{order.orderNumber}</TableCell>
                   <TableCell className="p-4 text-gray-600 font-medium">{formatDate(order.createdAt)}</TableCell>
                   <TableCell className="p-4">
-                    <div className="font-bold text-gray-900">{productName}</div>
+                    <div className="font-bold text-gray-900 flex items-center gap-1.5 flex-wrap">
+                      <span>{productName}</span>
+                      {hasMultipleItems && (
+                        <span className="text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded-md">
+                          Multi-Currency
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-500 font-medium mt-0.5">
-                      {foreignAmount} {currency}
+                      {foreignSummary}
                     </div>
                   </TableCell>
                   <TableCell className="p-4 font-bold text-gray-900">{formatCurrencyINR(order.totalAmountInr)}</TableCell>

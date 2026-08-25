@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { getLiveRates } from '@/lib/api-public';
+import { getCurrencyFlag } from '@/lib/currencyMetadata';
 import Link from 'next/link';
 
 export default function RatesPage() {
@@ -99,12 +100,12 @@ export default function RatesPage() {
                       <tr key={rate.currency} className={`hover:bg-gray-50 transition-colors ${idx !== filteredRates.length - 1 ? 'border-b border-gray-100' : ''}`}>
                         <td className="p-4">
                           <div className="flex items-center">
-                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center font-bold text-blue-600 mr-3">
-                              {rate.currency.substring(0,2)}
+                            <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-lg mr-3 shadow-2xs">
+                              {getCurrencyFlag(rate.currency)}
                             </div>
                             <div>
-                              <div className="font-bold text-gray-900">{rate.currency}</div>
-                              <div className="text-xs text-gray-500">{rate.name}</div>
+                              <div className="font-extrabold text-gray-900">{rate.currency}</div>
+                              <div className="text-xs text-gray-500 font-medium">{rate.name}</div>
                             </div>
                           </div>
                         </td>

@@ -21,7 +21,7 @@ import { SyncListener } from "@/components/SyncListener";
 
 
 export const metadata: Metadata = {
-  title: "Forexmate - Premium Foreign Exchange",
+  title: "ForexMate - Premium Foreign Exchange & International Remittance",
   description: "Live Interbank Rates & Same Day Delivery",
 };
 

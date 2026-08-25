@@ -236,6 +236,10 @@ export class OrdersService {
       throw new BadRequestException(`Product code ${productCode} not found in database`);
     }
 
+    if (!forexProduct.isActive) {
+      throw new BadRequestException(`The product "${forexProduct.name}" is temporarily disabled by administrator.`);
+    }
+
     const orderNumber = `ORD-${Math.floor(10000000 + Math.random() * 90000000)}`;
     const totalAmountInr = quote.lockedInrRate.toNumber() * quote.amountForeign.toNumber();
 
@@ -548,6 +552,175 @@ export class OrdersService {
         mappedStatus: mapOrderStatus(updatedOrder),
         status: mapOrderStatus(updatedOrder)
       };
+    });
+  }
+
+  async createDirectCheckout(authUserId: string | null, data: any) {
+    const email = data.email?.trim().toLowerCase() || `customer_${Date.now()}@forexmate.in`;
+    const cleanMobile = data.phone?.replace(/\D/g, '') || data.mobile?.replace(/\D/g, '') || '9876543210';
+    const fullName = data.travellerName?.trim() || data.fullName?.trim() || 'Customer';
+
+    let user = authUserId ? await this.prisma.user.findUnique({ where: { id: authUserId } }) : null;
+    if (!user) {
+      user = await this.prisma.user.findFirst({
+        where: { OR: [{ email }, { mobile: cleanMobile }] }
+      });
+    }
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          password: 'mock_guest_password_hash',
+          mobile: cleanMobile,
+          fullName,
+          status: 'ACTIVE',
+          userType: 'CUSTOMER'
+        }
+      });
+    }
+
+    let profile = await this.prisma.customerProfile.findUnique({
+      where: { userId: user.id }
+    });
+
+    if (!profile) {
+      try {
+        profile = await this.prisma.customerProfile.create({
+          data: {
+            userId: user.id,
+            panNumber: data.pan || null,
+            travelPurpose: data.purpose || 'TOURISM'
+          }
+        });
+      } catch (_) {
+        profile = await this.prisma.customerProfile.create({
+          data: {
+            userId: user.id,
+            travelPurpose: data.purpose || 'TOURISM'
+          }
+        });
+      }
+    } else if (data.pan && !profile.panNumber) {
+      try {
+        await this.prisma.customerProfile.update({
+          where: { id: profile.id },
+          data: { panNumber: data.pan }
+        });
+      } catch (_) {}
+    }
+
+    let branchId = data.branchId;
+    if (!branchId) {
+      const defaultBranch = await this.prisma.branch.findFirst();
+      branchId = defaultBranch?.id;
+    }
+
+    const isSell = data.product === 'CASH_SELL';
+    const isRemittance = data.product === 'REMITTANCE';
+    const isCard = data.product === 'FOREX_CARD' || data.product === 'CARD';
+    const productType = isSell ? 'CASH_SELL' : isRemittance ? 'REMITTANCE' : isCard ? 'FOREX_CARD' : 'CASH_BUY';
+    const deliveryMethod = data.deliveryMethod || (isRemittance ? 'WIRE_TRANSFER' : 'BRANCH_PICKUP');
+    const isPickup = ['BRANCH_PICKUP', 'PICKUP', 'STORE_PICKUP'].includes(deliveryMethod);
+    const isDelivery = ['HOME_DELIVERY', 'DELIVERY'].includes(deliveryMethod);
+
+    let workflowType = 'CASH_BUY_FLOW';
+    if (isSell) {
+      workflowType = isDelivery ? 'CASH_SELL_DELIVERY' : 'CASH_SELL_PICKUP';
+    } else if (isRemittance) {
+      workflowType = 'REMITTANCE_OUTWARD';
+    } else if (isCard) {
+      workflowType = isDelivery ? 'CARD_DELIVERY' : 'CARD_PICKUP';
+    } else {
+      workflowType = isDelivery ? 'CASH_DELIVERY' : 'CASH_PICKUP';
+    }
+
+    const orderNumber = data.orderNumber || (data.bookingRef ? data.bookingRef : `ORD-${Date.now()}`);
+
+    let productRecord = await this.prisma.forexProduct.findUnique({
+      where: { code: productType }
+    });
+    if (!productRecord) {
+      productRecord = await this.prisma.forexProduct.findFirst();
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          orderNumber,
+          profileId: profile.id,
+          branchId,
+          totalAmountInr: data.totalAmountInr || 0,
+          deliveryMethod,
+          status: isSell ? OrderStatus.PAYMENT_COMPLETED : OrderStatus.PENDING,
+          productType,
+          workflowType,
+          currentStage: 'KYC_STAGE',
+          requiresKyc: true,
+          requiresInventory: !isRemittance,
+          requiresPickupHandover: isPickup,
+          requiresDelivery: isDelivery,
+          complianceStatus: 'PENDING',
+          travelDestination: data.destination || null,
+          departureDate: data.departureDate ? new Date(data.departureDate) : null,
+          returnDate: data.returnDate ? new Date(data.returnDate) : null
+        }
+      });
+
+      if (Array.isArray(data.items) && data.items.length > 0) {
+        for (const item of data.items) {
+          const currCode = item.currency || 'USD';
+          let currency = await tx.currency.findUnique({ where: { code: currCode } });
+          if (!currency) {
+            currency = await tx.currency.create({
+              data: { code: currCode, name: currCode, symbol: currCode }
+            });
+          }
+
+          await tx.orderItem.create({
+            data: {
+              orderId: order.id,
+              productId: productRecord?.id || '',
+              currencyId: currency.id,
+              amount: item.amount || 0,
+              rate: item.rate || 1,
+              inrSubtotal: item.inrEquivalent || item.inrValue || (item.amount * item.rate) || 0
+            }
+          });
+        }
+      }
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId: order.id,
+          status: order.status,
+          changedById: user.id,
+          comments: `Order placed online by customer (${fullName}). Mode: ${deliveryMethod}`
+        }
+      });
+
+      if (isDelivery && data.deliveryAddress) {
+        const addr = await tx.customerAddress.create({
+          data: {
+            profileId: profile.id,
+            address: data.deliveryAddress,
+            city: data.city || 'Delhi',
+            state: data.state || 'Delhi',
+            pin: data.pincode || '110001',
+            landmark: data.landmark || null
+          }
+        });
+
+        await tx.orderDelivery.create({
+          data: {
+            orderId: order.id,
+            addressId: addr.id,
+            status: 'PENDING'
+          }
+        });
+      }
+
+      return order;
     });
   }
 }

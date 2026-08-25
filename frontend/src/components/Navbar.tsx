@@ -1,155 +1,188 @@
 "use client";
+
+import React from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { Globe, Banknote, Send, CreditCard, Briefcase, ShieldCheck, Smartphone, Handshake, Building2, Flame } from 'lucide-react';
+import { Globe, Banknote, Send, CreditCard, Briefcase, ShieldCheck, Smartphone, Handshake, Building2, MapPin, ChevronDown, User, Phone } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+
   return (
-    <header className="sticky top-0 z-50 bg-slate-950/50 backdrop-blur-md border-b border-white/10 text-white font-sans">
-      {/* Top Banner Contact Strip */}
-      <div className="py-1 px-6 flex justify-between items-center text-[11px] border-b border-white/10 text-slate-300">
-        <div className="flex space-x-6 items-center">
-          <a href="tel:09212219191" className="flex items-center hover:text-white font-bold transition-colors">
-            <span className="mr-1.5 text-orange-400">📞</span> +91 9212219191
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 text-slate-900 font-sans transition-all shadow-xs">
+      {/* Top Banner Contact & License Ribbon */}
+      <div className="py-1.5 px-4 md:px-8 flex justify-between items-center text-xs border-b border-slate-200/60 bg-slate-50 text-slate-700">
+        <div className="flex space-x-4 md:space-x-6 items-center">
+          <a href="tel:09212219191" className="flex items-center hover:text-amber-600 font-bold transition-colors">
+            <Phone className="w-3.5 h-3.5 mr-1.5 text-amber-600" />
+            <span>+91 9212219191</span>
           </a>
-          <span className="text-slate-700">|</span>
-          <span className="flex items-center text-[10px] text-emerald-400 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span>
-            RBI Authorized FFMC
+          <span className="text-slate-300 hidden sm:inline">•</span>
+          <span className="hidden sm:flex items-center text-[10px] text-emerald-700 font-extrabold tracking-wide uppercase">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse mr-1.5"></span>
+            RBI Authorized Category II FFMC
           </span>
-          <Link href="/contact" className="hover:text-white transition-colors">Care</Link>
+          <span className="text-slate-300 hidden md:inline">•</span>
+          <Link href="/branches" className="hidden md:flex items-center text-slate-700 hover:text-amber-600 font-bold transition-colors">
+            <MapPin className="w-3 h-3 mr-1 text-amber-600" />
+            <span>Branch Locator</span>
+          </Link>
         </div>
-        <div className="flex space-x-4 items-center">
+
+        <div className="flex space-x-3 items-center">
           {user ? (
             <>
-              <span className="font-extrabold text-white">Hi, {user.fullName.split(' ')[0]}</span>
-              <span className="opacity-30">|</span>
-              <button onClick={() => logout()} className="hover:text-red-400 font-bold transition-colors">Logout</button>
-              <span className="opacity-30">|</span>
-              <Link href="/dashboard" className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-0.5 rounded-full font-extrabold text-[11px] transition-colors shadow-xs">My Account</Link>
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 text-slate-950 font-black text-xs flex items-center justify-center shadow-xs">
+                  {user.fullName.charAt(0).toUpperCase()}
+                </div>
+                <span className="font-extrabold text-slate-900 text-xs">Hi, {user.fullName.split(' ')[0]}</span>
+              </div>
+              <span className="text-slate-300">•</span>
+              <Link href="/dashboard" className="px-3 py-1 rounded-full text-xs font-black bg-slate-900 text-white hover:bg-slate-800 transition-all shadow-xs">
+                My Dashboard
+              </Link>
+              <button onClick={() => logout()} className="text-slate-500 hover:text-rose-600 text-xs font-bold transition-colors">
+                Logout
+              </button>
             </>
           ) : (
             <>
-              <Link href="/login" className="hover:text-white font-bold transition-colors">Login</Link>
-              <span className="opacity-30">|</span>
-              <Link href="/register" className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-0.5 rounded-full font-bold text-[11px] transition-colors shadow-xs">Register</Link>
+              <Link href="/login" className="hover:text-amber-600 font-bold text-xs transition-colors text-slate-800">
+                Login
+              </Link>
+              <span className="text-slate-300">•</span>
+              <Link href="/register" className="btn-gold px-3.5 py-1 rounded-full text-xs font-black shadow-xs hover:scale-105 transition-all">
+                Create Account
+              </Link>
             </>
           )}
         </div>
       </div>
 
-      {/* Main Navigation Megamenu */}
-      <nav className="px-6 flex justify-between items-center h-16 text-white">
+      {/* Main Navigation Bar */}
+      <nav className="px-4 md:px-8 flex justify-between items-center h-16 max-w-7xl mx-auto">
         
-        {/* Logo */}
+        {/* Brand Logo with Gold Typography */}
         <div className="flex items-center shrink-0 mr-8">
-          <Link href="/" className="group flex items-center gap-1.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white text-xl shadow-md group-hover:scale-105 transition-transform border border-white/20">
-              <Globe className="w-5 h-5 text-white" />
+          <Link href="/" className="group flex items-center gap-2">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 via-amber-500 to-amber-600 p-[2px] shadow-md group-hover:scale-105 transition-transform">
+              <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center">
+                <Globe className="w-5 h-5 text-amber-400" />
+              </div>
             </div>
-            <div className="text-white font-black text-2xl tracking-tighter italic">Forex<span className="text-orange-400">mate</span></div>
+            <div>
+              <div className="font-display text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-1">
+                Forex<span className="text-amber-600 font-black">Mate</span>
+              </div>
+              <div className="section-label text-[8px] tracking-[0.25em] text-amber-700">A MTTPL Company</div>
+            </div>
           </Link>
         </div>
-        
-        {/* Nav Links */}
-        <div className="hidden lg:flex items-center space-x-8 text-sm font-bold text-slate-200 h-full">
+
+        {/* Desktop Nav Items */}
+        <div className="hidden lg:flex items-center space-x-8 text-xs font-extrabold uppercase tracking-wider text-slate-800">
           
-          {/* Services Megamenu */}
-          <div className="relative group h-full flex items-center">
-            <button className="flex items-center hover:text-white transition-colors py-4">
-              Services <svg className="w-4 h-4 ml-1 opacity-60 transform group-hover:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+          {/* Forex Services Dropdown */}
+          <div className="relative group py-4">
+            <button className="flex items-center hover:text-amber-600 transition-colors gap-1">
+              <span>Forex Services</span>
+              <ChevronDown className="w-3.5 h-3.5 opacity-60 group-hover:rotate-180 transition-transform text-slate-500" />
             </button>
-            <div className="absolute top-[64px] -left-10 bg-white shadow-2xl rounded-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 w-[650px] p-6 grid grid-cols-2 gap-x-8 gap-y-6 before:content-[''] before:absolute before:-top-4 before:left-0 before:w-full before:h-4 text-gray-900">
+            
+            <div className="absolute top-14 -left-6 bg-white border border-slate-200/90 shadow-2xl rounded-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 w-[580px] p-5 grid grid-cols-2 gap-4 text-slate-900 z-50">
               <div>
-                <h3 className="text-xs uppercase tracking-widest text-gray-400 font-extrabold mb-4">Core Forex</h3>
-                <ul className="space-y-3">
-                  <li><Link href="/currency-exchange" className="flex items-center hover:text-blue-600 font-semibold"><Banknote className="w-5 h-5 mr-3 text-blue-600" /> Currency Exchange</Link></li>
-                  <li><Link href="/transfer-money" className="flex items-center hover:text-blue-600 font-semibold"><Send className="w-5 h-5 mr-3 text-indigo-600" /> Send Money Abroad</Link></li>
-                  <li><Link href="/forex-cards" className="flex items-center hover:text-blue-600 font-semibold"><CreditCard className="w-5 h-5 mr-3 text-purple-600" /> Prepaid Travel Forex Card</Link></li>
-                  <li><Link href="/trade-remittance" className="flex items-center hover:text-blue-600 font-semibold"><Briefcase className="w-5 h-5 mr-3 text-amber-600" /> Trade Remittance</Link></li>
-                </ul>
+                <div className="section-label mb-3 text-[9px] text-amber-600">Retail Currency</div>
+                <div className="space-y-1.5">
+                  <Link href="/buy-forex" className="flex items-center p-2 rounded-xl hover:bg-slate-100 transition-colors group/item">
+                    <Banknote className="w-4 h-4 mr-2.5 text-amber-600 group-hover/item:scale-110 transition-transform" />
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Buy Foreign Cash</div>
+                      <div className="text-[10px] text-slate-500 font-medium">Zero margin live rates</div>
+                    </div>
+                  </Link>
+
+                  <Link href="/sell-forex" className="flex items-center p-2 rounded-xl hover:bg-slate-100 transition-colors group/item">
+                    <Banknote className="w-4 h-4 mr-2.5 text-emerald-600 group-hover/item:scale-110 transition-transform" />
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Sell Foreign Cash</div>
+                      <div className="text-[10px] text-slate-500 font-medium">Convert back to INR instantly</div>
+                    </div>
+                  </Link>
+
+                  <Link href="/forex-cards" className="flex items-center p-2 rounded-xl hover:bg-slate-100 transition-colors group/item">
+                    <CreditCard className="w-4 h-4 mr-2.5 text-purple-600 group-hover/item:scale-110 transition-transform" />
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Multi-Currency Forex Card</div>
+                      <div className="text-[10px] text-slate-500 font-medium">Accepted in 150+ countries</div>
+                    </div>
+                  </Link>
+                </div>
               </div>
+
               <div>
-                <h3 className="text-xs uppercase tracking-widest text-gray-400 font-extrabold mb-4">Travel & Partners</h3>
-                <ul className="space-y-3">
-                  <li><Link href="/travel-insurance" className="flex items-center hover:text-blue-600 font-semibold"><ShieldCheck className="w-5 h-5 mr-3 text-sky-600" /> Travel Insurance</Link></li>
-                  <li><Link href="/international-sim" className="flex items-center hover:text-blue-600 font-semibold"><Smartphone className="w-5 h-5 mr-3 text-emerald-600" /> International Sim Card</Link></li>
-                  <li><Link href="/faas-partners" className="flex items-center hover:text-blue-600 font-semibold"><Handshake className="w-5 h-5 mr-3 text-orange-600" /> Forex as a Service (FaaS)</Link></li>
-                  <li><Link href="/corporate-solutions" className="flex items-center hover:text-blue-600 font-semibold"><Building2 className="w-5 h-5 mr-3 text-slate-600" /> Corporate Solutions</Link></li>
-                </ul>
+                <div className="section-label mb-3 text-[9px] text-amber-600">Wire & Remittance</div>
+                <div className="space-y-1.5">
+                  <Link href="/transfer-money" className="flex items-center p-2 rounded-xl hover:bg-slate-100 transition-colors group/item">
+                    <Send className="w-4 h-4 mr-2.5 text-blue-600 group-hover/item:scale-110 transition-transform" />
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Outward Remittance</div>
+                      <div className="text-[10px] text-slate-500 font-medium">University fees & family transfer</div>
+                    </div>
+                  </Link>
+
+                  <Link href="/trade-remittance" className="flex items-center p-2 rounded-xl hover:bg-slate-100 transition-colors group/item">
+                    <Briefcase className="w-4 h-4 mr-2.5 text-amber-600 group-hover/item:scale-110 transition-transform" />
+                    <div>
+                      <div className="text-xs font-black text-slate-900">Corporate Trade Remittance</div>
+                      <div className="text-[10px] text-slate-500 font-medium">B2B import/export payments</div>
+                    </div>
+                  </Link>
+
+                  <Link href="/faas-partners" className="flex items-center p-2 rounded-xl hover:bg-slate-100 transition-colors group/item">
+                    <Handshake className="w-4 h-4 mr-2.5 text-emerald-600 group-hover/item:scale-110 transition-transform" />
+                    <div>
+                      <div className="text-xs font-black text-slate-900">FaaS Partner API</div>
+                      <div className="text-[10px] text-slate-500 font-medium">Integrate Forex into travel sites</div>
+                    </div>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Top Currencies Megamenu */}
-          <div className="relative group h-full flex items-center">
-            <button className="flex items-center hover:text-white transition-colors py-4">
-              Top Currencies <svg className="w-4 h-4 ml-1 opacity-60 transform group-hover:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            <div className="absolute top-[64px] -left-32 bg-white shadow-2xl rounded-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 w-[550px] p-6 grid grid-cols-2 gap-x-8 gap-y-2 before:content-[''] before:absolute before:-top-4 before:left-0 before:w-full before:h-4 text-gray-900">
-              <Link href="/currency/usd" className="flex items-center py-2 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors">
-                <span className="text-xl mr-3">🇺🇸</span> <div><div className="font-bold">US Dollar</div><div className="text-[10px] text-gray-400 uppercase tracking-wider">USD Rate</div></div>
-              </Link>
-              <Link href="/currency/eur" className="flex items-center py-2 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors">
-                <span className="text-xl mr-3">🇪🇺</span> <div><div className="font-bold">Euro</div><div className="text-[10px] text-gray-400 uppercase tracking-wider">EUR Rate</div></div>
-              </Link>
-              <Link href="/currency/gbp" className="flex items-center py-2 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors">
-                <span className="text-xl mr-3">🇬🇧</span> <div><div className="font-bold">British Pound</div><div className="text-[10px] text-gray-400 uppercase tracking-wider">GBP Rate</div></div>
-              </Link>
-              <Link href="/currency/aud" className="flex items-center py-2 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors">
-                <span className="text-xl mr-3">🇦🇺</span> <div><div className="font-bold">Australian Dollar</div><div className="text-[10px] text-gray-400 uppercase tracking-wider">AUD Rate</div></div>
-              </Link>
-              <Link href="/currency/cad" className="flex items-center py-2 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors">
-                <span className="text-xl mr-3">🇨🇦</span> <div><div className="font-bold">Canadian Dollar</div><div className="text-[10px] text-gray-400 uppercase tracking-wider">CAD Rate</div></div>
-              </Link>
-              <Link href="/currency/sgd" className="flex items-center py-2 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors">
-                <span className="text-xl mr-3">🇸🇬</span> <div><div className="font-bold">Singapore Dollar</div><div className="text-[10px] text-gray-400 uppercase tracking-wider">SGD Rate</div></div>
-              </Link>
-              <div className="col-span-2 pt-2 mt-2 border-t border-gray-100 text-center">
-                <Link href="/rates" className="text-sm text-blue-600 font-bold hover:underline">View All Currencies &rarr;</Link>
-              </div>
-            </div>
-          </div>
+          {/* Top Currencies */}
+          <Link href="/rates" className="hover:text-amber-600 transition-colors">
+            Live Rate Card
+          </Link>
 
-          {/* Currency Converter Megamenu */}
-          <div className="relative group h-full flex items-center">
-            <button className="flex items-center hover:text-white transition-colors py-4">
-              Currency Converter <svg className="w-4 h-4 ml-1 opacity-60 transform group-hover:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            <div className="absolute top-[64px] -left-32 bg-white shadow-2xl rounded-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 w-[450px] p-6 grid grid-cols-2 gap-x-4 gap-y-2 before:content-[''] before:absolute before:-top-4 before:left-0 before:w-full before:h-4 text-gray-900">
-              <Link href="/currency-converter/usd-to-inr" className="py-2 hover:text-blue-600 font-bold flex items-center"><span className="text-gray-400 mr-2 text-xs">USA</span> USD to INR</Link>
-              <Link href="/currency-converter/eur-to-inr" className="py-2 hover:text-blue-600 font-bold flex items-center"><span className="text-gray-400 mr-2 text-xs">EUR</span> EUR to INR</Link>
-              <Link href="/currency-converter/gbp-to-inr" className="py-2 hover:text-blue-600 font-bold flex items-center"><span className="text-gray-400 mr-2 text-xs">UK</span> GBP to INR</Link>
-              <Link href="/currency-converter/aud-to-inr" className="py-2 hover:text-blue-600 font-bold flex items-center"><span className="text-gray-400 mr-2 text-xs">AUS</span> AUD to INR</Link>
-              <Link href="/currency-converter/cad-to-inr" className="py-2 hover:text-blue-600 font-bold flex items-center"><span className="text-gray-400 mr-2 text-xs">CAN</span> CAD to INR</Link>
-              <Link href="/currency-converter/sgd-to-inr" className="py-2 hover:text-blue-600 font-bold flex items-center"><span className="text-gray-400 mr-2 text-xs">SGP</span> SGD to INR</Link>
-              <div className="col-span-2 pt-4 mt-2 border-t border-gray-100 text-center">
-                <Link href="/currency-converter" className="text-sm text-blue-600 font-bold hover:underline">Open Currency Converter &rarr;</Link>
-              </div>
-            </div>
-          </div>
+          {/* Corporate Solutions */}
+          <Link href="/corporate-solutions" className="hover:text-amber-600 transition-colors">
+            Corporate Solutions
+          </Link>
 
-          <Link href="/rates" className="hover:text-white transition-colors">Forex Rates</Link>
-          <Link href="/faqs" className="hover:text-white transition-colors">FAQs</Link>
-          <Link href="/offers" className="text-orange-400 hover:text-orange-300 font-extrabold transition-colors flex items-center"><Flame className="w-4 h-4 mr-1 text-orange-400" /> Offers</Link>
+          {/* MTTPL Travel Portal Redirect */}
+          <a
+            href="https://earnest-sawine-29983e.netlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-amber-800 hover:text-amber-900 bg-amber-500/15 px-3 py-1.5 rounded-full border border-amber-500/30 transition-all hover:bg-amber-500/25 shadow-2xs font-extrabold"
+          >
+            <span>✈️ MTTPL Travels</span>
+          </a>
+
         </div>
 
-        {/* Right Action Buttons */}
-        <div className="flex items-center space-x-4">
-          <Link href="/buy-forex" className="hidden xl:flex items-center bg-white/10 hover:bg-white/20 text-white font-extrabold px-5 py-2.5 rounded-full text-sm border border-white/20 backdrop-blur-sm transition-all shadow-sm">
-            Book An Order
+        {/* Right CTA */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/buy-forex"
+            className="btn-gold px-4 py-2 rounded-xl text-xs font-extrabold shadow-md hover:scale-105 transition-all"
+          >
+            <span>Book Forex @ Live Rate</span>
           </Link>
-          <Link href="/rates" className="hidden xl:flex items-center bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-full text-sm font-extrabold transition-all shadow-md shadow-blue-500/20">
-            Live Rates <span className="flex h-2 w-2 relative ml-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span></span>
-          </Link>
-          
-          {user && (
-            <Link href="/dashboard" className="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center border-2 border-orange-400 hover:bg-orange-600 transition-colors ml-4 shrink-0 shadow-md">
-              <span className="font-bold text-sm">{user.fullName.charAt(0).toUpperCase()}</span>
-            </Link>
-          )}
         </div>
+
       </nav>
     </header>
   );

@@ -1,46 +1,58 @@
+"use client";
+
+import React, { Suspense } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import Link from 'next/link';
+import { OrderWizard } from '@/components/orders/OrderWizard';
+import { CreditCard, ShieldCheck, Zap } from 'lucide-react';
 
 export default function ForexCardsPage() {
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-gray-900 flex flex-col">
+    <div className="min-h-screen font-sans text-slate-900 flex flex-col relative bg-[#071426] overflow-x-hidden">
+      
+      {/* Background Travel Image Overlay */}
+      <div 
+        className="fixed inset-0 bg-cover bg-center pointer-events-none z-0"
+        style={{ 
+          backgroundImage: `linear-gradient(to bottom, rgba(7, 20, 38, 0.85) 0%, rgba(13, 27, 42, 0.70) 50%, rgba(7, 20, 38, 0.95) 100%), url('/full_travel_bg.png')` 
+        }}
+      />
+
       <Navbar />
-      <main className="flex-grow pt-24 pb-12 px-6">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-6">Zero Markup Multi-Currency Forex Cards</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto text-lg mb-10">
-            Travel the world like a local. Load multiple currencies on a single card and swipe globally with zero hidden charges.
+
+      {/* Hero Header Section */}
+      <section className="relative z-10 text-white pt-10 pb-6 px-6">
+        <div className="max-w-6xl mx-auto text-center space-y-2">
+          <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-md">
+            Multi-Currency <span className="text-amber-400 font-extrabold">Forex Travel Card</span>
+          </h1>
+          <p className="text-slate-200 max-w-2xl mx-auto text-sm md:text-base font-medium drop-shadow-xs">
+            Load up to 15 currencies on 1 platinum card. Zero cross-currency markup & free foreign ATM withdrawals.
           </p>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-2xl mx-auto mb-16">
-            <h2 className="text-2xl font-bold mb-6">Get your Forex Card today</h2>
-            <Link href="/dashboard/order?intent=BUY&product=CARD">
-              <button className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-10 rounded-xl text-lg transition-transform transform hover:scale-105 shadow-md">
-                Order Forex Card
-              </button>
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left mb-16">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-500 transition-colors">
-              <div className="text-4xl mb-4 text-blue-500">🌍</div>
-              <h3 className="text-xl font-bold mb-3">Load 14+ Currencies</h3>
-              <p className="text-gray-600">Avoid cross-currency markup fees. Load USD, EUR, GBP, and many more on a single smart card.</p>
+          <div className="flex flex-wrap justify-center gap-3 text-xs font-bold text-slate-100 pt-2">
+            <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
+              <CreditCard className="w-3.5 h-3.5 text-purple-400" /> 15 Currencies on 1 Card
             </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-500 transition-colors">
-              <div className="text-4xl mb-4 text-blue-500">🛡️</div>
-              <h3 className="text-xl font-bold mb-3">Chip & PIN Secure</h3>
-              <p className="text-gray-600">Highest level of security. Instantly block, unblock, or change PIN from the Forexmate app.</p>
+            <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
+              <Zap className="w-3.5 h-3.5 text-amber-400" /> Instant App Reload
             </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:border-blue-500 transition-colors">
-              <div className="text-4xl mb-4 text-blue-500">📱</div>
-              <h3 className="text-xl font-bold mb-3">App Controlled</h3>
-              <p className="text-gray-600">Track spends in real-time, reload on the go, and manage multiple wallets seamlessly through our mobile app.</p>
+            <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Chip & PIN Security
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Embedded Full Forex Card Order Engine */}
+      <main className="flex-grow px-4 md:px-6 relative z-10 pb-16">
+        <div className="max-w-4xl mx-auto text-left shadow-2xl rounded-3xl overflow-hidden bg-white border border-white/20 ring-1 ring-black/10">
+          <Suspense fallback={<div className="p-10 text-center font-bold text-slate-500">Loading Order Engine...</div>}>
+            <OrderWizard />
+          </Suspense>
+        </div>
       </main>
+
       <Footer />
     </div>
   );

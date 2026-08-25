@@ -32,10 +32,10 @@ export default function RemittancesPage() {
           <p className="text-gray-500 mt-1">Track your international remittance orders.</p>
         </div>
         <Link
-          href="/buy-forex"
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm"
+          href="/buy-forex?tab=remittance"
+          className="btn-gold font-black text-slate-950 text-xs px-5 py-3 rounded-xl shadow-md hover:scale-105 transition-all"
         >
-          + New Transfer
+          + Send Money Abroad (Wire)
         </Link>
       </div>
 

@@ -37,9 +37,12 @@ export default function CardsPage() {
           <h1 className="text-2xl font-bold text-gray-900">My Forex Cards</h1>
           <p className="text-gray-500 mt-1">Manage your multi-currency travel cards.</p>
         </div>
-        <button className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors shadow-sm">
-          + Apply for Card
-        </button>
+        <Link 
+          href="/buy-forex?tab=card"
+          className="btn-gold font-black text-slate-950 text-xs px-5 py-3 rounded-xl shadow-md hover:scale-105 transition-all"
+        >
+          + Order / Reload Forex Card
+        </Link>
       </div>
 
       {/* Cards Grid */}
@@ -49,10 +52,13 @@ export default function CardsPage() {
             <CreditCard className="w-8 h-8 text-blue-600" />
           </div>
           <h3 className="text-xl font-bold text-gray-800 mb-2">No Cards Yet</h3>
-          <p className="text-gray-500 mb-6">Apply for a Forexmate Forex Card to get started.</p>
-          <button className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors">
-            Apply for Card
-          </button>
+          <p className="text-gray-500 mb-6">Apply for a Forexmate Multi-Currency Card to get started.</p>
+          <Link 
+            href="/buy-forex?tab=card"
+            className="btn-gold inline-block text-slate-950 font-extrabold px-6 py-3 rounded-xl hover:scale-105 transition-all shadow-md"
+          >
+            Order Forex Card Now
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

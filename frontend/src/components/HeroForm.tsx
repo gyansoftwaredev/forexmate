@@ -1,571 +1,511 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRates } from '@/hooks/useRates';
-import { useTransactionStore } from '@/stores/transactionStore';
-import { ShieldCheck, Truck, LockKeyhole, Banknote, TrendingUp, Send, Globe, ChevronDown, Info } from 'lucide-react';
+import { 
+  Banknote, TrendingUp, Send, Globe, ChevronDown, Lock, Sparkles, CheckCircle2, ArrowRight, RefreshCw
+} from 'lucide-react';
 import { CitySelectorModal } from './orders/CitySelectorModal';
+import { SameDayDeliveryModal } from './orders/SameDayDeliveryModal';
+import { CashbackOfferModal } from './orders/CashbackOfferModal';
 
-const DEFAULT_CURRENCIES = [
-  { code: "USD", name: "US Dollar", rate: "94.95", country: "United States", flag: "🇺🇸", popular: true },
-  { code: "AED", name: "UAE Dirham", rate: "25.91", country: "United Arab Emirates", flag: "🇦🇪", popular: true },
-  { code: "THB", name: "Thai Baht", rate: "2.88", country: "Thailand", flag: "🇹🇭", popular: true },
-  { code: "EUR", name: "Euro", rate: "107.76", country: "Eurozone", flag: "🇪🇺", popular: true },
-  { code: "SGD", name: "Singapore Dollar", rate: "73.24", country: "Singapore", flag: "🇸🇬", popular: true },
+import { ALL_CURRENCIES_MAP, ALL_CURRENCIES_LIST, getCurrencyInfo } from '@/lib/currencyMetadata';
+
+const REMITTANCE_PURPOSES = [
+  { id: 'EDUCATION', label: '🎓 Overseas Education', tcs: '0.5% TCS over ₹7L' },
+  { id: 'FAMILY', label: '👨‍👩‍👧‍👦 Family Maintenance', tcs: '20% TCS over ₹7L' },
+  { id: 'MEDICAL', label: '🏥 Medical Treatment', tcs: '5% TCS over ₹7L' },
+  { id: 'GIFT', label: '🎁 Gift & Emigration', tcs: '20% TCS over ₹7L' },
 ];
 
-const getFlagEmoji = (currencyCode: string | undefined) => {
-  if (!currencyCode) return '🌍';
-  if (currencyCode === 'EUR') return '🇪🇺';
-  if (currencyCode === 'INR') return '🇮🇳';
-  const countryCode = currencyCode.substring(0, 2);
-  const codePoints = countryCode
-    .toUpperCase()
-    .split('')
-    .map(char => 127397 + char.charCodeAt(0));
-  try {
-    return String.fromCodePoint(...codePoints);
-  } catch (e) {
-    return '🌍';
-  }
-};
-
-const getCurrencyName = (currencyCode: string) => {
-  try {
-    const displayNames = new Intl.DisplayNames(['en'], { type: 'currency' });
-    return displayNames.of(currencyCode) || currencyCode;
-  } catch (e) {
-    return currencyCode;
-  }
-};
-
-const getCountryName = (currencyCode: string) => {
-  if (currencyCode === 'EUR') return 'Eurozone';
-  try {
-    const countryCode = currencyCode.substring(0, 2);
-    const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
-    return displayNames.of(countryCode) || currencyCode;
-  } catch (e) {
-    return currencyCode;
-  }
-};
-
 export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }) {
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  const [cardType, setCardType] = useState('card');
+  const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'remittance' | 'card'>(defaultTab as any);
+  const [currencyCode, setCurrencyCode] = useState<string>('USD');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const [currencies, setCurrencies] = useState(DEFAULT_CURRENCIES);
-  const [selectedCurrency, setSelectedCurrency] = useState(DEFAULT_CURRENCIES[0]);
-
-  const [foreignAmount, setForeignAmount] = useState<string>('');
-  const [inrAmount, setInrAmount] = useState<string>('');
+  const [foreignAmount, setForeignAmount] = useState<string>('1000');
   
   const [selectedCity, setSelectedCity] = useState('Delhi');
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
-  const [showDeliveryInfo, setShowDeliveryInfo] = useState(false);
+  const [isDeliveryPolicyOpen, setIsDeliveryPolicyOpen] = useState(false);
+  const [isCashbackModalOpen, setIsCashbackModalOpen] = useState(false);
 
-  const [deliveryInfo, setDeliveryInfo] = useState<{ dayText: string; pillText: string }>({
-    dayText: 'Today',
-    pillText: 'By today, 9 PM'
+  // Live products configuration status from admin catalog
+  const [productsStatus, setProductsStatus] = useState<Record<string, boolean>>({
+    CASH: true,
+    CASH_SELL: true,
+    REMITTANCE: true,
+    FOREX_CARD: true,
   });
 
-  useEffect(() => {
-    const updateCutoff = () => {
-      const currentHour = new Date().getHours();
-      // If order is placed between 12:00 AM (0) and 1:00 PM (13), delivery is TODAY
-      if (currentHour < 13) {
-        setDeliveryInfo({
-          dayText: 'Today',
-          pillText: 'By today, 9 PM'
-        });
-      } else {
-        // Exceeds 1:00 PM (13:00) cutoff ➔ shifts to TOMORROW
-        setDeliveryInfo({
-          dayText: 'Tomorrow',
-          pillText: 'By tomorrow, 9 PM'
-        });
+  // Fulfillment mode for Buy, Sell & Card
+  const [fulfillmentMode, setFulfillmentMode] = useState<'DOORSTEP' | 'BRANCH'>('DOORSTEP');
+
+  // Remittance-specific state
+  const [remittancePurpose, setRemittancePurpose] = useState<string>('EDUCATION');
+
+  const router = useRouter();
+  const { data: apiRatesData } = useRates();
+
+  React.useEffect(() => {
+    const fetchPublicProducts = async () => {
+      try {
+        const res = await fetch('/api/v1/public/products');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const map: Record<string, boolean> = {};
+            data.forEach((p: any) => {
+              map[p.code] = p.isActive;
+            });
+            setProductsStatus(prev => ({ ...prev, ...map }));
+          }
+        }
+      } catch (e) {
+        // Fallback to active
       }
     };
-    updateCutoff();
-    const interval = setInterval(updateCutoff, 60000);
-    return () => clearInterval(interval);
-  }, []);
-  
-  const router = useRouter();
-  
-  const dropdownRef = useRef<HTMLDivElement>(null);
+    fetchPublicProducts();
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
-      }
+    const handleSync = () => fetchPublicProducts();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('forexmate-sync', handleSync);
+      return () => window.removeEventListener('forexmate-sync', handleSync);
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const { data } = useRates();
+  const isBuyActive = productsStatus.CASH !== false;
+  const isSellActive = productsStatus.CASH_SELL !== false;
+  const isRemittanceActive = productsStatus.REMITTANCE !== false;
+  const isCardActive = productsStatus.FOREX_CARD !== false;
 
-  useEffect(() => {
-    if (data && Array.isArray(data) && data.length > 0) {
-      const apiCurrencies = data
-        .filter((item: any) => item.currency.code !== 'INR')
-        .map((item: any) => ({
-          code: item.currency.code,
-          name: getCurrencyName(item.currency.code),
-          rate: item.inrRate.toFixed(2),
-          country: getCountryName(item.currency.code),
-          flag: getFlagEmoji(item.currency.code),
-          popular: ['USD', 'EUR', 'GBP', 'AED', 'SGD', 'CAD', 'AUD'].includes(item.currency.code)
-        }))
-        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const isCurrentTabActive = 
+    activeTab === 'buy' ? isBuyActive :
+    activeTab === 'sell' ? isSellActive :
+    activeTab === 'remittance' ? isRemittanceActive : isCardActive;
 
-      if (apiCurrencies.length > 5) {
-        setCurrencies(apiCurrencies);
-        
-        // Re-select current currency to get updated rate and metadata
-        setSelectedCurrency(prev => {
-          const updated = apiCurrencies.find(c => c.code === prev.code);
-          return updated || prev;
-        });
+  // Helper to extract base interbank rate from API or fallback
+  const getBaseInterbankRate = (code: string): number => {
+    if (Array.isArray(apiRatesData) && apiRatesData.length > 0) {
+      const found = apiRatesData.find((r: any) => r.currency?.code === code || r.currency === code);
+      if (found && (found.inrRate || found.rate)) {
+        return Number(found.inrRate || found.rate);
       }
     }
-  }, [data]);
-
-  // Ensure cardType is notes for sell orders
-  useEffect(() => {
-    if (activeTab === 'sell') {
-      setCardType('notes');
-    }
-  }, [activeTab]);
-
-  // Recalculate when currency changes
-  useEffect(() => {
-    if (foreignAmount && selectedCurrency.rate) {
-      const baseRate = parseFloat(selectedCurrency.rate);
-      const rate = activeTab === 'sell' ? baseRate - 0.63 : (cardType === 'notes' ? baseRate + 0.63 : baseRate);
-      setInrAmount((parseFloat(foreignAmount) * rate).toFixed(2));
-    }
-  }, [selectedCurrency, activeTab, cardType]);
-
-  const handleForeignAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setForeignAmount(val);
-    if (val && selectedCurrency.rate) {
-      const baseRate = parseFloat(selectedCurrency.rate);
-      const rate = activeTab === 'sell' ? baseRate - 0.63 : (cardType === 'notes' ? baseRate + 0.63 : baseRate);
-      setInrAmount((parseFloat(val) * rate).toFixed(2));
-    } else {
-      setInrAmount('');
-    }
+    return ALL_CURRENCIES_MAP[code]?.fallbackRate || 83.50;
   };
 
-  const handleInrAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setInrAmount(val);
-    if (val && selectedCurrency.rate) {
-      const baseRate = parseFloat(selectedCurrency.rate);
-      const rate = activeTab === 'sell' ? baseRate - 0.63 : (cardType === 'notes' ? baseRate + 0.63 : baseRate);
-      setForeignAmount((parseFloat(val) / rate).toFixed(2));
-    } else {
-      setForeignAmount('');
-    }
-  };
+  // Calculate product-adjusted rate matching ProductCalculatorStep.tsx EXACTLY
+  const baseRate = getBaseInterbankRate(currencyCode);
+  let appliedRate = baseRate;
+  if (activeTab === 'buy') {
+    appliedRate = Math.round((baseRate + 0.63) * 100) / 100; // 83.50 + 0.63 = 84.13
+  } else if (activeTab === 'sell') {
+    appliedRate = Math.round((baseRate - 0.63) * 100) / 100; // 83.50 - 0.63 = 82.87
+  } else if (activeTab === 'remittance') {
+    appliedRate = Math.round((baseRate + 0.10) * 100) / 100; // 83.50 + 0.10 = 83.60
+  } else if (activeTab === 'card') {
+    appliedRate = Math.round(baseRate * 100) / 100; // 83.50
+  }
 
-  const handleBuyNow = () => {
-    if (!foreignAmount || !inrAmount) {
-      alert("Please enter an amount first");
+  const selectedCurrMeta = getCurrencyInfo(currencyCode);
+
+  const numForeign = parseFloat(foreignAmount) || 0;
+  const computedInr = Math.round(numForeign * appliedRate);
+
+  const bankRate = appliedRate * 1.035;
+  const bankTotal = Math.round(numForeign * bankRate);
+  const totalSavings = Math.max(0, bankTotal - computedInr);
+
+  const handleActionSubmit = () => {
+    if (!isCurrentTabActive) {
+      alert('This product is temporarily disabled by administrator.');
       return;
     }
-    useTransactionStore.getState().clearSession();
-    
-    const targetUrl = `/buy-forex?tab=${activeTab}&type=${cardType}&currency=${selectedCurrency.code}&amount=${foreignAmount}&inr=${inrAmount}`;
-    router.push(targetUrl);
+
+    // Clear any previous completed/stuck session from localStorage
+    try {
+      if (typeof window !== 'undefined') {
+        const rawStorage = localStorage.getItem('forexmate-transaction-storage');
+        if (rawStorage) {
+          const parsed = JSON.parse(rawStorage);
+          if (parsed?.state?.draftState) {
+            parsed.state.draftState.checkoutStep = 1;
+            parsed.state.draftState.status = 'CREATED';
+            localStorage.setItem('forexmate-transaction-storage', JSON.stringify(parsed));
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (activeTab === 'buy') {
+      router.push(`/buy-forex?tab=buy&currency=${currencyCode}&amount=${foreignAmount}`);
+    } else if (activeTab === 'sell') {
+      router.push(`/sell-forex?tab=sell&currency=${currencyCode}&amount=${foreignAmount}`);
+    } else if (activeTab === 'remittance') {
+      router.push(`/remittance?tab=remittance&currency=${currencyCode}&amount=${foreignAmount}`);
+    } else if (activeTab === 'card') {
+      router.push(`/forex-cards?tab=card&type=card&currency=${currencyCode}&amount=${foreignAmount}`);
+    }
   };
 
-  const filteredCurrencies = currencies.filter(c => 
-    (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (c.code || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (c.country || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const popularFiltered = filteredCurrencies.filter(c => c.popular);
-  const othersFiltered = filteredCurrencies.filter(c => !c.popular);
-
   return (
-    <div className="w-full max-w-6xl mx-auto mt-2 mb-16 relative z-10 font-sans">
+    <div className="w-full max-w-5xl mx-auto my-6 z-20 relative">
       
-      <div className="mb-10 text-left pt-2">
-        <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-[1.08]">
-          YOUR JOURNEY.<br />
-          <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 bg-clip-text text-transparent drop-shadow-sm">
-            OUR CURRENCY.
+      {/* Dynamic Headline Based on Active Tab */}
+      <div className="text-center mb-6 space-y-2">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-800 text-xs font-black tracking-widest uppercase shadow-2xs">
+          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+          <span>
+            {activeTab === 'buy' && 'Buy Currency Cash • Doorstep Delivery'}
+            {activeTab === 'sell' && 'Sell Foreign Notes • Instant Bank Credit'}
+            {activeTab === 'remittance' && 'International SWIFT Wire Transfer'}
+            {activeTab === 'card' && 'Prepaid Multi-Currency Travel Card'}
           </span>
-        </h1>
-        <p className="text-slate-200 text-sm md:text-base font-medium mt-3 max-w-2xl leading-relaxed">
-          Best forex rates, zero markup, doorstep delivery and trusted by 1M+ happy customers across India.
-        </p>
-
-        <div className="flex flex-wrap gap-3 mt-6">
-          <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl px-4 py-2 flex items-center gap-3 text-white shadow-xs">
-            <div className="w-8 h-8 rounded-xl bg-orange-500/20 flex items-center justify-center text-orange-300 font-bold text-sm">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-black text-white">Zero Forex Markup</p>
-              <p className="text-[10px] text-slate-300 font-medium">Best rates guaranteed</p>
-            </div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl px-4 py-2 flex items-center gap-3 text-white shadow-xs">
-            <div className="w-8 h-8 rounded-xl bg-blue-500/20 flex items-center justify-center text-blue-300 font-bold text-sm">
-              <Truck className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-black text-white">Doorstep Delivery</p>
-              <p className="text-[10px] text-slate-300 font-medium">{deliveryInfo.pillText}</p>
-            </div>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-2xl px-4 py-2 flex items-center gap-3 text-white shadow-xs">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-300 font-bold text-sm">
-              <LockKeyhole className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-black text-white">100% Secure</p>
-              <p className="text-[10px] text-slate-300 font-medium">RBI Licensed</p>
-            </div>
-          </div>
         </div>
+
+        <h1 className="font-display text-4xl md:text-6xl font-bold tracking-tight text-slate-900 drop-shadow-xs">
+          {activeTab === 'buy' && <>Exchange Foreign Currency at <span className="text-amber-600 font-extrabold">True Zero Margin</span> Rates</>}
+          {activeTab === 'sell' && <>Convert Leftover Foreign Cash to <span className="text-emerald-700 font-extrabold">INR Instantly</span></>}
+          {activeTab === 'remittance' && <>Send Money Abroad via <span className="text-blue-700 font-extrabold">Paperless SWIFT Wire</span></>}
+          {activeTab === 'card' && <>Get Platinum Forex Card with <span className="text-purple-700 font-extrabold">Zero ATM Markup</span></>}
+        </h1>
+
+        <p className="text-sm md:text-base text-slate-600 max-w-2xl mx-auto font-medium">
+          {activeTab === 'buy' && 'Doorstep delivery in 2 hours across 150+ cities. Lock live interbank rates instantly.'}
+          {activeTab === 'sell' && 'Highest buyback rates guaranteed. Free doorstep cash pickup or instant branch payout.'}
+          {activeTab === 'remittance' && 'University fees, family maintenance & medical transfers to 150+ countries with MT103 proof.'}
+          {activeTab === 'card' && 'Load up to 15 currencies on 1 card. Accepted worldwide at 35M+ VISA locations.'}
+        </p>
       </div>
 
-      <div className="flex justify-center -mb-2 relative z-20">
-        <div className="bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl shadow-xl border border-slate-800 flex overflow-hidden gap-1">
-          
-          <button 
+      {/* Main Glass Calculator Widget Container */}
+      <div className="bg-white/95 backdrop-blur-2xl border border-slate-200/90 rounded-3xl p-5 md:p-7 shadow-2xl shadow-slate-300/60 relative z-30">
+        
+        {/* Subtle ambient light glow */}
+        <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        {/* 1. Tab Navigation Bar */}
+        <div className="grid grid-cols-4 gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/80 mb-4">
+          <button
             onClick={() => setActiveTab('buy')}
-            className={`px-8 py-3.5 flex items-center justify-center gap-2 rounded-xl transition-all duration-200 min-w-[150px] font-extrabold text-xs cursor-pointer ${
-              activeTab === 'buy' 
-                ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25 scale-[1.02]' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
+            className={`py-3 px-3 rounded-xl font-black text-xs md:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'buy'
+                ? 'btn-gold shadow-md'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60 font-bold'
+            } ${!isBuyActive ? 'opacity-40 grayscale' : ''}`}
           >
             <Banknote className="w-4 h-4" />
-            <span>Buy Forex</span>
+            <span>Buy Forex {!isBuyActive && '(Disabled)'}</span>
           </button>
-          
-          <button 
+
+          <button
             onClick={() => setActiveTab('sell')}
-            className={`px-8 py-3.5 flex items-center justify-center gap-2 rounded-xl transition-all duration-200 min-w-[150px] font-extrabold text-xs cursor-pointer ${
-              activeTab === 'sell' 
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 scale-[1.02]' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
+            className={`py-3 px-3 rounded-xl font-black text-xs md:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'sell'
+                ? 'btn-gold shadow-md'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60 font-bold'
+            } ${!isSellActive ? 'opacity-40 grayscale' : ''}`}
           >
             <TrendingUp className="w-4 h-4" />
-            <span>Sell Forex</span>
+            <span>Sell Forex {!isSellActive && '(Disabled)'}</span>
           </button>
-          
-          <button 
-            onClick={() => setActiveTab('transfer')}
-            className={`px-8 py-3.5 flex items-center justify-center gap-2 rounded-xl transition-all duration-200 min-w-[150px] font-extrabold text-xs cursor-pointer ${
-              activeTab === 'transfer' 
-                ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-500/25 scale-[1.02]' 
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
+
+          <button
+            onClick={() => setActiveTab('remittance')}
+            className={`py-3 px-3 rounded-xl font-black text-xs md:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'remittance'
+                ? 'btn-gold shadow-md'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60 font-bold'
+            } ${!isRemittanceActive ? 'opacity-40 grayscale' : ''}`}
           >
             <Send className="w-4 h-4" />
-            <span>Transfer Money</span>
+            <span>Send Remittance {!isRemittanceActive && '(Disabled)'}</span>
           </button>
 
-        </div>
-      </div>
-
-      {/* Main Container with Travel & Finance Background Texture */}
-      <div className="bg-white/95 rounded-3xl shadow-[0_35px_80px_-20px_rgba(15,23,42,0.22)] pb-12 pt-7 px-8 relative border border-slate-200/80 ring-1 ring-slate-900/5 transition-all">
-        {/* Background Texture Overlay */}
-        <div 
-          className="absolute inset-0 rounded-3xl overflow-hidden pointer-events-none bg-cover bg-center z-0 opacity-30"
-          style={{ backgroundImage: `url('/card_bg.png')` }}
-        />
-        
-        {/* Content Wrapper Z-10 */}
-        <div className="relative z-10">
-        
-        {/* Delivery Info & Promo */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center text-sm text-gray-700">
-            {activeTab === 'transfer' ? (
-              <>
-                <Globe className="w-4 h-4 text-blue-600 inline mr-2" /> Direct Bank-to-Bank Transfer | <span className="font-bold mx-1">100% RBI LRS Compliant</span>
-              </>
-            ) : (
-              <>
-                <Truck className="w-4 h-4 text-orange-500 inline mr-2" /> Doorstep Delivery by <span className="font-bold mx-1">{deliveryInfo.dayText}, 9:00 PM in</span> 
-                <button
-                  type="button" 
-                  onClick={() => setIsCityModalOpen(true)}
-                  className="text-blue-600 font-extrabold ml-1 inline-flex items-center bg-blue-50/80 hover:bg-blue-100 px-2.5 py-0.5 rounded-lg border border-blue-200/60 transition-colors text-xs cursor-pointer shadow-2xs"
-                >
-                  {selectedCity} <ChevronDown className="w-3.5 h-3.5 ml-0.5 text-blue-600" />
-                </button>
-                <div className="relative inline-block ml-2">
-                  <button 
-                    type="button"
-                    onClick={() => setShowDeliveryInfo(!showDeliveryInfo)}
-                    onMouseEnter={() => setShowDeliveryInfo(true)}
-                    onMouseLeave={() => setShowDeliveryInfo(false)}
-                    className="text-gray-400 hover:text-blue-600 cursor-pointer text-xs"
-                  >
-                    ⓘ
-                  </button>
-                  {showDeliveryInfo && (
-                    <div className="absolute left-0 top-6 w-64 p-3 bg-slate-900 text-white text-xs rounded-xl shadow-xl z-50 pointer-events-none font-medium leading-relaxed border border-slate-700">
-                      🚚 <strong>Doorstep Delivery Policy:</strong><br />
-                      Orders placed before 1:00 PM are delivered same-day by 9:00 PM. Orders past 1:00 PM are delivered next day by 9:00 PM.
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-full text-xs font-bold flex items-center">
-            {activeTab === 'transfer' ? 'Zero Commission Wire Transfer' : 'Upto ₹7,500 Cashback'} <span className="ml-1 opacity-60 font-normal">ⓘ</span>
-          </div>
+          <button
+            onClick={() => setActiveTab('card')}
+            className={`py-3 px-3 rounded-xl font-black text-xs md:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeTab === 'card'
+                ? 'btn-gold shadow-md'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-200/60 font-bold'
+            } ${!isCardActive ? 'opacity-40 grayscale' : ''}`}
+          >
+            <Globe className="w-4 h-4" />
+            <span>Forex Card {!isCardActive && '(Disabled)'}</span>
+          </button>
         </div>
 
-        <hr className="border-gray-200 mb-6" />
-
-        {/* Form Fields Row */}
-        <div className="flex flex-col md:flex-row gap-0">
-          
-          {/* Column 1: Currency */}
-          <div className="flex-1 md:pr-6 md:border-r border-gray-200 mb-6 md:mb-0 relative" ref={dropdownRef}>
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3">CURRENCY</label>
-            <div 
-              className="flex justify-between items-center cursor-pointer hover:bg-gray-50 p-2 -ml-2 rounded-lg transition-colors border border-transparent hover:border-gray-200"
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            >
-              <div>
-                <div className="text-lg font-bold text-gray-900 flex items-center">
-                  <span className="mr-2">{selectedCurrency.flag}</span>
-                  {selectedCurrency.name}
-                </div>
-                <div className="text-xs text-gray-500 font-semibold mt-0.5">{selectedCurrency.code}</div>
-              </div>
-              <svg className={`w-5 h-5 text-gray-400 transform transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+        {/* Top Doorstep Delivery & Cashback Strip inside the Widget Box (BUY TAB ONLY) */}
+        {activeTab === 'buy' && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-2.5 px-4 mb-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-slate-800 font-medium shadow-2xs">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-amber-600">🛵</span>
+              <span>Doorstep Delivery by <strong className="text-slate-900">Tomorrow, 9:00 PM in</strong></span>
+              <button 
+                onClick={() => setIsCityModalOpen(true)}
+                className="font-extrabold text-amber-800 bg-white px-2.5 py-0.5 rounded-lg border border-amber-300 shadow-2xs flex items-center gap-1 hover:bg-amber-50 transition-colors"
+              >
+                <span>{selectedCity}</span>
+                <ChevronDown className="w-3 h-3 text-amber-600" />
+              </button>
+              <button 
+                onClick={() => setIsDeliveryPolicyOpen(true)}
+                className="text-sm cursor-pointer hover:scale-110 transition-transform ml-0.5"
+                title="Click for Same-Day Delivery Policy"
+              >
+                👈
+              </button>
             </div>
 
-            {/* Custom Dropdown Menu */}
-            {isDropdownOpen && (
-              <div className="absolute top-[80px] left-0 w-[400px] bg-white border border-gray-200 shadow-2xl rounded-xl z-50 overflow-hidden flex flex-col">
-                <div className="p-3 border-b border-gray-100">
-                  <div className="relative">
-                    <svg className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                    <input 
-                      type="text" 
-                      placeholder="Search Currency" 
-                      className="w-full border border-blue-400 rounded-lg py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      autoFocus
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-between px-4 py-2 bg-gray-50 border-b border-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                  <span>{searchQuery ? 'Search Results' : 'Popular Currencies'}</span>
-                  <span>Country</span>
-                </div>
-
-                <div className="overflow-y-auto max-h-[350px]">
-                  {/* Popular Currencies */}
-                  {popularFiltered.map((curr, idx) => (
-                    <div 
-                      key={idx} 
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
-                      onClick={() => {
-                        setSelectedCurrency(curr);
-                        setIsDropdownOpen(false);
-                        setSearchQuery('');
-                      }}
-                    >
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-3">{curr.flag}</span>
-                        <div>
-                          <div className="text-sm font-bold text-gray-900">{curr.name}</div>
-                          <div className="text-xs text-gray-500 font-medium">Rate: <span className="font-bold text-gray-900">{curr.rate ? `${curr.rate} INR` : 'N/A'}</span></div>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500 text-right max-w-[120px] truncate" title={curr.country}>
-                        {curr.country}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* All Currencies Header */}
-                  {!searchQuery && othersFiltered.length > 0 && (
-                    <div className="flex justify-between px-4 py-2 bg-gray-50 border-y border-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                      <span>All Currencies</span>
-                      <span>Country</span>
-                    </div>
-                  )}
-
-                  {/* Other Currencies */}
-                  {othersFiltered.map((curr, idx) => (
-                    <div 
-                      key={idx} 
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
-                      onClick={() => {
-                        setSelectedCurrency(curr);
-                        setIsDropdownOpen(false);
-                        setSearchQuery('');
-                      }}
-                    >
-                      <div className="flex items-center">
-                        <span className="text-2xl mr-3">{curr.flag}</span>
-                        <div>
-                          <div className="text-sm font-bold text-gray-900">{curr.name}</div>
-                          <div className="text-xs text-gray-500 font-medium">Rate: <span className="font-bold text-gray-900">{curr.rate ? `${curr.rate} INR` : 'N/A'}</span></div>
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500 text-right max-w-[120px] truncate" title={curr.country}>
-                        {curr.country}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {filteredCurrencies.length === 0 && (
-                    <div className="p-6 text-center text-gray-500 text-sm">
-                      No currencies found matching "{searchQuery}"
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={() => setIsCashbackModalOpen(true)}
+              className="flex items-center gap-1 text-emerald-800 font-extrabold bg-emerald-50 hover:bg-emerald-100 px-2.5 py-0.5 rounded-xl border border-emerald-200 shrink-0 text-[11px] transition-all hover:scale-105 cursor-pointer shadow-2xs"
+            >
+              <span>Upto ₹7,500 Cashback</span>
+              <span className="text-emerald-600 text-[11px] font-black">ⓘ</span>
+            </button>
           </div>
+        )}
 
-          {/* Column 2: Choose Card/Notes / Transfer Mode */}
-          <div className="flex-[2] md:px-6 md:border-r border-gray-200 mb-6 md:mb-0">
-            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3 flex items-center">
-              {activeTab === 'transfer' ? 'TRANSFER MODE' : 'CHOOSE CARD/CURRENCY NOTES'} <span className="ml-1 cursor-help">ⓘ</span>
+        {/* 2. Main Dynamic Converter Form Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          
+          {/* Field 1: Currency Selector (5 cols) */}
+          <div className="md:col-span-5 relative">
+            <label className="text-[10px] font-black tracking-widest text-amber-700 uppercase mb-1 block">
+              {activeTab === 'sell' ? 'Currency to Encash' : activeTab === 'remittance' ? 'Remittance Currency' : 'Select Currency'}
             </label>
             
-            <div className="flex gap-4">
-              {activeTab === 'transfer' ? (
-                <label className="flex-1 border border-indigo-600 bg-indigo-50/50 rounded-xl p-3 flex items-center cursor-pointer shadow-sm">
-                  <div className="w-8 h-6 bg-indigo-600 rounded mr-3 shadow flex items-center justify-center text-[10px] text-white font-bold">🏦</div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">Direct Wire Transfer</div>
-                    <div className="text-xs text-gray-500 font-medium mt-0.5">1 {selectedCurrency.code} = ₹{selectedCurrency.rate || 'N/A'} (Zero Mark-up)</div>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="w-full bg-slate-50 border border-slate-200 hover:border-amber-500 text-slate-900 rounded-2xl p-3.5 flex items-center justify-between transition-all shadow-2xs"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{selectedCurrMeta.flag}</span>
+                <div className="text-left">
+                  <div className="text-sm font-black tracking-tight flex items-center gap-1.5 text-slate-900">
+                    <span>{currencyCode}</span>
+                    <span className="text-slate-500 text-xs font-semibold">• {selectedCurrMeta.name}</span>
                   </div>
-                </label>
-              ) : (
-                <>
-                  {/* Card Option (Hidden/Disabled for Sell) */}
-                  {activeTab !== 'sell' && (
-                    <label className={`flex-1 border rounded-xl p-3 flex items-center cursor-pointer transition-all ${cardType === 'card' ? 'border-gray-900 bg-gray-50/50 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
-                      <input type="radio" name="forex_type" className="w-4 h-4 text-blue-600 focus:ring-0 mr-3" checked={cardType === 'card'} onChange={() => setCardType('card')} />
-                      <div className="w-8 h-6 bg-gradient-to-r from-blue-900 to-blue-700 rounded mr-3 shadow flex items-center justify-center text-[8px] text-white font-bold tracking-tighter">CARD</div>
-                      <div>
-                        <div className="text-sm font-bold text-gray-900">Multi Currency Card</div>
-                        <div className="text-xs text-gray-500 font-medium mt-0.5">1 {selectedCurrency.code} = ₹{selectedCurrency.rate || 'N/A'}</div>
-                      </div>
-                    </label>
-                  )}
-
-                  {/* Notes Option */}
-                  <label className={`flex-1 border rounded-xl p-3 flex items-center cursor-pointer transition-all ${cardType === 'notes' || activeTab === 'sell' ? 'border-gray-900 bg-gray-50/50 shadow-sm' : 'border-gray-200 hover:border-gray-300'}`}>
-                    <input type="radio" name="forex_type" className="w-4 h-4 text-blue-600 focus:ring-0 mr-3" checked={cardType === 'notes' || activeTab === 'sell'} onChange={() => setCardType('notes')} disabled={activeTab === 'sell'} />
-                    <div className="w-8 h-6 bg-green-100 rounded mr-3 border border-green-200 flex items-center justify-center text-[10px]">💵</div>
-                    <div>
-                      <div className="text-sm font-bold text-gray-900">{selectedCurrency.code} Currency Notes</div>
-                      <div className="text-xs text-gray-500 font-medium mt-0.5">
-                        1 {selectedCurrency.code} = ₹{selectedCurrency.rate ? (parseFloat(selectedCurrency.rate) + (activeTab === 'sell' ? -0.63 : 0.63)).toFixed(2) : 'N/A'}
-                      </div>
-                    </div>
-                  </label>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Column 3: Amount Inputs */}
-          <div className="flex-[2.2] md:pl-6 relative flex items-start gap-4 pt-0.5">
-            
-            <div className="flex-1 min-w-0">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3">{selectedCurrency.code} AMOUNT</label>
-              <input 
-                type="text" 
-                placeholder="Enter Amount" 
-                className="w-full text-base lg:text-lg font-bold text-gray-900 border-b border-gray-300 focus:border-blue-600 focus:outline-none pb-1.5 placeholder-gray-300 bg-transparent"
-                value={foreignAmount}
-                onChange={handleForeignAmountChange}
-              />
-              <div className="text-[11px] text-gray-500 mt-2 font-medium whitespace-nowrap">
-                {activeTab === 'sell' ? 'Live Sell Rate' : 'Live Rate'} ₹{selectedCurrency.rate ? (parseFloat(selectedCurrency.rate) + (activeTab === 'sell' ? -0.63 : 0.63)).toFixed(2) : 'N/A'}
+                  <div className="text-[11px] text-amber-700 font-extrabold">
+                    {activeTab === 'buy' && `Live Rate: 1 ${currencyCode} = ₹ ${appliedRate.toFixed(2)}`}
+                    {activeTab === 'sell' && `Buyback Rate: 1 ${currencyCode} = ₹ ${appliedRate.toFixed(2)}`}
+                    {activeTab === 'remittance' && `SWIFT Rate: 1 ${currencyCode} = ₹ ${appliedRate.toFixed(2)}`}
+                    {activeTab === 'card' && `Zero Fee Rate: 1 ${currencyCode} = ₹ ${appliedRate.toFixed(2)}`}
+                  </div>
+                </div>
               </div>
-            </div>
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            </button>
 
-            {/* OR Badge */}
-            <div className="mt-8 bg-gray-100 text-gray-400 rounded-full w-6 h-6 flex items-center justify-center text-[9px] font-bold shrink-0 border border-white">
-              OR
-            </div>
+            {/* Currency Options Modal */}
+            {isDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsDropdownOpen(false)} 
+                />
+                <div className="absolute left-0 right-0 top-18 bg-white border border-slate-200/90 rounded-2xl shadow-2xl p-2 z-50 max-h-72 overflow-y-auto scrollbar-thin space-y-1">
+                  {ALL_CURRENCIES_LIST.map((meta) => {
+                    const code = meta.code;
+                    const bRate = getBaseInterbankRate(code);
+                    let calcRate = bRate;
+                    if (activeTab === 'buy') calcRate = Math.round((bRate + 0.63) * 100) / 100;
+                    if (activeTab === 'sell') calcRate = Math.round((bRate - 0.63) * 100) / 100;
+                    if (activeTab === 'remittance') calcRate = Math.round((bRate + 0.10) * 100) / 100;
+                    if (activeTab === 'card') calcRate = Math.round(bRate * 100) / 100;
 
-            <div className="flex-1 min-w-0">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3">INR AMOUNT</label>
-              <input 
-                type="text" 
-                placeholder="Enter Amount" 
-                className="w-full text-base lg:text-lg font-bold text-gray-900 border-b border-gray-300 focus:border-blue-600 focus:outline-none pb-1.5 placeholder-gray-300 bg-transparent"
-                value={inrAmount}
-                onChange={handleInrAmountChange}
+                    return (
+                      <button
+                        key={code}
+                        onClick={() => {
+                          setCurrencyCode(code);
+                          setIsDropdownOpen(false);
+                        }}
+                        className={`w-full text-left p-2.5 rounded-xl flex items-center justify-between text-xs font-bold transition-all ${
+                          currencyCode === code
+                            ? 'bg-amber-500 text-slate-950 font-black'
+                            : 'text-slate-800 hover:bg-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-lg">{meta.flag}</span>
+                          <span>{code} - {meta.name}</span>
+                        </div>
+                        <span className="font-mono font-bold">₹ {calcRate.toFixed(2)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Field 2: Foreign Amount Input (4 cols) */}
+          <div className="md:col-span-4">
+            <label className="text-[10px] font-black tracking-widest text-amber-700 uppercase mb-1 block">
+              {activeTab === 'sell' ? 'Foreign Notes Amount' : activeTab === 'remittance' ? 'Wire Transfer Amount' : 'Foreign Currency Amount'}
+            </label>
+            <div className="bg-slate-50 border border-slate-200 focus-within:border-amber-500 rounded-2xl p-2.5 px-3.5 flex items-center justify-between shadow-2xs">
+              <span className="text-base font-black text-amber-600 font-mono">{currencyCode}</span>
+              <input
+                type="number"
+                value={foreignAmount}
+                onChange={(e) => setForeignAmount(e.target.value)}
+                placeholder="1000"
+                className="w-full text-right bg-transparent text-xl font-black text-slate-900 focus:outline-none font-mono"
               />
             </div>
+          </div>
 
+          {/* Field 3: Fulfillment Mode for Buy, Sell & Card / Purpose for Remittance (3 cols) */}
+          <div className="md:col-span-3">
+            {activeTab === 'remittance' ? (
+              <div>
+                <label className="text-[10px] font-black tracking-widest text-amber-700 uppercase mb-1 block">
+                  Purpose of Transfer
+                </label>
+                <select
+                  value={remittancePurpose}
+                  onChange={(e) => setRemittancePurpose(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-amber-500 text-slate-900 font-bold text-xs rounded-2xl p-3.5 focus:outline-none shadow-2xs"
+                >
+                  {REMITTANCE_PURPOSES.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="text-[10px] font-black tracking-widest text-amber-700 uppercase mb-1 block">
+                  Fulfillment Mode
+                </label>
+                <select
+                  value={fulfillmentMode}
+                  onChange={(e) => setFulfillmentMode(e.target.value as any)}
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-amber-500 text-slate-900 font-bold text-xs rounded-2xl p-3.5 focus:outline-none shadow-2xs"
+                >
+                  <option value="DOORSTEP">🏠 Doorstep Delivery</option>
+                  <option value="BRANCH">🏢 Branch Pickup</option>
+                </select>
+              </div>
+            )}
           </div>
 
         </div>
 
-        {/* Footer info inside card */}
-        <div className="mt-8 flex items-center text-xs text-gray-800 font-medium">
-          <span className="text-yellow-500 mr-2">✨</span>
-          {activeTab === 'transfer' ? 'Direct Bank-to-Bank Wire Transfer via RBI Authorized AD-II Partners' : 'Genuine Notes from RBI Licensed Companies'}
-        </div>
+        {/* 3. Live Price & Summary Breakdown Ribbon */}
+        <div className="mt-5 p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4 text-xs font-bold text-slate-700">
+            <div>
+              <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">
+                {activeTab === 'sell' ? 'You Receive INR:' : activeTab === 'remittance' ? 'Total Transfer INR:' : 'Net Payable INR:'}
+              </span>
+              <span className="text-xl font-black text-slate-900 font-mono">₹ {computedInr.toLocaleString()}</span>
+            </div>
 
-        </div>
-        {/* End of content wrapper z-10 */}
+            {activeTab !== 'sell' && (
+              <>
+                <div className="h-8 w-px bg-slate-200 hidden md:block" />
 
-        {/* Floating Buy/Sell/Transfer Now Button */}
-        <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 z-30">
-          <button 
-            onClick={handleBuyNow}
-            className={`text-white font-extrabold text-lg px-12 py-3 rounded-full transition-transform hover:scale-105 active:scale-95 tracking-wide shadow-lg ${
-              activeTab === 'sell' 
-                ? 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30' 
-                : activeTab === 'transfer'
-                  ? 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'
-                  : 'bg-orange-500 hover:bg-orange-400 shadow-orange-500/30'
-            }`}
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Bank Rate Comparison:</span>
+                  <span className="line-through text-slate-400 font-mono">₹ {bankTotal.toLocaleString()}</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Dynamic Benefit Badge */}
+          {activeTab === 'sell' ? (
+            <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center gap-1.5 shadow-2xs">
+              <RefreshCw className="w-4 h-4 text-emerald-600" />
+              <span>Instant Bank Account NEFT Payout</span>
+            </div>
+          ) : activeTab === 'remittance' ? (
+            <div className="px-3.5 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-black flex items-center gap-1.5 shadow-2xs">
+              <Send className="w-4 h-4 text-blue-600" />
+              <span>Same-Day SWIFT Wire MT103 Guarantee</span>
+            </div>
+          ) : totalSavings > 0 ? (
+            <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center gap-1.5 shadow-2xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>You Save ₹ {totalSavings.toLocaleString()} vs Banks!</span>
+            </div>
+          ) : null}
+
+          {/* Dynamic Action Button */}
+          <button
+            onClick={handleActionSubmit}
+            className="w-full md:w-auto btn-gold px-7 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
           >
-            {activeTab === 'sell' ? 'SELL NOW' : activeTab === 'transfer' ? 'TRANSFER NOW' : 'BUY NOW'}
+            {activeTab === 'buy' && (
+              <>
+                <Lock className="w-4 h-4 text-slate-950" />
+                <span>Book Order @ Live Rate</span>
+              </>
+            )}
+
+            {activeTab === 'sell' && (
+              <>
+                <TrendingUp className="w-4 h-4 text-slate-950" />
+                <span>Sell Cash & Get Paid 🔄</span>
+              </>
+            )}
+
+            {activeTab === 'remittance' && (
+              <>
+                <Send className="w-4 h-4 text-slate-950" />
+                <span>Proceed to Wire Remittance ✈️</span>
+              </>
+            )}
+
+            {activeTab === 'card' && (
+              <>
+                <Globe className="w-4 h-4 text-slate-950" />
+                <span>Get Platinum Forex Card 💳</span>
+              </>
+            )}
+            
+            <ArrowRight className="w-4 h-4 text-slate-950" />
           </button>
         </div>
 
       </div>
 
-      <CitySelectorModal 
-        isOpen={isCityModalOpen} 
-        onClose={() => setIsCityModalOpen(false)} 
-        onSelect={(city) => {
-          setSelectedCity(city);
-          setIsCityModalOpen(false);
-        }} 
+      {/* City Selector Modal */}
+      {isCityModalOpen && (
+        <CitySelectorModal
+          isOpen={isCityModalOpen}
+          onClose={() => setIsCityModalOpen(false)}
+          onSelectCity={(city) => {
+            setSelectedCity(city);
+            setIsCityModalOpen(false);
+          }}
+        />
+      )}
+
+      {/* Same Day Delivery Policy Modal */}
+      <SameDayDeliveryModal 
+        isOpen={isDeliveryPolicyOpen} 
+        onClose={() => setIsDeliveryPolicyOpen(false)} 
       />
+
+      {/* Cashback Slabs Offer Modal */}
+      <CashbackOfferModal
+        isOpen={isCashbackModalOpen}
+        onClose={() => setIsCashbackModalOpen(false)}
+        onApply={() => {
+          setIsCashbackModalOpen(false);
+        }}
+      />
+
     </div>
   );
 }

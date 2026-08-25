@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 
+import { calculateForexGst } from '@/lib/gstCalculator';
+
 export default function BookingWizard() {
   const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
@@ -11,6 +13,10 @@ export default function BookingWizard() {
   const inr = searchParams.get('inr') || '0';
   const tab = searchParams.get('tab') || 'buy';
   const type = searchParams.get('type') || 'card';
+
+  const inrVal = parseFloat(inr) || 0;
+  const computedGst = calculateForexGst(inrVal);
+  const totalPayable = inrVal + computedGst;
 
   return (
     <div className="flex flex-col lg:flex-row gap-8">
@@ -149,7 +155,7 @@ export default function BookingWizard() {
               </div>
               <div className="flex justify-between mb-4 pb-4 border-b border-gray-200">
                 <span className="text-gray-600">GST (As per Govt. rules)</span>
-                <span className="font-bold text-gray-900">₹{(parseFloat(inr) * 0.0018).toFixed(2)}</span>
+                <span className="font-bold text-gray-900">₹{computedGst}</span>
               </div>
               <div className="flex justify-between mb-4 pb-4 border-b border-gray-200">
                 <span className="text-gray-600 flex items-center">Convenience Fee <span className="ml-2 text-green-600 font-bold bg-green-100 px-2 py-0.5 rounded text-xs">FREE</span></span>
@@ -157,7 +163,7 @@ export default function BookingWizard() {
               </div>
               <div className="flex justify-between items-center mt-6">
                 <span className="font-extrabold text-xl text-gray-900">Total Amount to Pay</span>
-                <span className="font-extrabold text-2xl text-blue-600">₹{(parseFloat(inr) + parseFloat(inr) * 0.0018).toFixed(2)}</span>
+                <span className="font-extrabold text-2xl text-blue-600">₹{totalPayable.toLocaleString('en-IN')}</span>
               </div>
             </div>
 

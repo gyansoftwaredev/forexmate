@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RatesService } from './rates.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -15,6 +15,39 @@ export class RatesController {
   @ApiResponse({ status: 200, description: 'Rates retrieved successfully' })
   async getAllRates() {
     return this.ratesService.getAllRates();
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('rates.manage')
+  @Post('currency')
+  @ApiOperation({ summary: 'Add a new currency and rate to the pricing engine' })
+  async addCurrency(
+    @Body() body: {
+      code: string;
+      name: string;
+      symbol?: string;
+      inrRate: number;
+      marginBuyPct?: number;
+      marginSellPct?: number;
+    }
+  ) {
+    return this.ratesService.addCurrency(body);
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('rates.manage')
+  @Delete('currency/:id')
+  @ApiOperation({ summary: 'Delete or deactivate a currency from pricing engine' })
+  async deleteCurrency(@Param('id') id: string) {
+    return this.ratesService.deleteCurrency(id);
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @Permissions('rates.manage')
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete or deactivate a currency rate by ID' })
+  async deleteRate(@Param('id') id: string) {
+    return this.ratesService.deleteCurrency(id);
   }
 
   @UseGuards(JwtAuthGuard, PermissionsGuard)

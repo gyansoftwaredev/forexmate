@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Bot, X, Send, Sparkles, ShieldCheck, RefreshCw, MessageSquare, ChevronDown } from 'lucide-react';
 
 interface ChatMessage {
@@ -33,6 +34,7 @@ const FOREXMATE_KEYWORDS = [
 ];
 
 export default function AlphaChatBot() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [showGreetingTooltip, setShowGreetingTooltip] = useState(false);
@@ -40,6 +42,11 @@ export default function AlphaChatBot() {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Strictly only render on the homepage ('/')
+  if (pathname !== '/') {
+    return null;
+  }
 
   // Entrance Flight Animation Sequence on Page Load
   useEffect(() => {

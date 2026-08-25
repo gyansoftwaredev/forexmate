@@ -10,11 +10,14 @@ export class PublicService {
   // 1. Get Live Rates
   async getLiveRates() {
     return this.prisma.exchangeRate.findMany({
+      where: {
+        currency: { isActive: true }
+      },
       include: {
         currency: true
       },
       orderBy: {
-        currencyId: 'asc'
+        currency: { code: 'asc' }
       }
     });
   }
@@ -23,6 +26,7 @@ export class PublicService {
   async getActiveCurrencies() {
     return this.prisma.currency.findMany({
       where: {
+        isActive: true,
         rates: { isNot: null }
       },
       select: {
@@ -76,6 +80,13 @@ export class PublicService {
       where: { isActive: true },
       include: { feeConfigurations: true },
       orderBy: { countryName: 'asc' },
+    });
+  }
+
+  // 7. Get Forex Products & Status
+  async getProducts() {
+    return this.prisma.forexProduct.findMany({
+      orderBy: { code: 'asc' }
     });
   }
 }

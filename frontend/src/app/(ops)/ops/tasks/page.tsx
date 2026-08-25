@@ -35,11 +35,14 @@ import {
   Eye,
   X,
   Filter,
-  ChevronDown
+  ChevronDown,
+  Upload,
+  PhoneCall
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/context/AuthContext';
 import API_URL, { authFetch, apiJson } from '@/lib/api';
+import { getCurrencyFlag } from '@/lib/currencyMetadata';
 import RemittanceCRMDesk from './RemittanceCRMDesk';
 
 export default function OperationsCrmPage() {
@@ -271,6 +274,55 @@ export default function OperationsCrmPage() {
       await fetchLeads();
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleVerifyDoc = async (orderId: string, docType: string, status = 'APPROVED', notes = '') => {
+    setActionLoading(true);
+    try {
+      const res = await authFetch(`${API_URL}/ops/leads/${orderId}/verify-doc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ docType, status, notes })
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || 'Failed to verify KYC document');
+      }
+      await fetchLeads();
+      alert(`✅ ${docType} has been marked verified for this order!`);
+    } catch (err: any) {
+      alert(err.message || 'Verification failed');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleStaffUploadDoc = async (orderId: string, docType: string, file: File) => {
+    if (!file) return;
+    setActionLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('docType', docType);
+      formData.append('notes', `Uploaded directly by staff (${user?.fullName || user?.email || 'Operations Desk'})`);
+
+      const res = await authFetch(`${API_URL}/ops/leads/${orderId}/upload-doc`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || 'Failed to upload document');
+      }
+
+      alert(`✅ ${docType} document successfully uploaded & verified!`);
+      await fetchLeads();
+    } catch (err: any) {
+      alert(err.message || 'File upload failed');
     } finally {
       setActionLoading(false);
     }
@@ -1171,25 +1223,51 @@ export default function OperationsCrmPage() {
                           {selectedLead.productType?.replace(/_/g, ' ')}
                         </Badge>
                       </div>
-                      <div className="space-y-2 font-semibold">
-                        <div className="flex justify-between text-slate-600">
-                          <span>Requested Foreign Currency:</span>
-                          <strong className="text-slate-900 font-mono">
-                            {selectedLead.items?.[0]?.amount} {selectedLead.items?.[0]?.currency?.code}
-                          </strong>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Applied Exchange Rate:</span>
-                          <strong className="text-slate-900 font-mono">
-                            1 {selectedLead.items?.[0]?.currency?.code} = ₹{Number(selectedLead.items?.[0]?.rate || 0).toFixed(4)}
-                          </strong>
-                        </div>
-                        <div className="flex justify-between text-slate-600">
-                          <span>Gross Forex Subtotal (INR):</span>
-                          <strong className="text-slate-900 font-mono">
-                            ₹{Number(selectedLead.items?.[0]?.inrSubtotal || selectedLead.totalAmountInr).toLocaleString('en-IN')}
-                          </strong>
-                        </div>
+                      {/* Multi-Currency Items Breakdown */}
+                      <div className="space-y-2">
+                        {selectedLead.items && selectedLead.items.length > 0 ? (
+                          selectedLead.items.map((item: any, idx: number) => {
+                            const cCode = item.currency?.code || 'USD';
+                            const amt = Number(item.amount || 0);
+                            const rate = Number(item.rate || 0);
+                            const subtotal = Number(item.inrSubtotal || (amt * rate));
+                            return (
+                              <div key={idx} className="p-3 bg-white border border-slate-200 rounded-xl space-y-1.5 shadow-2xs">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="font-extrabold text-slate-900 flex items-center gap-1.5">
+                                    <span className="text-base">{getCurrencyFlag(cCode)}</span>
+                                    <span>{cCode} {item.product?.name ? `(${item.product.name})` : ''}</span>
+                                  </span>
+                                  <strong className="text-slate-900 font-mono font-black text-sm">
+                                    {amt.toLocaleString('en-IN')} {cCode}
+                                  </strong>
+                                </div>
+                                <div className="flex justify-between text-[11px] text-slate-500">
+                                  <span>Applied Exchange Rate:</span>
+                                  <span className="font-mono text-slate-700 font-bold">
+                                    1 {cCode} = ₹{rate.toFixed(4)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between text-[11px] text-slate-700 font-bold border-t border-slate-100 pt-1">
+                                  <span>Gross Subtotal (INR):</span>
+                                  <span className="font-mono text-emerald-700 font-black">
+                                    ₹{subtotal.toLocaleString('en-IN')}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="p-3 bg-white border border-slate-200 rounded-xl space-y-1">
+                            <div className="flex justify-between text-slate-600">
+                              <span>Total Amount:</span>
+                              <strong className="text-slate-900 font-mono">₹{Number(selectedLead.totalAmountInr).toLocaleString('en-IN')} INR</strong>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5 pt-1 font-semibold">
                         <div className="flex justify-between text-slate-500 text-[11px]">
                           <span>Service & Operational Charges:</span>
                           <span>₹0.00 (Waived)</span>
@@ -1202,13 +1280,14 @@ export default function OperationsCrmPage() {
                           <span>TCS (Tax Collected at Source):</span>
                           <span>₹0.00 (Within threshold)</span>
                         </div>
-                        <hr className="border-slate-200 my-1" />
-                        <div className="flex justify-between text-slate-950 font-black text-sm">
-                          <span>Grand Total Payable (INR):</span>
-                          <span className="text-indigo-600 font-mono text-base">
-                            ₹{Number(selectedLead.totalAmountInr).toLocaleString('en-IN')}
-                          </span>
-                        </div>
+                      </div>
+
+                      <hr className="border-slate-200 my-1" />
+                      <div className="flex justify-between text-slate-950 font-black text-sm">
+                        <span>Grand Total Payable (INR):</span>
+                        <span className="text-indigo-600 font-mono text-base">
+                          ₹{Number(selectedLead.totalAmountInr).toLocaleString('en-IN')}
+                        </span>
                       </div>
                     </CardContent>
                   </Card>
@@ -1955,7 +2034,7 @@ export default function OperationsCrmPage() {
                                         </span>
                                       )}
                                       {isSelectedCurrent && (
-                                        <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase px-1.5 py-0.5 rounded">
+                                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black uppercase px-1.5 py-0.5 rounded">
                                           Assigned Now
                                         </span>
                                       )}
@@ -1963,13 +2042,44 @@ export default function OperationsCrmPage() {
                                     <span className="text-[10px] text-slate-400 font-medium">{branchItem.branchCode} • {branchItem.branchCity}</span>
                                   </td>
                                   <td className="p-3 font-black text-slate-900">
-                                    {branchItem.currencySymbol}{Number(branchItem.availableStock).toLocaleString()} {branchItem.requestedCurrency}
+                                    {branchItem.currencies && branchItem.currencies.length > 0 ? (
+                                      <div className="space-y-1">
+                                        {branchItem.currencies.map((c: any, i: number) => (
+                                          <div key={i} className="flex items-center gap-1.5 text-xs font-bold text-slate-900">
+                                            <span>{getCurrencyFlag(c.currencyCode)}</span>
+                                            <span>{c.currencySymbol}{Number(c.availableStock).toLocaleString()} {c.currencyCode}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span>{branchItem.currencySymbol}{Number(branchItem.availableStock).toLocaleString()} {branchItem.requestedCurrency}</span>
+                                    )}
                                   </td>
                                   <td className="p-3 font-semibold text-slate-500">
-                                    {branchItem.currencySymbol}{Number(branchItem.reservedStock).toLocaleString()}
+                                    {branchItem.currencies && branchItem.currencies.length > 0 ? (
+                                      <div className="space-y-1">
+                                        {branchItem.currencies.map((c: any, i: number) => (
+                                          <div key={i} className="text-xs">
+                                            <span>{c.currencySymbol}{Number(c.reservedStock).toLocaleString()}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span>{branchItem.currencySymbol}{Number(branchItem.reservedStock).toLocaleString()}</span>
+                                    )}
                                   </td>
                                   <td className="p-3 font-bold text-blue-700">
-                                    {branchItem.currencySymbol}{Number(branchItem.remainingStock).toLocaleString()}
+                                    {branchItem.currencies && branchItem.currencies.length > 0 ? (
+                                      <div className="space-y-1">
+                                        {branchItem.currencies.map((c: any, i: number) => (
+                                          <div key={i} className="text-xs">
+                                            <span>{c.currencySymbol}{Number(c.remainingStock).toLocaleString()}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span>{branchItem.currencySymbol}{Number(branchItem.remainingStock).toLocaleString()}</span>
+                                    )}
                                   </td>
                                   <td className="p-3">
                                     {branchItem.status === 'HEALTHY' ? (
@@ -2042,67 +2152,232 @@ export default function OperationsCrmPage() {
                 </div>
               )}
 
-              {/* 4. KYC Documents Review Block */}
-              {selectedLead.profile?.user?.KycDocument && selectedLead.profile.user.KycDocument.length > 0 && (
-                <div className="space-y-4">
-                  <h4 className="font-bold text-sm text-gray-400 uppercase tracking-wider">Uploaded Compliance Documents</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {selectedLead.profile.user.KycDocument.map((doc: any) => {
-                      const fileUrl = doc.filePath?.startsWith('uploads/') 
-                        ? `${API_URL.replace('/api/v1', '')}/${doc.filePath}`
-                        : `${API_URL.replace('/api/v1', '')}/uploads/${doc.filePath}`;
-                      const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(doc.filePath || '');
-                      const ocrConf = doc.ocrData?.ocrConfidence || 0;
-                      const ocrData = doc.ocrData?.extractedData || {};
-                      
-                      return (
-                        <Card key={doc.id} className="rounded-2xl border-gray-150 overflow-hidden shadow-none bg-slate-50/10">
-                          <div className="flex h-36">
-                            <div className="w-28 bg-slate-900 flex-shrink-0 relative overflow-hidden flex items-center justify-center">
-                              {isImage ? (
-                                <div 
-                                  onClick={() => { setActiveDocumentUrl(fileUrl); setActiveDocumentType(doc.docType); }}
-                                  className="cursor-zoom-in w-full h-full"
-                                >
-                                  <img src={fileUrl} className="w-full h-full object-cover hover:scale-105 transition-transform" alt={doc.docType} />
-                                </div>
-                              ) : (
-                                <FileText className="w-10 h-10 text-slate-700" />
-                              )}
-                              <div className="absolute inset-0 bg-slate-950/65 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
-                                <button 
-                                  onClick={() => { setActiveDocumentUrl(fileUrl); setActiveDocumentType(doc.docType); }}
-                                  className="text-white text-[10px] font-bold bg-indigo-650 bg-indigo-600 px-2.5 py-1.5 rounded-lg flex items-center gap-1 shadow-sm"
-                                >
-                                  Preview <Eye size={11} />
-                                </button>
-                              </div>
-                            </div>
-                            <div className="flex-1 p-3 text-[10px] font-semibold text-gray-800 space-y-1 overflow-y-auto">
-                              <div className="flex justify-between items-center border-b border-gray-100 pb-1 mb-1">
-                                <Badge className="bg-indigo-100 text-indigo-700 font-extrabold text-[9px]">{doc.docType}</Badge>
-                                <Badge variant="outline" className={doc.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}>
-                                  {doc.status}
-                                </Badge>
-                              </div>
-                              <p className="text-gray-400 uppercase font-bold text-[8px] tracking-wider mb-0.5">OCR Extracted</p>
-                              {doc.ocrData ? (
-                                <>
-                                  <p><span className="text-gray-400">Doc ID:</span> {ocrData.documentNumber || 'N/A'}</p>
-                                  <p><span className="text-gray-400">Name:</span> {ocrData.name || ocrData.fullName || 'N/A'}</p>
-                                  <p><span className="text-gray-400">Confidence:</span> {(ocrConf * 100).toFixed(0)}%</p>
-                                </>
-                              ) : (
-                                <p className="text-gray-400 italic">No OCR data</p>
-                              )}
-                            </div>
+              {/* 4. Purpose-Linked Compliance & KYC Documents Section */}
+              {(() => {
+                const purposeStr = (selectedLead.travelDatesAndPurpose || selectedLead.profile?.travelPurpose || 'TOURISM').toUpperCase();
+                const isSell = selectedLead.productType === 'CASH_SELL';
+                const isRemittance = selectedLead.productType === 'REMITTANCE';
+
+                const requiredDocSpecs: Array<{ docType: string; label: string; desc: string; keywords: string[] }> = [
+                  { docType: 'PAN', label: 'PAN Card (Govt Tax ID)', desc: 'Mandatory Government Identity & Tax Compliance', keywords: ['PAN'] },
+                  { docType: 'PASSPORT', label: 'Passport (Front & Back)', desc: 'Mandatory for all international travel & forex under RBI', keywords: ['PASSPORT'] },
+                ];
+
+                if (isSell) {
+                  requiredDocSpecs.push({ docType: 'CURRENCY_DECLARATION', label: 'Currency Surrender Form / Declaration', desc: 'Customer declaration of source of surrendered foreign currency', keywords: ['DECLARATION', 'SOURCE'] });
+                } else if (isRemittance) {
+                  requiredDocSpecs.push(
+                    { docType: 'A2_FORM', label: 'RBI Form A2 Declaration', desc: 'Mandatory Liberalised Remittance Scheme declaration', keywords: ['A2', 'LRS'] },
+                    { docType: 'BENEFICIARY_INVOICE', label: 'University Fee Invoice / Hospital Bill / Gift Deed', desc: 'Purpose supporting document for overseas wire beneficiary', keywords: ['INVOICE', 'BILL', 'OFFER', 'FEE'] }
+                  );
+                } else if (purposeStr.includes('EDU') || purposeStr.includes('STUDENT') || purposeStr.includes('UNIVERSITY')) {
+                  requiredDocSpecs.push(
+                    { docType: 'ADMIT_CARD', label: 'University Admission / Offer Letter / I-20', desc: 'Official admission letter or current university enrollment certificate', keywords: ['ADMIT', 'OFFER', 'UNIVERSITY', 'STUDENT'] },
+                    { docType: 'STUDENT_VISA_TICKET', label: 'Student Visa or Confirmed Air Ticket', desc: 'Confirmed student visa sticker or international flight ticket', keywords: ['VISA', 'TICKET', 'AIR'] }
+                  );
+                } else if (purposeStr.includes('MED') || purposeStr.includes('HOSPITAL')) {
+                  requiredDocSpecs.push(
+                    { docType: 'HOSPITAL_ESTIMATE', label: 'Hospital Treatment Estimate / Doctor Letter', desc: 'Letter from overseas medical institution or attending specialist', keywords: ['HOSPITAL', 'MEDICAL', 'DOCTOR'] },
+                    { docType: 'MEDICAL_VISA_TICKET', label: 'Medical Visa or Flight Ticket', desc: 'Confirmed flight ticket or medical travel visa', keywords: ['VISA', 'TICKET', 'AIR'] }
+                  );
+                } else if (purposeStr.includes('BUSINESS') || purposeStr.includes('CORP')) {
+                  requiredDocSpecs.push(
+                    { docType: 'BUSINESS_INVITATION', label: 'Business Invitation / Deputation Letter', desc: 'Invitation letter from overseas corporate entity or employer deputation', keywords: ['BUSINESS', 'INVITATION', 'DEPUTATION'] },
+                    { docType: 'AIR_TICKET', label: 'Confirmed Flight Ticket', desc: 'Confirmed return/onward international flight ticket', keywords: ['TICKET', 'AIR', 'FLIGHT'] }
+                  );
+                } else if (purposeStr.includes('WORK') || purposeStr.includes('EMPLOYMENT')) {
+                  requiredDocSpecs.push(
+                    { docType: 'EMPLOYMENT_CONTRACT', label: 'Employment Contract / Work Permit', desc: 'Overseas job offer contract or valid work visa', keywords: ['EMPLOYMENT', 'CONTRACT', 'WORK'] },
+                    { docType: 'AIR_TICKET', label: 'Confirmed Flight Ticket', desc: 'Confirmed flight ticket to destination country', keywords: ['TICKET', 'AIR', 'FLIGHT'] }
+                  );
+                } else {
+                  requiredDocSpecs.push(
+                    { docType: 'AIR_TICKET', label: 'Confirmed Air Ticket / Valid Visa', desc: 'Valid travel visa or confirmed international flight ticket', keywords: ['TICKET', 'AIR', 'VISA', 'FLIGHT'] }
+                  );
+                }
+
+                const uploadedDocsList: any[] = selectedLead.profile?.user?.KycDocument || [];
+
+                return (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 pb-2">
+                      <div>
+                        <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                          <FileCheck className="w-4 h-4 text-indigo-600" />
+                          <span>Purpose Compliance & KYC Documents</span>
+                        </h4>
+                        <p className="text-xs text-slate-500 font-medium">
+                          Required documents under RBI guidelines for travel purpose: <strong className="text-slate-800">{purposeStr}</strong>
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-bold text-slate-500">
+                          {uploadedDocsList.length} of {requiredDocSpecs.length} Uploaded
+                        </span>
+                      </div>
+                    </div>
+
+                    {!selectedLead.assignedStaffId && (
+                      <div className="p-3 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-indigo-50 border border-amber-300/80 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0 font-black">
+                            🔒
+                          </span>
+                          <div>
+                            <p className="font-extrabold text-slate-900">Unassigned Lead Workflow</p>
+                            <p className="text-slate-500 text-[11px]">
+                              You can claim this lead now, or simply upload documents directly—it will automatically claim this case to your account.
+                            </p>
                           </div>
-                        </Card>
-                      );
-                    })}
+                        </div>
+                        <Button
+                          size="sm"
+                          disabled={actionLoading}
+                          onClick={() => handleClaim(selectedLead.id)}
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs h-7 px-3 rounded-xl shrink-0 shadow-xs cursor-pointer flex items-center gap-1"
+                        >
+                          <UserPlus size={12} />
+                          <span>Claim Lead Now</span>
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {requiredDocSpecs.map((spec) => {
+                        const matchingDoc = uploadedDocsList.find((d: any) => {
+                          const dt = (d.docType || '').toUpperCase();
+                          return dt === spec.docType || spec.keywords.some(kw => dt.includes(kw));
+                        });
+
+                        const inputId = `staff-upload-${spec.docType}-${selectedLead.id}`;
+
+                        if (matchingDoc) {
+                          const fileUrl = matchingDoc.filePath?.startsWith('uploads/') 
+                            ? `${API_URL.replace('/api/v1', '')}/${matchingDoc.filePath}`
+                            : `${API_URL.replace('/api/v1', '')}/uploads/${matchingDoc.filePath}`;
+                          const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(matchingDoc.filePath || '');
+                          const ocrConf = matchingDoc.ocrData?.ocrConfidence || 0;
+                          const ocrData = matchingDoc.ocrData?.extractedData || {};
+
+                          return (
+                            <Card key={spec.docType} className="rounded-2xl border-gray-200 overflow-hidden shadow-2xs bg-white">
+                              <div className="flex h-40">
+                                <div className="w-32 bg-slate-900 flex-shrink-0 relative overflow-hidden flex items-center justify-center">
+                                  {isImage ? (
+                                    <div 
+                                      onClick={() => { setActiveDocumentUrl(fileUrl); setActiveDocumentType(matchingDoc.docType); }}
+                                      className="cursor-zoom-in w-full h-full"
+                                    >
+                                      <img src={fileUrl} className="w-full h-full object-cover hover:scale-105 transition-transform" alt={spec.label} />
+                                    </div>
+                                  ) : (
+                                    <FileText className="w-10 h-10 text-slate-400" />
+                                  )}
+                                  <div className="absolute inset-0 bg-slate-950/65 opacity-0 hover:opacity-100 flex flex-col items-center justify-center gap-1.5 transition-opacity p-1 text-center">
+                                    <button 
+                                      onClick={() => { setActiveDocumentUrl(fileUrl); setActiveDocumentType(matchingDoc.docType); }}
+                                      className="text-white text-[10px] font-bold bg-indigo-600 hover:bg-indigo-700 px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm cursor-pointer w-max"
+                                    >
+                                      Preview <Eye size={11} />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="flex-1 p-3 text-[10px] font-semibold text-gray-800 space-y-1.5 flex flex-col justify-between overflow-y-auto">
+                                  <div className="space-y-1">
+                                    <div className="flex justify-between items-center border-b border-gray-100 pb-1">
+                                      <Badge className="bg-indigo-100 text-indigo-700 font-extrabold text-[9px] truncate max-w-[130px]">{spec.label}</Badge>
+                                      <Badge variant="outline" className={matchingDoc.status === 'APPROVED' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-yellow-50 text-yellow-700 border-yellow-200'}>
+                                        {matchingDoc.status}
+                                      </Badge>
+                                    </div>
+                                    <p className="text-gray-400 uppercase font-bold text-[8px] tracking-wider">Document Details</p>
+                                    {matchingDoc.ocrData ? (
+                                      <div className="space-y-0.5 text-slate-700">
+                                        <p><span className="text-gray-400">Doc ID:</span> {ocrData.documentNumber || 'N/A'}</p>
+                                        <p><span className="text-gray-400">Name:</span> {ocrData.name || ocrData.fullName || 'N/A'}</p>
+                                        <p><span className="text-gray-400">Confidence:</span> {(ocrConf * 100).toFixed(0)}%</p>
+                                      </div>
+                                    ) : (
+                                      <p className="text-emerald-700 font-bold">✓ Verified Document Attached</p>
+                                    )}
+                                  </div>
+
+                                  <div className="pt-1 border-t border-slate-100 flex items-center justify-between">
+                                    <input
+                                      type="file"
+                                      id={inputId}
+                                      className="hidden"
+                                      accept="image/*,application/pdf"
+                                      onChange={(e) => {
+                                        if (e.target.files?.[0]) {
+                                          handleStaffUploadDoc(selectedLead.id, spec.docType, e.target.files[0]);
+                                        }
+                                      }}
+                                    />
+                                    <label
+                                      htmlFor={inputId}
+                                      className="text-[9px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded cursor-pointer flex items-center gap-1"
+                                    >
+                                      <Upload className="w-2.5 h-2.5" />
+                                      <span>Replace Scan</span>
+                                    </label>
+                                    <span className="text-[8px] text-slate-400">Staff Mode</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
+                          );
+                        }
+
+                        // Document NOT yet uploaded by customer -> Show Staff Assist Verification & Upload Card
+                        return (
+                          <Card key={spec.docType} className="rounded-2xl border-dashed border-2 border-amber-300/80 bg-amber-50/25 p-4 space-y-3 shadow-2xs">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-amber-900 font-black text-xs">{spec.label}</span>
+                                </div>
+                                <p className="text-[11px] text-slate-600 leading-snug">{spec.desc}</p>
+                              </div>
+                              <span className="bg-amber-100 border border-amber-300 text-amber-900 font-extrabold text-[9px] px-2 py-0.5 rounded-full shrink-0">
+                                ⚠️ PENDING SUBMISSION
+                              </span>
+                            </div>
+
+                            <div className="pt-2 border-t border-amber-200/60 flex items-center justify-between gap-2">
+                              <span className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
+                                <Upload className="w-3 h-3 text-indigo-600" />
+                                <span>Attach customer document:</span>
+                              </span>
+
+                              {/* Hidden file input for staff upload */}
+                              <input
+                                type="file"
+                                id={inputId}
+                                className="hidden"
+                                accept="image/*,application/pdf"
+                                onChange={(e) => {
+                                  if (e.target.files?.[0]) {
+                                    handleStaffUploadDoc(selectedLead.id, spec.docType, e.target.files[0]);
+                                  }
+                                }}
+                              />
+
+                              <label
+                                htmlFor={inputId}
+                                className="h-8 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-[11px] px-3.5 rounded-xl shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Upload Document (Staff)</span>
+                              </label>
+                            </div>
+                          </Card>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* 4. CRM Timeline Log & Note entry */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

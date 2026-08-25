@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import HeroForm from '@/components/HeroForm';
 import RatesRibbon from '@/components/RatesRibbon';
+import AlphaChatBot from '@/components/AlphaChatBot';
 
 const ValueProps = dynamic(() => import('@/components/ValueProps'));
 const ExploreProducts = dynamic(() => import('@/components/ExploreProducts'));
@@ -43,6 +44,9 @@ export default function Home() {
         <FAQSection />
 
       </div>
+
+      {/* Alpha AI Guide - Strictly Homepage Only */}
+      <AlphaChatBot />
 
       {/* Footer */}
       <Footer />

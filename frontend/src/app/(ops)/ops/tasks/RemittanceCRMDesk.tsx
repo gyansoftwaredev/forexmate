@@ -846,7 +846,7 @@ export default function RemittanceCRMDesk({
                   className="w-full bg-slate-50 border border-gray-200 rounded-xl p-3 font-bold text-xs text-gray-900 outline-indigo-500"
                 >
                   <option value="EbixCash World Money Direct">EbixCash World Money Direct</option>
-                  <option value="BookMyForex Partner Bank Treasury">BookMyForex Partner Bank Treasury</option>
+                  <option value="ForexMate Partner Bank Treasury">ForexMate Partner Bank Treasury</option>
                   <option value="IndusInd Bank Treasury">IndusInd Bank International Treasury</option>
                   <option value="Thomas Cook Remit Desk">Thomas Cook Remit Desk</option>
                 </select>

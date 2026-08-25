@@ -222,6 +222,15 @@ export default function BeneficiariesPage() {
                     <span className="text-xs text-gray-400 block font-medium">Recipient Bank Address</span>
                     <span className="text-xs text-gray-600 mt-1 block leading-relaxed">{ben.address}</span>
                   </div>
+                  <div className="col-span-2 pt-2 flex justify-end">
+                    <Button 
+                      className="btn-gold font-black text-slate-950 text-xs px-4 py-2 rounded-xl shadow-2xs hover:scale-105 transition-all flex items-center gap-1.5"
+                      onClick={() => window.location.href = `/buy-forex?tab=remittance&beneficiaryId=${ben.id}`}
+                    >
+                      <ArrowRight className="w-3.5 h-3.5" />
+                      <span>Send Money to {ben.name.split(' ')[0]}</span>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

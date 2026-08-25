@@ -125,26 +125,63 @@ export function OrderDetails({ id }: { id: string }) {
           )}
 
           <Card className="border-gray-200 shadow-sm rounded-2xl overflow-hidden">
-            <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-6">
-              <CardTitle className="text-lg font-bold">Product Details</CardTitle>
+            <CardHeader className="bg-gray-50/50 border-b border-gray-100 p-6 flex flex-row items-center justify-between">
+              <CardTitle className="text-lg font-bold">Ordered Currencies & Items</CardTitle>
+              {order.items && order.items.length > 1 && (
+                <span className="text-xs font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-full">
+                  {order.items.length} Currencies Included
+                </span>
+              )}
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                <div className="text-gray-500 font-medium text-sm">Product</div>
-                <div className="font-bold text-gray-900">{productName}</div>
-              </div>
-              <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                <div className="text-gray-500 font-medium text-sm">Amount</div>
-                <div className="font-bold text-gray-900">{foreignAmount} {currency}</div>
-              </div>
-              {order.quote?.lockedInrRate && (
-                <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                  <div className="text-gray-500 font-medium text-sm">Locked Rate</div>
-                  <div className="font-bold text-gray-900">₹{order.quote.lockedInrRate}</div>
+            <CardContent className="p-6 space-y-4">
+              {order.items && order.items.length > 0 ? (
+                <div className="border border-gray-100 rounded-xl overflow-hidden divide-y divide-gray-100">
+                  {order.items.map((item: any, idx: number) => {
+                    const itemAmt = item.amount || '0';
+                    const itemCurr = item.currency?.code || item.currency || '';
+                    const itemName = item.product?.name || `${itemAmt} ${itemCurr} Foreign Currency`;
+                    const itemRate = item.rate ? `₹${item.rate}` : order.quote?.lockedInrRate ? `₹${order.quote.lockedInrRate}` : null;
+                    const itemInr = item.inrEquivalent ? `₹${Number(item.inrEquivalent).toLocaleString('en-IN')}` : null;
+
+                    return (
+                      <div key={idx} className="p-4 flex items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                        <div className="space-y-0.5">
+                          <div className="font-extrabold text-gray-900 text-sm">{itemName}</div>
+                          <div className="text-xs text-gray-500 font-medium flex items-center gap-2">
+                            <span>Amount: <strong className="text-gray-800 font-bold">{itemAmt} {itemCurr}</strong></span>
+                            {itemRate && <span>• Rate: <strong className="text-blue-600 font-bold">{itemRate}</strong></span>}
+                          </div>
+                        </div>
+                        {itemInr && (
+                          <div className="text-right font-black text-gray-900 text-sm">
+                            {itemInr}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <div className="text-gray-500 font-medium text-sm">Product</div>
+                    <div className="font-bold text-gray-900">{productName}</div>
+                  </div>
+                  <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                    <div className="text-gray-500 font-medium text-sm">Amount</div>
+                    <div className="font-bold text-gray-900">{foreignAmount} {currency}</div>
+                  </div>
+                  {order.quote?.lockedInrRate && (
+                    <div className="flex items-center justify-between py-2 border-b border-gray-100">
+                      <div className="text-gray-500 font-medium text-sm">Locked Rate</div>
+                      <div className="font-bold text-gray-900">₹{order.quote.lockedInrRate}</div>
+                    </div>
+                  )}
                 </div>
               )}
-              <div className="flex items-center justify-between py-3 pt-6 mt-3 border-t border-gray-100">
-                <div className="text-gray-900 font-bold">Total Amount</div>
+
+              <div className="flex items-center justify-between py-3 pt-4 border-t border-gray-100">
+                <div className="text-gray-900 font-bold">Total Order Value</div>
                 <div className="text-xl font-extrabold text-blue-600">{formatCurrencyINR(order.totalAmountInr)}</div>
               </div>
             </CardContent>

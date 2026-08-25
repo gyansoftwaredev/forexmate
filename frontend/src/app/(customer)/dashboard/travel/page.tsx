@@ -109,18 +109,35 @@ export default function TravelHubPage() {
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-blue-600 font-bold uppercase tracking-wider">Estimated Payout</p>
-                  <h3 className="text-3xl font-black text-blue-900 mt-1">
-                    {selectedCurrency === 'USD' ? '$' : selectedCurrency === 'EUR' ? '€' : selectedCurrency === 'GBP' ? '£' : ''} {Number(calculatedForeign).toLocaleString()}
-                  </h3>
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-blue-600 font-bold uppercase tracking-wider">Estimated Payout</p>
+                    <h3 className="text-3xl font-black text-blue-900 mt-1">
+                      {selectedCurrency === 'USD' ? '$' : selectedCurrency === 'EUR' ? '€' : selectedCurrency === 'GBP' ? '£' : ''} {Number(calculatedForeign).toLocaleString()}
+                    </h3>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] bg-blue-100 border border-blue-200 text-blue-800 px-2.5 py-1 rounded-full font-bold uppercase">
+                      Live Rate Applied
+                    </span>
+                    <p className="text-xs text-blue-600 mt-2 font-medium">1 {selectedCurrency} = ₹{rateMap[selectedCurrency]}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] bg-blue-100 border border-blue-200 text-blue-800 px-2.5 py-1 rounded-full font-bold uppercase">
-                    Live Rate Applied
-                  </span>
-                  <p className="text-xs text-blue-600 mt-2 font-medium">1 {selectedCurrency} = ₹{rateMap[selectedCurrency]}</p>
+
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-blue-100/80 justify-end">
+                  <Button 
+                    className="bg-white border border-blue-200 text-blue-900 font-bold text-xs hover:bg-blue-50 rounded-lg"
+                    onClick={() => window.location.href = `/buy-forex?tab=buy&currency=${selectedCurrency}&amount=${calculatedForeign}`}
+                  >
+                    💵 Order Cash Notes
+                  </Button>
+                  <Button 
+                    className="btn-gold font-black text-slate-950 text-xs rounded-lg shadow-sm"
+                    onClick={() => window.location.href = `/buy-forex?tab=card&currency=${selectedCurrency}&amount=${calculatedForeign}`}
+                  >
+                    💳 Order Forex Card
+                  </Button>
                 </div>
               </div>
             </CardContent>

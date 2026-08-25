@@ -1,77 +1,60 @@
 "use client";
 
 import React, { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { useUiStore } from '@/stores/uiStore';
-import { Card, CardContent } from '@/components/ui/card';
-
-// We'll build these step components next
+import { Card } from '@/components/ui/card';
 import { ProductCalculatorStep } from './steps/ProductCalculatorStep';
-import { LoginPromptStep } from './steps/LoginPromptStep';
-import { DeliveryComplianceStep } from './steps/DeliveryComplianceStep';
-import { PaymentStep } from './steps/PaymentStep';
-
-// Component Registry based on Transaction Engine Status
-const StepRegistry: Record<string, React.FC> = {
-  'CREATED': ProductCalculatorStep,
-  'IN_PROGRESS': ProductCalculatorStep,
-  'WAITING_LOGIN': LoginPromptStep,
-  'QUOTE_LOCKED': DeliveryComplianceStep,
-  'WAITING_PAYMENT': PaymentStep,
-  'CONVERTED': PaymentStep,
-};
+import { BookMyForexCheckoutEngine } from './BookMyForexCheckoutEngine';
 
 export function OrderWizard() {
-  const { sessionId, status, initSession, draftState, clearSession } = useTransactionStore();
+  const { sessionId, status, initSession, draftState, clearSession, updateDraft } = useTransactionStore();
   const { isGlobalLoading } = useUiStore();
+  const searchParams = useSearchParams();
 
-  // Initialize session on mount
+  // Reset to step 1 if the user navigates with new query params or previous order was converted
   useEffect(() => {
-    initSession();
-  }, [initSession]);
-
-  // Scroll to top when step status changes
-  useEffect(() => {
-    if (status) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
+    const hasParams = searchParams && (searchParams.get('currency') || searchParams.get('amount') || searchParams.get('tab'));
+    if (hasParams || draftState.status === 'CONVERTED' || draftState.checkoutStep === 5) {
+      updateDraft({
+        checkoutStep: 1,
+        status: 'CREATED',
+        bookingRef: undefined
+      });
     }
-  }, [status]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
-  // Clean up completed/converted Cash Sell session automatically on mount or state change
+  // Ensure session is initialized
   useEffect(() => {
-    if (sessionId && (status === 'CONVERTED' || status === 'WAITING_PAYMENT') && draftState.product === 'CASH_SELL') {
-      clearSession();
+    if (!sessionId || draftState.status === 'CONVERTED') {
+      initSession();
     }
-  }, [sessionId, status, draftState.product, clearSession]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
-  if (!sessionId) {
-    return (
-      <Card className="shadow-lg border-0 bg-white min-h-[400px] flex items-center justify-center">
-        <p className="text-gray-500 font-medium animate-pulse">Initializing Order Engine...</p>
-      </Card>
-    );
-  }
+  const checkoutStep = draftState.checkoutStep || 1;
 
-  // Find the appropriate component for the current state
-  const ActiveStepComponent = StepRegistry[status];
+  // Scroll to top when step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [checkoutStep, status]);
 
   return (
     <div className="w-full relative">
       {/* UI Loading Overlay */}
       {isGlobalLoading && (
         <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-50 flex items-center justify-center rounded-xl">
-          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       )}
-      
-      <Card className="shadow-lg border-0 bg-white min-h-[500px]">
-        {ActiveStepComponent ? (
-          <ActiveStepComponent />
+
+      <Card className="shadow-lg border-0 bg-slate-50/50 min-h-[500px] rounded-3xl overflow-hidden">
+        {checkoutStep === 1 ? (
+          <ProductCalculatorStep />
         ) : (
-          <CardContent className="pt-10 flex flex-col items-center">
-            <h3 className="text-xl font-bold text-red-600 mb-2">Unknown State</h3>
-            <p className="text-gray-500">The workflow engine returned an unhandled state: {status}</p>
-          </CardContent>
+          <BookMyForexCheckoutEngine />
         )}
       </Card>
     </div>

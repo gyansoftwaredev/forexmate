@@ -189,6 +189,7 @@ export class TransactionEngineService {
     if (!productCode) throw new BadRequestException('Product code not found in draft state');
     const forexProduct = await this.prisma.forexProduct.findUnique({ where: { code: productCode } });
     if (!forexProduct) throw new BadRequestException(`Invalid product code: ${productCode}`);
+    if (!forexProduct.isActive) throw new BadRequestException(`The product "${forexProduct.name}" is temporarily disabled by administrator.`);
 
     // Update travel purpose if provided
     if (draftState.purpose) {

@@ -1,157 +1,179 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Search, MapPin, X } from 'lucide-react';
 
 const popularCities = [
-  { name: 'Delhi', state: 'Delhi (NCT)', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=100&h=100&fit=crop' },
-  { name: 'Bangalore', state: 'Karnataka', img: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=100&h=100&fit=crop' },
-  { name: 'Mumbai', state: 'Maharashtra', img: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=100&h=100&fit=crop' },
-  { name: 'Pune', state: 'Maharashtra', img: 'https://images.unsplash.com/photo-1584443912952-671cb0a84592?w=100&h=100&fit=crop' },
-  { name: 'Hyderabad', state: 'Telangana', img: 'https://images.unsplash.com/photo-1626297380963-0a75c1dd5e2e?w=100&h=100&fit=crop' },
-  { name: 'Chennai', state: 'Tamil Nadu', img: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=100&h=100&fit=crop' }
+  { name: 'Delhi', state: 'Delhi (NCT)', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=120&h=120&fit=crop&q=80' },
+  { name: 'Bangalore', state: 'Karnataka', img: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=120&h=120&fit=crop&q=80' },
+  { name: 'Mumbai', state: 'Maharashtra', img: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=120&h=120&fit=crop&q=80' },
+  { name: 'Pune', state: 'Maharashtra', img: 'https://images.unsplash.com/photo-1572445271230-a78b5944a659?w=120&h=120&fit=crop&q=80' },
+  { name: 'Hyderabad', state: 'Telangana', img: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=120&h=120&fit=crop&q=80' },
+  { name: 'Chennai', state: 'Tamil Nadu', img: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=120&h=120&fit=crop&q=80' }
 ];
 
 const allCities = [
-  { name: 'Agra', state: 'Uttar Pradesh' },
-  { name: 'Ahmedabad', state: 'Gujarat' },
-  { name: 'Amritsar', state: 'Punjab' },
-  { name: 'Anand', state: 'Gujarat' },
-  { name: 'Aurangabad', state: 'Maharashtra' },
-  { name: 'Bareilly', state: 'Uttar Pradesh' },
-  { name: 'Bhopal', state: 'Madhya Pradesh' },
-  { name: 'Bhubaneswar', state: 'Odisha' },
-  { name: 'Chandigarh', state: 'Chandigarh' },
-  { name: 'Coimbatore', state: 'Tamil Nadu' },
-  { name: 'Dehradun', state: 'Uttarakhand' },
-  { name: 'Dilsukh Nagar', state: 'Telangana' },
-  { name: 'Ernakulam', state: 'Kerala' },
-  { name: 'Faridabad', state: 'Haryana' },
-  { name: 'Ghaziabad', state: 'Uttar Pradesh' },
-  { name: 'Goa', state: 'Goa' },
-  { name: 'Guntur', state: 'Andhra Pradesh' },
-  { name: 'Gurgaon', state: 'Haryana' },
-  { name: 'Guwahati', state: 'Assam' },
-  { name: 'Gwalior', state: 'Madhya Pradesh' },
-  { name: 'Hoshiarpur', state: 'Punjab' },
-  { name: 'Hosur', state: 'Tamil Nadu' },
-  { name: 'Indore', state: 'Madhya Pradesh' },
-  { name: 'Jabalpur', state: 'Madhya Pradesh' },
-  { name: 'Jaipur', state: 'Rajasthan' },
-  { name: 'Jalandhar', state: 'Punjab' },
-  { name: 'Jammu', state: 'Jammu and Kashmir' },
-  { name: 'Kanpur', state: 'Uttar Pradesh' },
-  { name: 'Karnal', state: 'Haryana' },
-  { name: 'Kochi', state: 'Kerala' },
-  { name: 'Kolkata', state: 'West Bengal' },
-  { name: 'Kozhikode', state: 'Kerala' },
-  { name: 'Lucknow', state: 'Uttar Pradesh' },
-  { name: 'Ludhiana', state: 'Punjab' },
-  { name: 'Madurai', state: 'Tamil Nadu' },
-  { name: 'Mangalore', state: 'Karnataka' },
-  { name: 'Mohali', state: 'Punjab' },
-  { name: 'Mysore', state: 'Karnataka' },
-  { name: 'Nagapattinam', state: 'Tamil Nadu' },
-  { name: 'Nagpur', state: 'Maharashtra' },
-  { name: 'Nashik', state: 'Maharashtra' },
-  { name: 'Navi Mumbai', state: 'Maharashtra' },
-  { name: 'Navsari', state: 'Gujarat' },
-  { name: 'Nawanshahar', state: 'Punjab' },
-  { name: 'Nellore', state: 'Andhra Pradesh' },
-  { name: 'Noida', state: 'Uttar Pradesh' },
-  { name: 'Panchkula', state: 'Haryana' },
-  { name: 'Panvel', state: 'Maharashtra' },
-  { name: 'Patiala', state: 'Punjab' },
-  { name: 'Patna', state: 'Bihar' },
-  { name: 'Raipur', state: 'Chhattisgarh' },
-  { name: 'Rajkot', state: 'Gujarat' },
-  { name: 'Ranchi', state: 'Jharkhand' },
-  { name: 'Salem', state: 'Tamil Nadu' },
-  { name: 'Secunderabad', state: 'Telangana' },
-  { name: 'Surat', state: 'Gujarat' },
-  { name: 'Thane', state: 'Maharashtra' },
-  { name: 'Thiruvananthapuram', state: 'Kerala' },
-  { name: 'Udaipur', state: 'Rajasthan' },
-  { name: 'Vadodara', state: 'Gujarat' },
-  { name: 'Varanasi', state: 'Uttar Pradesh' },
-  { name: 'Vijayawada', state: 'Andhra Pradesh' },
-  { name: 'Visakhapatnam', state: 'Andhra Pradesh' },
-  { name: 'Warangal', state: 'Telangana' }
+  { name: 'Agra', state: 'Uttar Pradesh', img: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?w=120&h=120&fit=crop&q=80' },
+  { name: 'Ahmedabad', state: 'Gujarat', img: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=120&h=120&fit=crop&q=80' },
+  { name: 'Amritsar', state: 'Punjab', img: 'https://images.unsplash.com/photo-1514222709107-a180c68d72b4?w=120&h=120&fit=crop&q=80' },
+  { name: 'Anand', state: 'Gujarat', img: 'https://images.unsplash.com/photo-1589308078059-be1415eab4c3?w=120&h=120&fit=crop&q=80' },
+  { name: 'Aurangabad', state: 'Maharashtra', img: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=120&h=120&fit=crop&q=80' },
+  { name: 'Bareilly', state: 'Uttar Pradesh', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=120&h=120&fit=crop&q=80' },
+  { name: 'Bhopal', state: 'Madhya Pradesh', img: 'https://images.unsplash.com/photo-1622396481328-9b1b78cdd9fd?w=120&h=120&fit=crop&q=80' },
+  { name: 'Bhubaneswar', state: 'Odisha', img: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?w=120&h=120&fit=crop&q=80' },
+  { name: 'Chandigarh', state: 'Chandigarh', img: 'https://images.unsplash.com/photo-1622396481328-9b1b78cdd9fd?w=120&h=120&fit=crop&q=80' },
+  { name: 'Coimbatore', state: 'Tamil Nadu', img: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=120&h=120&fit=crop&q=80' },
+  { name: 'Dehradun', state: 'Uttarakhand', img: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=120&h=120&fit=crop&q=80' },
+  { name: 'Dilsukh Nagar', state: 'Telangana', img: 'https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=120&h=120&fit=crop&q=80' },
+  { name: 'Ernakulam', state: 'Kerala', img: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=120&h=120&fit=crop&q=80' },
+  { name: 'Faridabad', state: 'Haryana', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=120&h=120&fit=crop&q=80' },
+  { name: 'Ghaziabad', state: 'Uttar Pradesh', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=120&h=120&fit=crop&q=80' },
+  { name: 'Goa', state: 'Goa', img: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=120&h=120&fit=crop&q=80' },
+  { name: 'Guntur', state: 'Andhra Pradesh', img: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=120&h=120&fit=crop&q=80' },
+  { name: 'Gurgaon', state: 'Haryana', img: 'https://images.unsplash.com/photo-1590856029826-c7a73142bbf1?w=120&h=120&fit=crop&q=80' },
+  { name: 'Guwahati', state: 'Assam', img: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=120&h=120&fit=crop&q=80' },
+  { name: 'Gwalior', state: 'Madhya Pradesh', img: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?w=120&h=120&fit=crop&q=80' },
+  { name: 'Indore', state: 'Madhya Pradesh', img: 'https://images.unsplash.com/photo-1622396481328-9b1b78cdd9fd?w=120&h=120&fit=crop&q=80' },
+  { name: 'Jaipur', state: 'Rajasthan', img: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?w=120&h=120&fit=crop&q=80' },
+  { name: 'Jalandhar', state: 'Punjab', img: 'https://images.unsplash.com/photo-1514222709107-a180c68d72b4?w=120&h=120&fit=crop&q=80' },
+  { name: 'Kochi', state: 'Kerala', img: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=120&h=120&fit=crop&q=80' },
+  { name: 'Kolkata', state: 'West Bengal', img: 'https://images.unsplash.com/photo-1558431382-27e303142255?w=120&h=120&fit=crop&q=80' },
+  { name: 'Lucknow', state: 'Uttar Pradesh', img: 'https://images.unsplash.com/photo-1620766182966-c6eb5ed2b788?w=120&h=120&fit=crop&q=80' },
+  { name: 'Ludhiana', state: 'Punjab', img: 'https://images.unsplash.com/photo-1514222709107-a180c68d72b4?w=120&h=120&fit=crop&q=80' },
+  { name: 'Madurai', state: 'Tamil Nadu', img: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=120&h=120&fit=crop&q=80' },
+  { name: 'Mangalore', state: 'Karnataka', img: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=120&h=120&fit=crop&q=80' },
+  { name: 'Mysore', state: 'Karnataka', img: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=120&h=120&fit=crop&q=80' },
+  { name: 'Nagpur', state: 'Maharashtra', img: 'https://images.unsplash.com/photo-1572445271230-a78b5944a659?w=120&h=120&fit=crop&q=80' },
+  { name: 'Nashik', state: 'Maharashtra', img: 'https://images.unsplash.com/photo-1572445271230-a78b5944a659?w=120&h=120&fit=crop&q=80' },
+  { name: 'Noida', state: 'Uttar Pradesh', img: 'https://images.unsplash.com/photo-1590856029826-c7a73142bbf1?w=120&h=120&fit=crop&q=80' },
+  { name: 'Patna', state: 'Bihar', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=120&h=120&fit=crop&q=80' },
+  { name: 'Surat', state: 'Gujarat', img: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=120&h=120&fit=crop&q=80' },
+  { name: 'Thane', state: 'Maharashtra', img: 'https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=120&h=120&fit=crop&q=80' },
+  { name: 'Thiruvananthapuram', state: 'Kerala', img: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=120&h=120&fit=crop&q=80' },
+  { name: 'Udaipur', state: 'Rajasthan', img: 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?w=120&h=120&fit=crop&q=80' },
+  { name: 'Vadodara', state: 'Gujarat', img: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?w=120&h=120&fit=crop&q=80' },
+  { name: 'Varanasi', state: 'Uttar Pradesh', img: 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc?w=120&h=120&fit=crop&q=80' },
+  { name: 'Visakhapatnam', state: 'Andhra Pradesh', img: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=120&h=120&fit=crop&q=80' },
 ];
+
+function CityAvatar({ src, name }: { src?: string; name: string }) {
+  const [error, setError] = useState(false);
+
+  if (!src || error) {
+    return (
+      <div className="w-full h-full bg-gradient-to-br from-amber-100 to-amber-200 text-amber-900 flex items-center justify-center font-black text-xs">
+        {name.charAt(0)}
+      </div>
+    );
+  }
+
+  return (
+    <img 
+      src={src} 
+      alt={name} 
+      onError={() => setError(true)} 
+      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+    />
+  );
+}
 
 export function CitySelectorModal({ 
   isOpen, 
   onClose, 
-  onSelect 
+  onSelect,
+  onSelectCity
 }: { 
   isOpen: boolean, 
   onClose: () => void, 
-  onSelect: (city: string) => void 
+  onSelect?: (city: string) => void,
+  onSelectCity?: (city: string) => void
 }) {
   const [search, setSearch] = useState('');
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  const handleSelectCity = (cityName: string) => {
+    if (typeof onSelect === 'function') onSelect(cityName);
+    if (typeof onSelectCity === 'function') onSelectCity(cityName);
+    onClose();
+  };
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const filteredPopular = popularCities.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.state.toLowerCase().includes(search.toLowerCase()));
   const filteredAll = allCities.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.state.toLowerCase().includes(search.toLowerCase()));
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+      
       {/* Modal Container */}
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col relative animate-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[70vh] flex flex-col relative animate-in zoom-in-95 duration-200 overflow-hidden border border-slate-200">
         
-        {/* Close button */}
-        <button 
-          onClick={onClose}
-          className="absolute -right-3 -top-3 md:-right-6 md:-top-6 text-white hover:text-gray-200 bg-gray-900/50 hover:bg-gray-900 rounded-full p-2 transition-colors z-[101]"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Header with Title & Close button */}
+        <div className="p-4 px-5 border-b border-slate-100 space-y-3 bg-white">
+          <div className="flex items-center justify-between">
+            <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-amber-500" />
+              <span>Select Delivery City</span>
+            </h3>
 
-        {/* Header / Search */}
-        <div className="p-5 border-b border-gray-100 flex items-center gap-4">
-          <div className="flex-1 relative">
-            <Search className="w-4 h-4 text-blue-500 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input 
-              type="text" 
-              placeholder="City Name" 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 border border-blue-200 focus:border-blue-500 rounded-lg outline-none text-[15px] text-gray-900 font-medium transition-colors shadow-sm"
-              autoFocus
-            />
+            <button 
+              onClick={onClose}
+              className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors shrink-0"
+              title="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <button className="flex items-center text-blue-600 font-bold text-sm shrink-0 hover:bg-blue-50 px-3 py-2 rounded-lg transition-colors">
-            <MapPin className="w-4 h-4 mr-1.5" /> Detect Location
-          </button>
+
+          {/* Search bar & Detect Location */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex-1 relative">
+              <Search className="w-4 h-4 text-amber-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input 
+                type="text" 
+                placeholder="Search city name..." 
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-slate-200 focus:border-amber-500 rounded-xl outline-none text-xs text-slate-900 font-medium transition-colors shadow-2xs bg-slate-50/80 focus:bg-white"
+                autoFocus
+              />
+            </div>
+            <button 
+              onClick={() => handleSelectCity('Delhi')}
+              className="flex items-center text-amber-700 font-extrabold text-xs shrink-0 hover:bg-amber-100/70 bg-amber-50 border border-amber-200/80 px-3 py-2 rounded-xl transition-colors"
+            >
+              <MapPin className="w-3.5 h-3.5 mr-1 text-amber-600" /> Detect
+            </button>
+          </div>
         </div>
 
         {/* Lists Container */}
-        <div className="flex-1 overflow-y-auto p-2 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
           
           {/* Popular Cities */}
           {filteredPopular.length > 0 && (
             <div className="mb-4">
-              <div className="flex justify-between items-center px-4 py-3 bg-white sticky top-0 z-10">
-                <span className="font-extrabold text-gray-900 text-sm">Popular Cities</span>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">State</span>
+              <div className="flex justify-between items-center px-3 py-2 bg-white sticky top-0 z-10 border-b border-slate-100">
+                <span className="font-extrabold text-slate-900 text-xs uppercase tracking-wider text-amber-700">Popular Cities</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">State</span>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 mt-1">
                 {filteredPopular.map(city => (
                   <div 
                     key={city.name} 
-                    onClick={() => { onSelect(city.name); onClose(); }}
-                    className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 cursor-pointer rounded-xl group transition-colors"
+                    onClick={() => handleSelectCity(city.name)}
+                    className="flex items-center justify-between px-3 py-2 hover:bg-amber-50/60 cursor-pointer rounded-xl group transition-colors"
                   >
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-lg overflow-hidden mr-4 bg-gray-100 border border-gray-200 shrink-0">
-                        {city.img ? (
-                           <img src={city.img} alt={city.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                        ) : (
-                           <div className="w-full h-full bg-blue-100 text-blue-500 flex items-center justify-center font-bold text-lg">{city.name.charAt(0)}</div>
-                        )}
+                      <div className="w-8 h-8 rounded-lg overflow-hidden mr-3 bg-slate-100 border border-slate-200 shrink-0">
+                        <CityAvatar src={city.img} name={city.name} />
                       </div>
-                      <span className="font-bold text-[14px] text-gray-900 group-hover:text-blue-600 transition-colors">{city.name}</span>
+                      <span className="font-bold text-xs text-slate-900 group-hover:text-amber-700 transition-colors">{city.name}</span>
                     </div>
-                    <span className="text-[13px] text-gray-500 font-medium">{city.state}</span>
+                    <span className="text-[11px] text-slate-500 font-medium">{city.state}</span>
                   </div>
                 ))}
               </div>
@@ -161,19 +183,24 @@ export function CitySelectorModal({
           {/* All Cities */}
           {filteredAll.length > 0 && (
             <div>
-              <div className="flex justify-between items-center px-4 py-3 bg-white sticky top-0 z-10 border-t border-gray-100 mt-2">
-                <span className="font-extrabold text-gray-900 text-sm">{search ? 'Search Results' : 'All Cities'}</span>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">State</span>
+              <div className="flex justify-between items-center px-3 py-2 bg-white sticky top-0 z-10 border-b border-slate-100">
+                <span className="font-extrabold text-slate-900 text-xs uppercase tracking-wider text-amber-700">{search ? 'Search Results' : 'All Cities'}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">State</span>
               </div>
-              <div className="grid grid-cols-1 gap-1">
+              <div className="grid grid-cols-1 gap-1 mt-1">
                 {filteredAll.map(city => (
                   <div 
                     key={city.name} 
-                    onClick={() => { onSelect(city.name); onClose(); }}
-                    className="flex justify-between items-center px-5 py-2.5 hover:bg-gray-50 cursor-pointer rounded-lg group transition-colors"
+                    onClick={() => handleSelectCity(city.name)}
+                    className="flex justify-between items-center px-3 py-2 hover:bg-amber-50/60 cursor-pointer rounded-xl group transition-colors"
                   >
-                    <span className="font-bold text-gray-700 text-[14px] group-hover:text-blue-600">{city.name}</span>
-                    <span className="text-[12px] text-gray-400 font-medium">{city.state}</span>
+                    <div className="flex items-center">
+                      <div className="w-7 h-7 rounded-lg overflow-hidden mr-3 bg-slate-100 border border-slate-200 shrink-0">
+                        <CityAvatar src={city.img} name={city.name} />
+                      </div>
+                      <span className="font-bold text-slate-800 text-xs group-hover:text-amber-700">{city.name}</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-medium">{city.state}</span>
                   </div>
                 ))}
               </div>
@@ -182,11 +209,11 @@ export function CitySelectorModal({
 
           {filteredPopular.length === 0 && filteredAll.length === 0 && (
             <div className="py-12 text-center flex flex-col items-center">
-              <div className="bg-gray-100 p-4 rounded-full mb-4">
-                 <Search className="w-8 h-8 text-gray-400" />
+              <div className="bg-slate-100 p-3 rounded-full mb-3">
+                 <Search className="w-6 h-6 text-slate-400" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">No cities found</h3>
-              <p className="text-gray-500 text-sm">We couldn't find a city matching "{search}"</p>
+              <h3 className="text-sm font-bold text-slate-900 mb-1">No cities found</h3>
+              <p className="text-slate-500 text-xs">We couldn't find a city matching "{search}"</p>
             </div>
           )}
 
@@ -194,4 +221,6 @@ export function CitySelectorModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
