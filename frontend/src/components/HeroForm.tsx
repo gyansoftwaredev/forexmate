@@ -123,7 +123,9 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
       return;
     }
 
-    // Clear any previous completed/stuck session from localStorage
+    const deliveryMethod = fulfillmentMode === 'DOORSTEP' ? 'HOME_DELIVERY' : 'PICKUP';
+
+    // Clear any previous completed/stuck session and seed new draft state
     try {
       if (typeof window !== 'undefined') {
         const rawStorage = localStorage.getItem('forexmate-transaction-storage');
@@ -132,6 +134,13 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
           if (parsed?.state?.draftState) {
             parsed.state.draftState.checkoutStep = 1;
             parsed.state.draftState.status = 'CREATED';
+            parsed.state.draftState.city = selectedCity;
+            parsed.state.draftState.deliveryMethod = deliveryMethod;
+            parsed.state.draftState.currency = currencyCode;
+            parsed.state.draftState.amount = foreignAmount;
+            if (activeTab === 'remittance') {
+              parsed.state.draftState.purpose = remittancePurpose;
+            }
             localStorage.setItem('forexmate-transaction-storage', JSON.stringify(parsed));
           }
         }
@@ -140,14 +149,16 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
       console.error(e);
     }
 
+    const queryParams = `currency=${currencyCode}&amount=${foreignAmount}&city=${encodeURIComponent(selectedCity)}&fulfillment=${deliveryMethod}`;
+
     if (activeTab === 'buy') {
-      router.push(`/buy-forex?tab=buy&currency=${currencyCode}&amount=${foreignAmount}`);
+      router.push(`/buy-forex?tab=buy&${queryParams}`);
     } else if (activeTab === 'sell') {
-      router.push(`/sell-forex?tab=sell&currency=${currencyCode}&amount=${foreignAmount}`);
+      router.push(`/sell-forex?tab=sell&${queryParams}`);
     } else if (activeTab === 'remittance') {
-      router.push(`/remittance?tab=remittance&currency=${currencyCode}&amount=${foreignAmount}`);
+      router.push(`/remittance?tab=remittance&${queryParams}&purpose=${encodeURIComponent(remittancePurpose)}`);
     } else if (activeTab === 'card') {
-      router.push(`/forex-cards?tab=card&type=card&currency=${currencyCode}&amount=${foreignAmount}`);
+      router.push(`/forex-cards?tab=card&type=card&${queryParams}`);
     }
   };
 

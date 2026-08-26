@@ -125,14 +125,17 @@ export function ProductCalculatorStep() {
     updateDraft({ product: newProduct });
     const curr = draftState.currency || 'USD';
     const amt = draftState.amount || '1000';
+    const city = draftState.city || 'Delhi';
+    const fulfillment = draftState.deliveryMethod || 'HOME_DELIVERY';
+    const query = `currency=${curr}&amount=${amt}&city=${encodeURIComponent(city)}&fulfillment=${fulfillment}`;
     if (newProduct === 'CASH') {
-      router.replace(`/buy-forex?tab=buy&currency=${curr}&amount=${amt}`);
+      router.replace(`/buy-forex?tab=buy&${query}`);
     } else if (newProduct === 'CARD') {
-      router.replace(`/forex-cards?tab=card&type=card&currency=${curr}&amount=${amt}`);
+      router.replace(`/forex-cards?tab=card&type=card&${query}`);
     } else if (newProduct === 'CASH_SELL') {
-      router.replace(`/sell-forex?tab=sell&currency=${curr}&amount=${amt}`);
+      router.replace(`/sell-forex?tab=sell&${query}`);
     } else if (newProduct === 'REMITTANCE') {
-      router.replace(`/remittance?tab=remittance&currency=${curr}&amount=${amt}`);
+      router.replace(`/remittance?tab=remittance&${query}`);
     }
   };
 
@@ -213,6 +216,25 @@ export function ProductCalculatorStep() {
         updates.beneficiaryId = paramBeneficiary;
       }
       
+      const paramCity = searchParams.get('city');
+      const paramFulfillment = searchParams.get('fulfillment') || searchParams.get('deliveryMethod');
+      const paramPurpose = searchParams.get('purpose');
+
+      if (paramCity && paramCity !== draftState.city) {
+        updates.city = paramCity;
+      }
+      if (paramFulfillment) {
+        const normalized = (paramFulfillment.toUpperCase() === 'DOORSTEP' || paramFulfillment.toUpperCase() === 'HOME_DELIVERY') 
+          ? 'HOME_DELIVERY' 
+          : 'PICKUP';
+        if (normalized !== draftState.deliveryMethod) {
+          updates.deliveryMethod = normalized;
+        }
+      }
+      if (paramPurpose && paramPurpose !== draftState.purpose) {
+        updates.purpose = paramPurpose;
+      }
+      
       if (draftState.checkoutStep === 5 || draftState.status === 'CONVERTED') {
         updates.checkoutStep = 1;
         updates.status = 'CREATED';
@@ -225,11 +247,10 @@ export function ProductCalculatorStep() {
     }
   }, [sessionId, searchParams]);
 
-  // Persist default deliveryMethod to draftState immediately if not set,
-  // so BookMyForexCheckoutEngine always reads the correct value.
+  // Ensure a default deliveryMethod is set if not already present
   useEffect(() => {
     if (sessionId && !draftState.deliveryMethod) {
-      updateDraft({ deliveryMethod: 'PICKUP' });
+      updateDraft({ deliveryMethod: 'HOME_DELIVERY' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
