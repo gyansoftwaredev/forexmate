@@ -580,19 +580,18 @@ export function ProductCalculatorStep() {
     : Math.max(0, basePayableAmount - appliedDiscount);
 
   const handleSelectOffer = (offer: typeof DUMMY_OFFERS[0]) => {
-    const currentVal = totalCurrencyInrValue || 0;
+    if (appliedOffer?.code === offer.code) {
+      // Already applied, do not remove. Removal is only handled via the explicit Remove button.
+      return;
+    }
+    const currentVal = totalCurrencyInrValue || inrEquivalent || 0;
     if (currentVal < offer.minAmount) {
       setCouponError(`Min order amount of ₹${offer.minAmount.toLocaleString('en-IN')} required for ${offer.code}`);
       return;
     }
     setCouponError(null);
-    if (appliedOffer?.code === offer.code) {
-      setAppliedOffer(null);
-      setCouponInput('');
-    } else {
-      setAppliedOffer(offer);
-      setCouponInput(offer.code);
-    }
+    setAppliedOffer(offer);
+    setCouponInput(offer.code);
   };
 
   const handleApplyInputCoupon = () => {
@@ -1727,8 +1726,17 @@ export function ProductCalculatorStep() {
                   className="bg-transparent flex-1 min-w-0 py-1.5 px-1 text-[12px] font-mono font-bold focus:outline-none uppercase placeholder:font-sans placeholder:font-normal placeholder:text-gray-400 text-gray-900"
                 />
                 <button 
-                  onClick={handleApplyInputCoupon}
-                  className="bg-slate-900 hover:bg-amber-600 text-white font-extrabold text-[11px] px-3 py-1.5 rounded-md transition-colors uppercase shrink-0"
+                  type="button"
+                  onClick={() => {
+                    if (appliedOffer?.code !== couponInput) {
+                      handleApplyInputCoupon();
+                    }
+                  }}
+                  className={`font-extrabold text-[11px] px-3 py-1.5 rounded-md transition-colors uppercase shrink-0 ${
+                    appliedOffer?.code === couponInput
+                      ? 'bg-emerald-600 text-white cursor-default'
+                      : 'bg-slate-900 hover:bg-amber-600 text-white cursor-pointer'
+                  }`}
                 >
                   {appliedOffer?.code === couponInput ? 'APPLIED ✓' : 'APPLY'}
                 </button>
@@ -1796,11 +1804,16 @@ export function ProductCalculatorStep() {
 
                         {isEligible ? (
                           <button
-                            onClick={() => handleSelectOffer(offer)}
+                            type="button"
+                            onClick={() => {
+                              if (!isSelected) {
+                                handleSelectOffer(offer);
+                              }
+                            }}
                             className={`text-[11px] font-black px-3 py-1 rounded-lg transition-all ${
                               isSelected
-                                ? 'bg-emerald-600 text-white shadow-2xs'
-                                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-2xs'
+                                ? 'bg-emerald-600 text-white shadow-2xs cursor-default'
+                                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-2xs cursor-pointer'
                             }`}
                           >
                             {isSelected ? 'APPLIED ✓' : 'APPLY'}
