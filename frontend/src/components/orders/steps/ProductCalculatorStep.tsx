@@ -562,6 +562,17 @@ export function ProductCalculatorStep() {
   const totalExtraInr = extraCurrenciesCalculated.reduce((sum, item) => sum + item.inrEquivalent, 0);
   const totalCurrencyInrValue = (inrEquivalent || 0) + totalExtraInr;
 
+  // Auto-remove applied offer if order total falls below the offer's minimum threshold
+  useEffect(() => {
+    if (appliedOffer) {
+      const currentVal = totalCurrencyInrValue || 0;
+      if (currentVal < appliedOffer.minAmount) {
+        setAppliedOffer(null);
+        setCouponInput('');
+      }
+    }
+  }, [totalCurrencyInrValue, appliedOffer]);
+
   // Fee breakdown
   const parsedAmount = parseFloat(amount) || 0;
   const hasAnyCurrency = parsedAmount > 0 || extraCurrenciesCalculated.some(c => parseFloat(c.amount) > 0);
