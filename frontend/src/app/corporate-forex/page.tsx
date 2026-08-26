@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -15,9 +16,12 @@ export default function CorporateForexPage() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-2xl mx-auto mb-16">
             <h2 className="text-2xl font-bold mb-6">Request a Corporate Account</h2>
             <p className="text-gray-600 mb-6">Contact our B2B desk to get customized pricing, API access, and dedicated account management.</p>
-            <button className="bg-gray-900 hover:bg-black text-white font-bold py-3 px-8 rounded-xl text-lg transition-colors shadow-md">
+            <Link 
+              href="/dashboard/support" 
+              className="inline-block bg-gray-900 hover:bg-black text-white font-bold py-3 px-8 rounded-xl text-lg transition-colors shadow-md"
+            >
               Contact Sales Team
-            </button>
+            </Link>
             <p className="text-sm text-gray-500 mt-4">or call us at 1800-FOREX-B2B</p>
           </div>
 
