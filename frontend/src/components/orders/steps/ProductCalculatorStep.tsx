@@ -1716,14 +1716,16 @@ export function ProductCalculatorStep() {
 
             <div className="p-4 space-y-3.5">
               {/* Input bar */}
-              <div className="flex items-center gap-2 border border-gray-200 rounded-lg p-1 bg-gray-50/50 hover:bg-white transition-colors focus-within:border-amber-500 focus-within:bg-white">
-                <div className="pl-2 opacity-50"><Ticket className="w-4 h-4 text-gray-600 transform -rotate-45" /></div>
+              <div className="flex items-center gap-1.5 border border-gray-200 rounded-xl p-1 bg-gray-50/70 hover:bg-white transition-all focus-within:border-amber-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-amber-500/20 shadow-2xs">
+                <div className="pl-1.5 opacity-60 text-gray-500">
+                  <Ticket className="w-3.5 h-3.5 transform -rotate-45" />
+                </div>
                 <input 
                   type="text" 
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                  placeholder="Enter Coupon Code" 
-                  className="bg-transparent flex-1 min-w-0 py-1.5 px-1 text-[12px] font-mono font-bold focus:outline-none uppercase placeholder:font-sans placeholder:font-normal placeholder:text-gray-400 text-gray-900"
+                  placeholder="Enter coupon code" 
+                  className="bg-transparent flex-1 min-w-0 py-1 px-1 text-[11px] font-mono font-bold focus:outline-none uppercase placeholder:font-sans placeholder:normal-case placeholder:text-[11px] placeholder:text-gray-400 text-gray-900"
                 />
                 <button 
                   type="button"
@@ -1732,10 +1734,10 @@ export function ProductCalculatorStep() {
                       handleApplyInputCoupon();
                     }
                   }}
-                  className={`font-extrabold text-[11px] px-3 py-1.5 rounded-md transition-colors uppercase shrink-0 ${
+                  className={`font-extrabold text-[11px] px-3 py-1.5 rounded-lg transition-colors uppercase shrink-0 ${
                     appliedOffer?.code === couponInput
-                      ? 'bg-emerald-600 text-white cursor-default'
-                      : 'bg-slate-900 hover:bg-amber-600 text-white cursor-pointer'
+                      ? 'bg-emerald-600 text-white cursor-default shadow-2xs'
+                      : 'bg-slate-900 hover:bg-amber-600 text-white cursor-pointer shadow-2xs'
                   }`}
                 >
                   {appliedOffer?.code === couponInput ? 'APPLIED ✓' : 'APPLY'}
