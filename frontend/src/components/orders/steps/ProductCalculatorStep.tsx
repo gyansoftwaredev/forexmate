@@ -191,7 +191,7 @@ export function ProductCalculatorStep() {
       let targetProduct = draftState.product;
       if (pathname === '/sell-forex' || tab === 'sell' || intent === 'SELL' || productParam === 'CASH_SELL') {
         targetProduct = 'CASH_SELL';
-      } else if (pathname === '/remittance' || tab === 'transfer' || tab === 'remittance' || intent === 'REMITTANCE' || productParam === 'REMITTANCE') {
+      } else if (pathname === '/remittance' || pathname === '/transfer-money' || pathname === '/trade-remittance' || tab === 'transfer' || tab === 'remittance' || intent === 'REMITTANCE' || productParam === 'REMITTANCE') {
         targetProduct = 'REMITTANCE';
       } else if (pathname === '/forex-cards' || pathname === '/cards' || tab === 'card' || type === 'card' || intent === 'CARD' || productParam === 'CARD') {
         targetProduct = 'CARD';
