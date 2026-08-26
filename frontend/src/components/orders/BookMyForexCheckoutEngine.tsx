@@ -834,13 +834,13 @@ export function BookMyForexCheckoutEngine() {
                     <input
                       type="text"
                       required
-                      placeholder="Enter Full Name as on PAN / Passport"
+                      placeholder="Full name as on PAN"
                       value={travellerName}
                       onChange={(e) => {
                         setTravellerName(e.target.value);
                         if (isSell) setPayoutAccountHolder(e.target.value);
                       }}
-                      className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs"
+                      className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                 </div>
@@ -855,10 +855,10 @@ export function BookMyForexCheckoutEngine() {
                     <input
                       type="tel"
                       required
-                      placeholder="+91 10-digit mobile number"
+                      placeholder="10-digit mobile number"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs"
+                      className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                 </div>
@@ -873,10 +873,10 @@ export function BookMyForexCheckoutEngine() {
                     <input
                       type="email"
                       required
-                      placeholder="e.g. email@example.com"
+                      placeholder="e.g. name@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs"
+                      className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>
                 </div>
@@ -896,7 +896,7 @@ export function BookMyForexCheckoutEngine() {
                       type="text"
                       maxLength={10}
                       required
-                      placeholder="ENTER PAN NUMBER (e.g. ABCDE1234F)"
+                      placeholder="e.g. ABCDE1234F"
                       value={pan}
                       onChange={(e) => {
                         const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -909,7 +909,7 @@ export function BookMyForexCheckoutEngine() {
                         setPanTouched(true);
                         setPanValidation(validateIndianPan(pan));
                       }}
-                      className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-xs font-extrabold uppercase tracking-wider outline-none bg-white shadow-2xs transition-all ${
+                      className={`w-full pl-9 pr-3 py-2.5 border rounded-xl text-xs font-extrabold uppercase tracking-wider outline-none bg-white shadow-2xs transition-all placeholder:normal-case placeholder:tracking-normal placeholder:font-medium placeholder:text-slate-400 ${
                         panTouched && panValidation.isValid
                           ? 'border-emerald-500 ring-2 ring-emerald-500/20 text-slate-900'
                           : panTouched && !panValidation.isValid
