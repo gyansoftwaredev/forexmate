@@ -809,15 +809,6 @@ export default function CustomerAuthModal({ isOpen, onClose, onSuccess }: Custom
                     </>
                   )}
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => setRegOtpSent(false)}
-                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Back to Edit Details</span>
-                </button>
               </form>
             )}
           </div>
