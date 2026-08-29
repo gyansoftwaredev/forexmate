@@ -105,19 +105,20 @@ export function PersonalInfoForm() {
           <div className="space-y-1.5">
             <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center justify-between">
               <span>Full Name (As per PAN)</span>
-              <span className="text-slate-400 font-normal">{formData.fullName.length}/15</span>
+              <span className="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded">Permanent ID</span>
             </label>
             <div className="relative">
               <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                maxLength={15}
                 value={formData.fullName}
-                onChange={e => setFormData({ ...formData, fullName: e.target.value.slice(0, 15) })}
+                disabled
                 placeholder="Full Name"
-                className="w-full pl-10 pr-4 py-3 bg-slate-50/60 border border-slate-200 focus:border-amber-500 focus:bg-white rounded-2xl text-xs sm:text-sm font-bold text-slate-900 outline-none transition-all shadow-2xs placeholder:text-slate-400"
+                className="w-full pl-10 pr-10 py-3 bg-slate-100/80 border border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-600 cursor-not-allowed outline-none shadow-2xs"
               />
+              <Lock className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
             </div>
+            <p className="text-[10px] text-slate-400 font-medium">Full name is locked to statutory identity records.</p>
           </div>
 
           {/* Email Address */}
@@ -141,23 +142,25 @@ export function PersonalInfoForm() {
 
           {/* Phone Number */}
           <div className="space-y-1.5">
-            <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">
-              Registered Mobile Number
+            <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Registered Mobile Number</span>
+              <span className="text-[10px] text-slate-500 font-bold bg-slate-100 px-2 py-0.5 rounded">Verified Mobile</span>
             </label>
-            <div className="flex items-center bg-slate-50/60 border border-slate-200 focus-within:border-amber-500 focus-within:bg-white rounded-2xl p-1 transition-all shadow-2xs">
-              <div className="px-2.5 py-1.5 bg-white rounded-xl border border-slate-200 flex items-center gap-1 text-xs font-bold text-slate-800 shrink-0">
+            <div className="flex items-center bg-slate-100/80 border border-slate-200 rounded-2xl p-1 shadow-2xs">
+              <div className="px-2.5 py-1.5 bg-white/90 rounded-xl border border-slate-200 flex items-center gap-1 text-xs font-bold text-slate-700 shrink-0">
                 <span>🇮🇳</span>
                 <span>+91</span>
               </div>
               <input
                 type="tel"
-                maxLength={10}
                 value={formData.phone}
-                onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                disabled
                 placeholder="9876543210"
-                className="flex-1 px-3 py-2 text-xs sm:text-sm font-bold text-slate-900 outline-none bg-transparent"
+                className="flex-1 px-3 py-2 text-xs sm:text-sm font-bold text-slate-600 bg-transparent cursor-not-allowed outline-none"
               />
+              <Lock className="w-4 h-4 text-slate-400 mr-2.5 shrink-0" />
             </div>
+            <p className="text-[10px] text-slate-400 font-medium">To update registered mobile number, contact customer support.</p>
           </div>
 
           {/* PAN Number */}
