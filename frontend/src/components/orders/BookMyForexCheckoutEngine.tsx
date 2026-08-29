@@ -1193,14 +1193,14 @@ export function BookMyForexCheckoutEngine() {
                     {/* Beneficiary Name */}
                     <div>
                       <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
-                        BENEFICIARY / INSTITUTION NAME <span className="text-red-500">*</span>
+                        RECIPIENT NAME <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
                         value={benName}
                         onChange={(e) => setBenName(e.target.value)}
-                        placeholder="e.g. Harvard University or John Doe"
+                        placeholder="e.g. John Doe"
                         className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs"
                       />
                     </div>
