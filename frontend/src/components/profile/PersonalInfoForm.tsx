@@ -35,11 +35,11 @@ export function PersonalInfoForm() {
 
   useEffect(() => {
     if (profile || user) {
-      setFormData({
-        fullName: profile?.user?.fullName || user?.fullName || '',
-        phone: profile?.user?.mobile || user?.mobile || '',
-        panNumber: profile?.panNumber || ''
-      });
+      setFormData(prev => ({
+        fullName: profile?.fullName || profile?.user?.fullName || user?.fullName || '',
+        phone: profile?.mobile || profile?.user?.mobile || user?.mobile || '',
+        panNumber: profile?.profiles?.panNumber || profile?.panNumber || prev.panNumber || ''
+      }));
     }
   }, [profile, user]);
 
