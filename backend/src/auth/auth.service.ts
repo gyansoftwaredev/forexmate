@@ -50,18 +50,44 @@ export class AuthService {
   }
 
   // ─── Register ──────────────────────────────────────────────────────────────
-  async register(data: {
-    email: string;
-    password: string;
-    fullName?: string;
-    mobile?: string;
-  }) {
-    const existing = await this.prisma.user.findUnique({
-      where: { email: data.email },
+  async register(
+    data: {
+      email: string;
+      password: string;
+      fullName?: string;
+      mobile?: string;
+    },
+    ip = '127.0.0.1',
+    userAgent = 'Web Client',
+  ) {
+    const cleanEmail = (data.email || '').toLowerCase().trim();
+    if (!cleanEmail) {
+      throw new BadRequestException('Email address is required.');
+    }
+
+    const existingEmail = await this.prisma.user.findUnique({
+      where: { email: cleanEmail },
     });
 
-    if (existing) {
-      throw new ConflictException('An account with this email already exists.');
+    if (existingEmail) {
+      throw new ConflictException('An account with this email address already exists. Please sign in instead.');
+    }
+
+    if (data.mobile && data.mobile.trim()) {
+      const cleanMobile = data.mobile.replace(/\D/g, '');
+      if (cleanMobile.length > 0) {
+        const existingMobile = await this.prisma.user.findFirst({
+          where: { mobile: cleanMobile },
+        });
+        if (existingMobile) {
+          throw new ConflictException('An account with this mobile number already exists. Please sign in instead.');
+        }
+      }
+    }
+
+    const trimmedName = (data.fullName || '').trim();
+    if (trimmedName.length > 15) {
+      throw new BadRequestException('Full name must not exceed 15 characters.');
     }
 
     if (!data.password || data.password.length < 6) {
@@ -76,12 +102,13 @@ export class AuthService {
     });
 
     const user = await this.prisma.$transaction(async (tx) => {
+      const cleanMobile = data.mobile ? data.mobile.replace(/\D/g, '') : '';
       const newUser = await tx.user.create({
         data: {
-          email: data.email,
+          email: cleanEmail,
           password: hashedPassword,
-          fullName: data.fullName || '',
-          mobile: data.mobile || '',
+          fullName: trimmedName.slice(0, 15),
+          mobile: cleanMobile,
           roleId: customerRole ? customerRole.id : null,
         },
       });
@@ -107,7 +134,20 @@ export class AuthService {
       return newUser;
     });
 
-    return { message: 'Account created successfully.' };
+    // Create active session & tokens on registration
+    const sessionResult = await this.createSession(user.id, undefined, ip, userAgent, 'India', 'Mumbai');
+
+    return {
+      message: 'Account created successfully.',
+      access_token: sessionResult.access_token,
+      refresh_token: sessionResult.refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: 'CUSTOMER',
+      },
+    };
   }
 
   // ─── Login ─────────────────────────────────────────────────────────────────

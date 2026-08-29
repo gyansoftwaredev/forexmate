@@ -179,8 +179,14 @@ function CustomerLoginContent() {
     e.preventDefault();
     setErrorMessage('');
 
-    if (regFullName.trim().length < 2) {
+    const trimmedName = regFullName.trim();
+    if (trimmedName.length < 2) {
       setErrorMessage('Please enter your full name.');
+      return;
+    }
+
+    if (trimmedName.length > 15) {
+      setErrorMessage('Full name must not exceed 15 characters.');
       return;
     }
 
@@ -201,40 +207,28 @@ function CustomerLoginContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: regFullName.trim(),
+          fullName: trimmedName.slice(0, 15),
           mobile: cleanMobile,
           email: regEmail.trim().toLowerCase(),
           password: regPassword,
         }),
       });
 
-      try {
-        const payload = await apiJson<any>(res);
-        if (payload?.access_token && payload?.user) {
-          login(payload.access_token, payload.user);
-          setSuccessMessage('Account created! Redirecting...');
-          setIsSuccess(true);
-          setTimeout(() => {
-            router.push('/');
-          }, 600);
-          return;
-        }
-      } catch (_) {}
+      const payload = await apiJson<any>(res);
+      if (payload?.access_token && payload?.user) {
+        login(payload.access_token, payload.user);
+        setSuccessMessage('Account created! Redirecting...');
+        setIsSuccess(true);
+        setTimeout(() => {
+          router.push('/');
+        }, 600);
+        return;
+      }
 
-      const loginRes = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: regEmail.trim(), password: regPassword }),
-        credentials: 'include',
-      });
-
-      const loginPayload = await apiJson<{ access_token: string; user: any }>(loginRes);
-      login(loginPayload.access_token, loginPayload.user);
-
-      setSuccessMessage('Account created! Redirecting...');
+      setSuccessMessage('Account created successfully!');
       setIsSuccess(true);
       setTimeout(() => {
-        router.push('/');
+        setAuthAction('SIGN_IN');
       }, 600);
     } catch (err: any) {
       setErrorMessage(err.message || 'Registration failed. Email or mobile may already exist.');
@@ -570,6 +564,7 @@ function CustomerLoginContent() {
                 <input
                   type="text"
                   required
+                  maxLength={15}
                   placeholder="Rahul Sharma"
                   value={regFullName}
                   onChange={(e) => setRegFullName(e.target.value)}
