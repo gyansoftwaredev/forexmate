@@ -22,7 +22,6 @@ import {
   User, 
   Settings,
   LogOut,
-  Search,
   Menu,
   X,
   Briefcase,
@@ -184,23 +183,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             
             <div className="flex items-center flex-1 gap-4">
               <button 
-                className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                 onClick={() => setIsMobileOpen(true)}
               >
                 <Menu className="w-6 h-6" />
               </button>
-              
-              {/* Search Bar */}
-              <div className="hidden sm:flex max-w-md w-full relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input 
-                  placeholder="Search orders, cards, invoices, beneficiaries..." 
-                  className="w-full pl-10 pr-4 py-2 bg-slate-100/80 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/20 outline-none transition-all"
-                />
-              </div>
 
               {/* Ticker Strip */}
-              <div className="hidden xl:flex items-center gap-3 pl-4 border-l border-slate-200 text-[11px] font-extrabold text-slate-600">
+              <div className="hidden sm:flex items-center gap-3 text-[11px] font-extrabold text-slate-600">
                 <span className="flex items-center gap-1.5 text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   USD ₹84.13
