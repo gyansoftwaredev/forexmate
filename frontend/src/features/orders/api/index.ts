@@ -16,9 +16,21 @@ export const ordersApi = {
     let localOrders: Order[] = [];
     try {
       if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('auth_user') || localStorage.getItem('user');
+        const currentUser = storedUser ? JSON.parse(storedUser) : null;
+        
         const stored = localStorage.getItem('local_user_orders');
         if (stored) {
-          localOrders = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            localOrders = currentUser ? parsed.filter((o: any) => {
+              return (o.userId && o.userId === currentUser.id) ||
+                (o.userEmail && o.userEmail?.toLowerCase() === currentUser.email?.toLowerCase()) ||
+                (o.customerEmail && o.customerEmail?.toLowerCase() === currentUser.email?.toLowerCase()) ||
+                (o.mobile && currentUser.mobile && o.mobile.replace(/\D/g, '') === currentUser.mobile.replace(/\D/g, '')) ||
+                (o.phone && currentUser.mobile && o.phone.replace(/\D/g, '') === currentUser.mobile.replace(/\D/g, ''));
+            }) : [];
+          }
         }
       }
     } catch (e) {

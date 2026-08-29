@@ -716,6 +716,10 @@ export function BookMyForexCheckoutEngine() {
         travellerName,
         phone,
         email,
+        userId: user?.id,
+        userEmail: user?.email || email,
+        customerEmail: email,
+        mobile: phone,
         paymentOption: isSell ? 'PAYOUT_TO_BANK' : selectedPaymentMode,
         product
       };

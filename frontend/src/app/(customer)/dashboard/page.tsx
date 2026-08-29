@@ -54,60 +54,54 @@ export default function DashboardOverview() {
     return <DashboardSkeleton />;
   }
 
-  let localOrders: any[] = [];
+  let userLocalOrders: any[] = [];
   try {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('local_user_orders');
-      if (stored) localOrders = JSON.parse(stored);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && user) {
+          userLocalOrders = parsed.filter((o: any) => {
+            return (o.userId && o.userId === user.id) ||
+              (o.userEmail && o.userEmail?.toLowerCase() === user.email?.toLowerCase()) ||
+              (o.customerEmail && o.customerEmail?.toLowerCase() === user.email?.toLowerCase()) ||
+              (o.mobile && user.mobile && o.mobile.replace(/\D/g, '') === user.mobile.replace(/\D/g, '')) ||
+              (o.phone && user.mobile && o.phone.replace(/\D/g, '') === user.mobile.replace(/\D/g, ''));
+          });
+        }
+      }
     }
   } catch (e) {
     console.error(e);
   }
 
-  const baseOrders = summary?.recentOrders?.length ? summary.recentOrders : [
-    {
-      id: 'ord_984210',
-      orderNumber: 'FXM-984210',
-      createdAt: new Date().toISOString(),
-      items: [{ product: { name: '1,000 USD Foreign Currency Notes' } }],
-      totalAmountInr: 84431,
-      status: 'READY_FOR_PICKUP',
-      deliveryMethod: 'BRANCH_PICKUP',
-      branchName: 'Connaught Place Vault Branch, Delhi'
-    },
-    {
-      id: 'ord_984188',
-      orderNumber: 'FXM-984188',
-      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-      items: [{ product: { name: 'Multi-Currency Forex Card Load (USD 2,500)' } }],
-      totalAmountInr: 210325,
-      status: 'COMPLETED',
-      deliveryMethod: 'HOME_DELIVERY',
-    }
-  ];
-
-  const combinedOrders = [...localOrders];
-  baseOrders.forEach(bo => {
-    if (!combinedOrders.some(co => co.id === bo.id || co.orderNumber === bo.orderNumber)) {
-      combinedOrders.push(bo);
+  const apiOrders = summary?.recentOrders || [];
+  const combinedOrders = [...userLocalOrders];
+  apiOrders.forEach(ao => {
+    if (!combinedOrders.some(co => co.id === ao.id || co.orderNumber === ao.orderNumber)) {
+      combinedOrders.push(ao);
     }
   });
 
+  const totalOrdersCount = (summary?.totalOrders ?? 0) + userLocalOrders.filter(lo => !apiOrders.some(ao => ao.id === lo.id || ao.orderNumber === lo.orderNumber)).length;
+  const activeForexCardsCount = summary?.activeForexCards ?? 0;
+  const lrsUsageInr = summary?.lrsUsage ?? 0;
+  const usedLrsUsd = Math.round(lrsUsageInr / 84);
+  const maxLrsUsd = 250000;
+  const remainingLrsUsd = Math.max(0, maxLrsUsd - usedLrsUsd);
+  const lrsPercent = Math.min(100, Math.round((usedLrsUsd / maxLrsUsd) * 100));
+
   const activeSummary = {
-    kycStatus: summary?.kycStatus || 'VERIFIED',
-    activeForexCards: summary?.activeForexCards || 2,
-    totalOrders: (summary?.totalOrders || 14) + localOrders.length,
-    lrsUsage: summary?.lrsUsage || 3750000,
-    pendingOrders: (summary?.pendingOrders || 1) + localOrders.length,
-    completedOrders: summary?.completedOrders || 13,
+    kycStatus: summary?.kycStatus || 'NOT_SUBMITTED',
+    activeForexCards: activeForexCardsCount,
+    totalOrders: totalOrdersCount,
+    lrsUsage: lrsUsageInr,
+    pendingOrders: summary?.pendingOrders ?? 0,
+    completedOrders: summary?.completedOrders ?? 0,
     recentOrders: combinedOrders
   };
 
   const isKycVerified = activeSummary.kycStatus === 'VERIFIED';
-  const maxLrsUsd = 250000;
-  const usedLrsUsd = 45200;
-  const remainingLrsUsd = maxLrsUsd - usedLrsUsd;
-  const lrsPercent = Math.round((usedLrsUsd / maxLrsUsd) * 100);
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-300">
@@ -364,58 +358,84 @@ export default function DashboardOverview() {
               </button>
             </div>
 
-            {/* Orders Table */}
-            <div className="divide-y divide-slate-100">
-              {activeSummary.recentOrders.map((ord: any) => (
-                <div 
-                  key={ord.id}
-                  onClick={() => router.push(`/dashboard/orders`)}
-                  className="p-5 hover:bg-amber-50/30 transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-amber-700 font-mono text-xs">{ord.orderNumber}</span>
-                      <span className="text-[10px] text-slate-400 font-semibold">• {formatDate(ord.createdAt)}</span>
-                    </div>
-                    <h4 className="font-extrabold text-slate-900 text-sm">
-                      {ord.items && ord.items.length > 1
-                        ? ord.items.map((it: any) => `${it.amount} ${it.currency?.code || it.currency || ''}`).join(' + ') + ' Notes'
-                        : (ord.items?.[0]?.product?.name || 'Foreign Currency Notes')}
-                    </h4>
-                    {ord.deliveryMethod === 'BRANCH_PICKUP' && (
-                      <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span>Pickup at: <strong className="text-slate-800">{ord.branchName || 'Connaught Place Vault Branch'}</strong></span>
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
-                    <div className="text-left sm:text-right">
-                      <span className="block text-xs font-black text-slate-900">₹{ord.totalAmountInr.toLocaleString('en-IN')}</span>
-                      <span className="text-[10px] text-slate-400 font-semibold uppercase">Total INR</span>
-                    </div>
-
-                    {ord.status === 'READY_FOR_PICKUP' ? (
-                      <span className="px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
-                        <Building2 className="w-3.5 h-3.5 text-amber-700" />
-                        <span>Ready at Branch</span>
-                      </span>
-                    ) : ord.status === 'COMPLETED' ? (
-                      <span className="px-3 py-1.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold flex items-center gap-1.5">
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>Fulfilled</span>
-                      </span>
-                    ) : (
-                      <span className="px-3 py-1.5 rounded-xl bg-blue-100 border border-blue-300 text-blue-900 text-xs font-extrabold flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-blue-600" />
-                        <span>In Processing</span>
-                      </span>
-                    )}
-                  </div>
+            {/* Orders Table or Empty State */}
+            {activeSummary.recentOrders.length === 0 ? (
+              <div className="p-10 text-center flex flex-col items-center justify-center">
+                <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center text-2xl mb-3 shadow-2xs">
+                  📦
                 </div>
-              ))}
-            </div>
+                <h4 className="font-extrabold text-slate-900 text-sm mb-1">No Orders Yet</h4>
+                <p className="text-xs text-slate-500 max-w-sm mb-5">
+                  You haven't placed any foreign currency orders yet. Start your first transaction at live zero-margin rates.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => router.push('/buy-forex')}
+                    className="px-4 py-2 bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-bold rounded-xl text-xs shadow-sm transition-all cursor-pointer"
+                  >
+                    Buy Currency Notes
+                  </button>
+                  <button
+                    onClick={() => router.push('/forex-cards')}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                  >
+                    Get Forex Card
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {activeSummary.recentOrders.map((ord: any) => (
+                  <div 
+                    key={ord.id}
+                    onClick={() => router.push(`/dashboard/orders`)}
+                    className="p-5 hover:bg-amber-50/30 transition-colors cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-amber-700 font-mono text-xs">{ord.orderNumber}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold">• {formatDate(ord.createdAt)}</span>
+                      </div>
+                      <h4 className="font-extrabold text-slate-900 text-sm">
+                        {ord.items && ord.items.length > 1
+                          ? ord.items.map((it: any) => `${it.amount} ${it.currency?.code || it.currency || ''}`).join(' + ') + ' Notes'
+                          : (ord.items?.[0]?.product?.name || 'Foreign Currency Notes')}
+                      </h4>
+                      {ord.deliveryMethod === 'BRANCH_PICKUP' && (
+                        <p className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                          <Building2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                          <span>Pickup at: <strong className="text-slate-800">{ord.branchName || 'Connaught Place Vault Branch'}</strong></span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0">
+                      <div className="text-left sm:text-right">
+                        <span className="block text-xs font-black text-slate-900">₹{ord.totalAmountInr.toLocaleString('en-IN')}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold uppercase">Total INR</span>
+                      </div>
+
+                      {ord.status === 'READY_FOR_PICKUP' ? (
+                        <span className="px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                          <Building2 className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Ready at Branch</span>
+                        </span>
+                      ) : ord.status === 'COMPLETED' ? (
+                        <span className="px-3 py-1.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold flex items-center gap-1.5">
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Fulfilled</span>
+                        </span>
+                      ) : (
+                        <span className="px-3 py-1.5 rounded-xl bg-blue-100 border border-blue-300 text-blue-900 text-xs font-extrabold flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-blue-600" />
+                          <span>In Processing</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
           </div>
 
