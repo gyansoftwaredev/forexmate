@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, Search, Plus, Trash2, Globe, Landmark, 
   CheckCircle, AlertCircle, X, ArrowRight, Clipboard, 
-  Sparkles, ShieldCheck, Lock, Building2, Send, Check, Hash, MapPin, User
+  Sparkles, ShieldCheck, Lock, Building2, Send, Check, Hash, MapPin, User, Pencil
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ export const WORLD_COUNTRIES = [
   { name: 'Indonesia', flag: '🇮🇩', code: 'ID' },
   { name: 'Vietnam', flag: '🇻🇳', code: 'VN' },
   { name: 'Mauritius', flag: '🇲🇺', code: 'MU' },
+  { name: 'Maldives', flag: '🇲🇻', code: 'MV' },
   { name: 'Sri Lanka', flag: '🇱🇰', code: 'LK' },
   { name: 'Nepal', flag: '🇳🇵', code: 'NP' },
   { name: 'Bangladesh', flag: '🇧🇩', code: 'BD' },
@@ -80,6 +81,9 @@ export const WORLD_COUNTRIES = [
   { name: 'Lithuania', flag: '🇱🇹', code: 'LT' },
   { name: 'Slovakia', flag: '🇸🇰', code: 'SK' },
   { name: 'Slovenia', flag: '🇸🇮', code: 'SI' },
+  { name: 'Nigeria', flag: '🇳🇬', code: 'NG' },
+  { name: 'Ghana', flag: '🇬🇭', code: 'GH' },
+  { name: 'Morocco', flag: '🇲🇦', code: 'MA' }
 ];
 
 interface Beneficiary {
@@ -97,7 +101,8 @@ export default function BeneficiariesPage() {
   const [beneficiaries, setBeneficiaries] = useState<Beneficiary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [editingBeneficiary, setEditingBeneficiary] = useState<Beneficiary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
@@ -109,11 +114,6 @@ export default function BeneficiariesPage() {
   const [country, setCountry] = useState('United States');
   const [isCountryOpen, setIsCountryOpen] = useState(false);
   const [countryFilter, setCountryFilter] = useState('');
-
-  const filteredCountries = WORLD_COUNTRIES.filter(c => 
-    c.name.toLowerCase().includes(countryFilter.toLowerCase()) ||
-    c.code.toLowerCase().includes(countryFilter.toLowerCase())
-  );
 
   const fetchBeneficiaries = async () => {
     setIsLoading(true);
@@ -132,6 +132,28 @@ export default function BeneficiariesPage() {
     fetchBeneficiaries();
   }, []);
 
+  const handleOpenAdd = () => {
+    setEditingBeneficiary(null);
+    setName('');
+    setBankName('');
+    setAccountNumber('');
+    setSwiftCode('');
+    setAddress('');
+    setCountry('United States');
+    setIsAddOpen(true);
+  };
+
+  const handleOpenEdit = (ben: Beneficiary) => {
+    setEditingBeneficiary(ben);
+    setName(ben.name || '');
+    setBankName(ben.bankName || '');
+    setAccountNumber(ben.ibanOrAccountNumber || '');
+    setSwiftCode(ben.swiftCode || '');
+    setAddress(ben.address || '');
+    setCountry(ben.country || 'United States');
+    setIsAddOpen(true);
+  };
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -149,22 +171,41 @@ export default function BeneficiariesPage() {
 
     setIsSubmitting(true);
     try {
-      const res = await authFetch(`${API_URL}/remittances/beneficiaries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          bankName: bankName.trim(),
-          swiftCode: swiftCode.trim().toUpperCase(),
-          ibanOrAccountNumber: accountNumber.trim(),
-          address: address.trim(),
-          country
-        })
-      });
-      const newBen = await apiJson<Beneficiary>(res);
-      setBeneficiaries(prev => [newBen, ...prev]);
-      toast.success('Wire beneficiary saved successfully');
+      if (editingBeneficiary) {
+        const res = await authFetch(`${API_URL}/remittances/beneficiaries/${editingBeneficiary.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            bankName: bankName.trim(),
+            swiftCode: swiftCode.trim().toUpperCase(),
+            ibanOrAccountNumber: accountNumber.trim(),
+            address: address.trim(),
+            country
+          })
+        });
+        const updatedBen = await apiJson<Beneficiary>(res);
+        setBeneficiaries(prev => prev.map(b => b.id === editingBeneficiary.id ? updatedBen : b));
+        toast.success('Wire beneficiary updated successfully');
+      } else {
+        const res = await authFetch(`${API_URL}/remittances/beneficiaries`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            bankName: bankName.trim(),
+            swiftCode: swiftCode.trim().toUpperCase(),
+            ibanOrAccountNumber: accountNumber.trim(),
+            address: address.trim(),
+            country
+          })
+        });
+        const newBen = await apiJson<Beneficiary>(res);
+        setBeneficiaries(prev => [newBen, ...prev]);
+        toast.success('Wire beneficiary saved successfully');
+      }
       setIsAddOpen(false);
+      setEditingBeneficiary(null);
 
       // Reset Form
       setName('');
@@ -174,7 +215,7 @@ export default function BeneficiariesPage() {
       setAddress('');
       setCountry('United States');
     } catch (err: any) {
-      toast.error(err?.message || 'Failed to save beneficiary');
+      toast.error(err?.message || (editingBeneficiary ? 'Failed to update beneficiary' : 'Failed to save beneficiary'));
     } finally {
       setIsSubmitting(false);
     }
@@ -242,7 +283,7 @@ export default function BeneficiariesPage() {
           </div>
 
           <button 
-            onClick={() => setIsAddOpen(true)} 
+            onClick={handleOpenAdd} 
             className="px-5 py-3.5 bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-md hover:scale-[1.01] active:scale-98 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4 text-slate-950" />
@@ -289,7 +330,7 @@ export default function BeneficiariesPage() {
           </p>
           {!searchQuery && (
             <button
-              onClick={() => setIsAddOpen(true)}
+              onClick={handleOpenAdd}
               className="px-6 py-3 bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-xs flex items-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4 text-slate-950" />
@@ -315,13 +356,22 @@ export default function BeneficiariesPage() {
                   </div>
                 </div>
 
-                <button 
-                  onClick={() => handleDelete(ben.id)}
-                  className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-colors cursor-pointer"
-                  title="Remove Beneficiary"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleOpenEdit(ben)}
+                    className="text-slate-400 hover:text-amber-700 hover:bg-amber-50 p-2 rounded-xl transition-colors cursor-pointer"
+                    title="Edit Beneficiary Details"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(ben.id)}
+                    className="text-slate-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-xl transition-colors cursor-pointer"
+                    title="Remove Beneficiary"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </CardHeader>
 
               <CardContent className="p-5 space-y-4 text-xs">
@@ -383,7 +433,7 @@ export default function BeneficiariesPage() {
         </div>
       )}
 
-      {/* --- ADD WIRE BENEFICIARY MODAL DIALOG --- */}
+      {/* --- ADD / EDIT WIRE BENEFICIARY MODAL DIALOG --- */}
       {isAddOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
@@ -395,8 +445,12 @@ export default function BeneficiariesPage() {
                   <Landmark className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-display font-black text-slate-900 text-base">Add Wire Beneficiary</h3>
-                  <p className="text-[11px] text-slate-500 font-medium">Save foreign recipient bank details for outward wire transfers</p>
+                  <h3 className="font-display font-black text-slate-900 text-base">
+                    {editingBeneficiary ? 'Edit Wire Beneficiary' : 'Add Wire Beneficiary'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    {editingBeneficiary ? 'Update foreign recipient bank details for outward wire transfers' : 'Save foreign recipient bank details for outward wire transfers'}
+                  </p>
                 </div>
               </div>
 
@@ -444,68 +498,65 @@ export default function BeneficiariesPage() {
                 <button
                   type="button"
                   onClick={() => setIsCountryOpen(!isCountryOpen)}
-                  className="w-full pl-3.5 pr-4 py-2.5 bg-slate-50/60 border border-slate-200 hover:border-amber-400 focus:border-amber-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 flex items-center justify-between shadow-2xs transition-colors cursor-pointer text-left"
+                  className="w-full px-3.5 py-2.5 bg-slate-50/60 border border-slate-200 focus:border-amber-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-none shadow-2xs flex items-center justify-between cursor-pointer transition-colors text-left"
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-base">{getCountryFlag(country)}</span>
-                    <span>{country}</span>
+                    <span className="font-extrabold text-slate-900">{country}</span>
                   </div>
-                  <span className="text-slate-400 text-[10px]">▼</span>
+                  <span className="text-slate-400 text-xs">▼</span>
                 </button>
 
-                {/* Dropdown Menu Overlay */}
+                {/* Dropdown Floating Panel */}
                 {isCountryOpen && (
                   <>
                     <div 
-                      className="fixed inset-0 z-20" 
-                      onClick={() => setIsCountryOpen(false)} 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setIsCountryOpen(false)}
                     />
-                    <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150">
-                      {/* Search Filter Inside Dropdown */}
-                      <div className="relative mb-2">
-                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          autoFocus
-                          value={countryFilter}
-                          onChange={e => setCountryFilter(e.target.value)}
-                          placeholder="Type country name..."
-                          className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-lg text-xs font-semibold outline-none placeholder:text-slate-400"
-                        />
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                      {/* Search in Dropdown */}
+                      <div className="p-2.5 border-b border-slate-100 bg-slate-50">
+                        <div className="relative">
+                          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                          <input 
+                            type="text"
+                            placeholder="Search country name or code..."
+                            value={countrySearch}
+                            onChange={e => setCountrySearch(e.target.value)}
+                            autoFocus
+                            className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 focus:border-amber-500 rounded-xl text-xs font-semibold text-slate-900 outline-none placeholder:text-slate-400"
+                          />
+                        </div>
                       </div>
 
-                      {/* Scrollable List */}
-                      <div className="max-h-48 overflow-y-auto space-y-0.5 pr-1 scrollbar-thin">
-                        {filteredCountries.length === 0 ? (
-                          <div className="p-3 text-center text-xs text-slate-400 font-medium">
-                            No country found
-                          </div>
-                        ) : (
-                          filteredCountries.map(c => (
-                            <button
-                              key={c.name}
-                              type="button"
-                              onClick={() => {
-                                setCountry(c.name);
-                                setIsCountryOpen(false);
-                                setCountryFilter('');
-                              }}
-                              className={`w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors cursor-pointer text-left ${
-                                country === c.name 
-                                  ? 'bg-amber-500/10 text-amber-900 font-black' 
-                                  : 'text-slate-700 hover:bg-slate-100 font-semibold'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="text-base">{c.flag}</span>
-                                <span>{c.name}</span>
-                              </div>
-                              {country === c.name && (
-                                <Check className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                              )}
-                            </button>
-                          ))
-                        )}
+                      {/* Options List */}
+                      <div className="max-h-48 overflow-y-auto p-1.5 space-y-0.5">
+                        {WORLD_COUNTRIES.filter(c => 
+                          c.name.toLowerCase().includes(countrySearch.toLowerCase()) || 
+                          c.code.toLowerCase().includes(countrySearch.toLowerCase())
+                        ).map(c => (
+                          <button
+                            key={c.name}
+                            type="button"
+                            onClick={() => {
+                              setCountry(c.name);
+                              setIsCountryOpen(false);
+                              setCountrySearch('');
+                            }}
+                            className={`w-full px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-between transition-colors cursor-pointer ${
+                              country === c.name 
+                                ? 'bg-amber-500/10 text-amber-950 font-extrabold' 
+                                : 'hover:bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span>{c.flag}</span>
+                              <span>{c.name}</span>
+                            </span>
+                            {country === c.name && <Check className="w-3.5 h-3.5 text-amber-600" />}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </>
@@ -539,7 +590,7 @@ export default function BeneficiariesPage() {
                     <Hash className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input 
                       value={swiftCode}
-                      onChange={e => setSwiftCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                      onChange={e => setSwiftCode(e.target.value.toUpperCase())}
                       placeholder="e.g. CITIUS33"
                       maxLength={11}
                       required
@@ -580,10 +631,12 @@ export default function BeneficiariesPage() {
                 </div>
               </div>
 
-              {/* Statutory Note */}
-              <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-200/80 flex items-start gap-2.5 text-[11px] text-slate-600 font-medium">
-                <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>Under RBI LRS guidelines, foreign outward wire routing details must match your beneficiary invoicing documentation.</span>
+              {/* Regulatory Notice Banner */}
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200/80 flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-amber-900 font-medium leading-relaxed">
+                  Under RBI LRS guidelines, foreign outward wire routing details must match your beneficiary invoicing documentation.
+                </p>
               </div>
 
               {/* Modal Buttons */}
@@ -603,11 +656,11 @@ export default function BeneficiariesPage() {
                   {isSubmitting ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Saving Account...</span>
+                      <span>{editingBeneficiary ? 'Updating Account...' : 'Saving Account...'}</span>
                     </>
                   ) : (
                     <>
-                      <span>Save Beneficiary</span>
+                      <span>{editingBeneficiary ? 'Update Beneficiary' : 'Save Beneficiary'}</span>
                       <Check className="w-4 h-4 text-slate-950" />
                     </>
                   )}

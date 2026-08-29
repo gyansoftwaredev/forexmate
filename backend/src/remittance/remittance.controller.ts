@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Request, Post, Delete, Body, Query } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Request, Post, Put, Delete, Body, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RemittanceService } from './remittance.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -77,6 +77,14 @@ export class RemittanceController {
   @ApiOperation({ summary: 'Save a new beneficiary' })
   createBeneficiary(@Request() req: any, @Body() body: any) {
     return this.remittanceService.createBeneficiary(req.user.id, body);
+  }
+
+  @Put('beneficiaries/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update an existing beneficiary' })
+  updateBeneficiary(@Request() req: any, @Param('id') id: string, @Body() body: any) {
+    return this.remittanceService.updateBeneficiary(req.user.id, id, body);
   }
 
   @Delete('beneficiaries/:id')

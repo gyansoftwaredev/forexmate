@@ -281,6 +281,38 @@ export class RemittanceService {
   }
 
   /**
+   * Update an existing beneficiary.
+   */
+  async updateBeneficiary(userId: string, id: string, data: any) {
+    const profile = await this.prisma.customerProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!profile) throw new NotFoundException('Profile not found');
+
+    const beneficiary = await this.prisma.beneficiary.findFirst({
+      where: { id, profileId: profile.id }
+    });
+
+    if (!beneficiary) throw new NotFoundException('Beneficiary not found');
+
+    const { name, country, bankName, swiftCode, ibanOrAccountNumber, address, currency } = data;
+
+    return this.prisma.beneficiary.update({
+      where: { id },
+      data: {
+        ...(name !== undefined && { name: name.trim() }),
+        ...(country !== undefined && { country: country.trim() }),
+        ...(bankName !== undefined && { bankName: bankName.trim() }),
+        ...(swiftCode !== undefined && { swiftCode: swiftCode.trim().toUpperCase() }),
+        ...(ibanOrAccountNumber !== undefined && { ibanOrAccountNumber: ibanOrAccountNumber.trim() }),
+        ...(address !== undefined && { address: address.trim() }),
+        ...(currency !== undefined && { currency: currency.trim().toUpperCase() }),
+      }
+    });
+  }
+
+  /**
    * Delete a beneficiary.
    */
   async deleteBeneficiary(userId: string, id: string) {
