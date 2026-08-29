@@ -234,6 +234,34 @@ export default function BeneficiariesPage() {
     }
   };
 
+  const getCountryCurrency = (countryName: string) => {
+    const c = countryName?.toLowerCase().trim() || '';
+    if (c.includes('united states') || c === 'us' || c === 'usa') return { code: 'US', currency: 'USD' };
+    if (c.includes('united kingdom') || c === 'uk' || c === 'gb' || c.includes('britain') || c.includes('england')) return { code: 'GB', currency: 'GBP' };
+    if (c.includes('canada') || c === 'ca') return { code: 'CA', currency: 'CAD' };
+    if (c.includes('australia') || c === 'au') return { code: 'AU', currency: 'AUD' };
+    if (c.includes('germany') || c.includes('france') || c.includes('italy') || c.includes('spain') || c.includes('netherlands') || c.includes('ireland') || c.includes('austria') || c.includes('belgium') || c.includes('portugal') || c.includes('finland') || c.includes('greece') || c.includes('cyprus') || c.includes('malta') || c.includes('luxembourg') || c.includes('europe')) return { code: 'DE', currency: 'EUR' };
+    if (c.includes('singapore') || c === 'sg') return { code: 'SG', currency: 'SGD' };
+    if (c.includes('emirates') || c.includes('uae') || c === 'ae' || c.includes('dubai')) return { code: 'AE', currency: 'AED' };
+    if (c.includes('switzerland') || c === 'ch') return { code: 'CH', currency: 'CHF' };
+    if (c.includes('new zealand') || c === 'nz') return { code: 'NZ', currency: 'NZD' };
+    if (c.includes('japan') || c === 'jp') return { code: 'JP', currency: 'JPY' };
+    if (c.includes('hong kong') || c === 'hk') return { code: 'HK', currency: 'HKD' };
+    if (c.includes('thailand') || c === 'th') return { code: 'TH', currency: 'THB' };
+    if (c.includes('south africa') || c === 'za') return { code: 'ZA', currency: 'ZAR' };
+    if (c.includes('malaysia') || c === 'my') return { code: 'MY', currency: 'MYR' };
+    if (c.includes('philippines') || c === 'ph') return { code: 'PH', currency: 'PHP' };
+    if (c.includes('saudi') || c === 'sa') return { code: 'SA', currency: 'SAR' };
+    if (c.includes('qatar') || c === 'qa') return { code: 'QA', currency: 'QAR' };
+    if (c.includes('kuwait') || c === 'kw') return { code: 'KW', currency: 'KWD' };
+    if (c.includes('oman') || c === 'om') return { code: 'OM', currency: 'OMR' };
+    if (c.includes('bahrain') || c === 'bh') return { code: 'BH', currency: 'BHD' };
+    if (c.includes('sweden') || c === 'se') return { code: 'SE', currency: 'SEK' };
+    if (c.includes('norway') || c === 'no') return { code: 'NO', currency: 'NOK' };
+    if (c.includes('denmark') || c === 'dk') return { code: 'DK', currency: 'DKK' };
+    return { code: '', currency: '' };
+  };
+
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast.success(`${label} copied to clipboard`);
@@ -251,6 +279,15 @@ export default function BeneficiariesPage() {
     b.swiftCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     b.country?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleSendWire = (ben: Beneficiary) => {
+    const info = getCountryCurrency(ben.country);
+    const params = new URLSearchParams();
+    params.set('beneficiaryId', ben.id);
+    if (info.code) params.set('country', info.code);
+    if (info.currency) params.set('currency', info.currency);
+    window.location.href = `/transfer-money?${params.toString()}`;
+  };
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-12 animate-in fade-in duration-300">
@@ -420,7 +457,7 @@ export default function BeneficiariesPage() {
                   </div>
 
                   <button 
-                    onClick={() => window.location.href = `/transfer-money?beneficiaryId=${ben.id}`}
+                    onClick={() => handleSendWire(ben)}
                     className="px-4 py-2 bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold text-xs rounded-xl shadow-2xs hover:scale-102 active:scale-98 transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <span>Send Wire</span>

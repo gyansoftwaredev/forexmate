@@ -215,6 +215,11 @@ export function ProductCalculatorStep() {
       if (paramBeneficiary && paramBeneficiary !== draftState.beneficiaryId) {
         updates.beneficiaryId = paramBeneficiary;
       }
+
+      const paramCountry = searchParams.get('country') || searchParams.get('countryCode');
+      if (paramCountry && paramCountry.toUpperCase() !== draftState.countryCode) {
+        updates.countryCode = paramCountry.toUpperCase();
+      }
       
       const paramCity = searchParams.get('city');
       const paramFulfillment = searchParams.get('fulfillment') || searchParams.get('deliveryMethod');
@@ -401,6 +406,69 @@ export function ProductCalculatorStep() {
     };
     fetchData();
   }, [isRemittance]);
+
+  // Helper to match beneficiary country with CountryConfig
+  const findMatchingCountry = (countryStr: string) => {
+    if (!countryStr) return undefined;
+    const bCountry = countryStr.toLowerCase().trim();
+    return countries.find(c => 
+      c.countryCode.toLowerCase() === bCountry ||
+      c.countryName.toLowerCase() === bCountry ||
+      (bCountry.includes('united states') && c.countryCode === 'US') ||
+      (bCountry.includes('united kingdom') && c.countryCode === 'GB') ||
+      (bCountry.includes('canada') && c.countryCode === 'CA') ||
+      (bCountry.includes('australia') && c.countryCode === 'AU') ||
+      (bCountry.includes('germany') && c.countryCode === 'DE') ||
+      (bCountry.includes('singapore') && c.countryCode === 'SG') ||
+      (bCountry.includes('emirates') && c.countryCode === 'AE') ||
+      (bCountry.includes('france') && c.countryCode === 'FR') ||
+      (bCountry.includes('japan') && c.countryCode === 'JP') ||
+      (bCountry.includes('switzerland') && c.countryCode === 'CH') ||
+      (bCountry.includes('new zealand') && c.countryCode === 'NZ') ||
+      (bCountry.includes('ireland') && c.countryCode === 'IE') ||
+      (bCountry.includes('netherlands') && c.countryCode === 'NL') ||
+      (bCountry.includes('italy') && c.countryCode === 'IT') ||
+      (bCountry.includes('spain') && c.countryCode === 'ES') ||
+      (bCountry.includes('hong kong') && c.countryCode === 'HK') ||
+      (bCountry.includes('thailand') && c.countryCode === 'TH') ||
+      (bCountry.includes('south africa') && c.countryCode === 'ZA') ||
+      (bCountry.includes('malaysia') && c.countryCode === 'MY') ||
+      (bCountry.includes('philippines') && c.countryCode === 'PH') ||
+      (bCountry.includes('saudi') && c.countryCode === 'SA') ||
+      (bCountry.includes('qatar') && c.countryCode === 'QA') ||
+      (bCountry.includes('kuwait') && c.countryCode === 'KW') ||
+      (bCountry.includes('oman') && c.countryCode === 'OM') ||
+      (bCountry.includes('bahrain') && c.countryCode === 'BHD') ||
+      (bCountry.includes('sweden') && c.countryCode === 'SE') ||
+      (bCountry.includes('norway') && c.countryCode === 'NO') ||
+      (bCountry.includes('denmark') && c.countryCode === 'DK')
+    );
+  };
+
+  // Auto-sync country and currency from selected beneficiary
+  useEffect(() => {
+    if (!isRemittance || !draftState.beneficiaryId || savedBeneficiaries.length === 0 || countries.length === 0) return;
+    const ben = savedBeneficiaries.find(b => b.id === draftState.beneficiaryId);
+    if (!ben || !ben.country) return;
+
+    const matchingCountry = findMatchingCountry(ben.country);
+
+    if (matchingCountry) {
+      const updates: any = {};
+      if (draftState.countryCode !== matchingCountry.countryCode) {
+        updates.countryCode = matchingCountry.countryCode;
+      }
+      if (currency !== matchingCountry.currencyCode) {
+        updates.currency = matchingCountry.currencyCode;
+      }
+      if (!draftState.beneficiaryName && ben.name) {
+        updates.beneficiaryName = ben.name;
+      }
+      if (Object.keys(updates).length > 0) {
+        updateDraft(updates);
+      }
+    }
+  }, [isRemittance, draftState.beneficiaryId, savedBeneficiaries, countries]);
 
   // Auto-sync currency when country changes for remittance
   useEffect(() => {
@@ -1173,16 +1241,32 @@ export function ProductCalculatorStep() {
                   {/* Saved Beneficiaries List */}
                   {savedBeneficiaries.length > 0 ? (
                     <div className="space-y-2">
-                      {savedBeneficiaries.map(ben => (
-                        <div
-                          key={ben.id}
-                          onClick={() => updateDraft({ beneficiaryId: ben.id, beneficiaryName: ben.name })}
-                          className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                            draftState.beneficiaryId === ben.id
-                              ? 'border-indigo-600 bg-indigo-50/60 shadow-sm'
-                              : 'border-gray-100 hover:border-indigo-200 hover:bg-gray-50/50'
-                          }`}
-                        >
+                      {savedBeneficiaries.map(ben => {
+                        const handleSelectBen = () => {
+                          const updates: any = { 
+                            beneficiaryId: ben.id, 
+                            beneficiaryName: ben.name 
+                          };
+                          if (ben.country) {
+                            const matching = findMatchingCountry(ben.country);
+                            if (matching) {
+                              updates.countryCode = matching.countryCode;
+                              updates.currency = matching.currencyCode;
+                            }
+                          }
+                          updateDraft(updates);
+                        };
+
+                        return (
+                          <div
+                            key={ben.id}
+                            onClick={handleSelectBen}
+                            className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                              draftState.beneficiaryId === ben.id
+                                ? 'border-indigo-600 bg-indigo-50/60 shadow-sm'
+                                : 'border-gray-100 hover:border-indigo-200 hover:bg-gray-50/50'
+                            }`}
+                          >
                           <div className="flex justify-between items-start">
                             <div className="flex items-center gap-3">
                               <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm">
@@ -1205,7 +1289,7 @@ export function ProductCalculatorStep() {
                             </div>
                           )}
                         </div>
-                      ))}
+                      ); })}
                     </div>
                   ) : (
                     <div className="text-center py-8 bg-slate-50 border border-slate-150 rounded-xl space-y-3">
