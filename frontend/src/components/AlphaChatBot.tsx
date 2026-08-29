@@ -2,42 +2,57 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { Bot, X, Send, Sparkles, ShieldCheck, RefreshCw, MessageSquare, ChevronDown } from 'lucide-react';
+import { 
+  Bot, X, Send, Sparkles, ShieldCheck, RefreshCw, 
+  MessageSquare, ChevronDown, ArrowRight, ExternalLink,
+  CreditCard, Globe, Landmark, Clock, Phone, MapPin, Check
+} from 'lucide-react';
+import Link from 'next/link';
 
 interface ChatMessage {
   id: string;
   sender: 'bot' | 'user';
   text: string;
   timestamp: string;
+  quickAction?: {
+    label: string;
+    href: string;
+  };
 }
 
 const INITIAL_GREETING: ChatMessage = {
   id: '1',
   sender: 'bot',
-  text: "Hey! 👋 I'm Alpha, your 24/7 Forexmate AI Guide. How can I assist you with currency exchange, forex cards, or international money transfers today?",
+  text: "Hello! 👋 I'm **Alpha**, your 24/7 MTTPL & Forexmate AI Concierge.\n\nHow may I assist you with live interbank exchange rates, multi-currency forex cards, or international wire transfers today?",
   timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  quickAction: {
+    label: "Explore Zero Margin Rates",
+    href: "/rates"
+  }
 };
 
 const SUGGESTIONS = [
-  "🚚 Delivery Cutoff Time?",
-  "💳 How Forex Cards Work?",
-  "🛡️ Is Forexmate RBI Approved?",
-  "📋 Required KYC Docs?",
-  "🏦 How to Send Money Abroad?",
+  "📈 Live Rates & Margins",
+  "🚚 Same-Day Doorstep Cutoff",
+  "💳 Multi-Currency Forex Card",
+  "🏦 Outward Wire Transfer (LRS)",
+  "📋 Required KYC Documents",
+  "🛡️ RBI FFMC License Info",
 ];
 
 const FOREXMATE_KEYWORDS = [
   'forex', 'currency', 'currencies', 'card', 'cards', 'rate', 'rates', 'inr', 'usd', 'eur', 'gbp', 'aud', 'cad', 'sded', 
   'doorstep', 'delivery', 'time', 'cutoff', 'city', 'cities', 'rbi', 'lrs', 'kyc', 'passport', 'pan', 'transfer', 'wire', 
   'remittance', 'buy', 'sell', 'order', 'status', 'refund', 'support', 'contact', 'phone', 'helpline', 'markup', 'margin', 
-  'cashback', 'promo', 'coupon', 'insurance', 'sim', 'branch', 'notes', 'exchange', 'forexmate', 'alpha', 'hello', 'hi', 'hey', 'help'
+  'cashback', 'promo', 'coupon', 'insurance', 'sim', 'branch', 'notes', 'exchange', 'forexmate', 'alpha', 'hello', 'hi', 'hey', 'help',
+  'mttpl', 'travel', 'flight', 'concierge'
 ];
 
 export default function AlphaChatBot() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [showGreetingTooltip, setShowGreetingTooltip] = useState(false);
+  const [showMicroTip, setShowMicroTip] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_GREETING]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -48,19 +63,25 @@ export default function AlphaChatBot() {
     return null;
   }
 
-  // Entrance Flight Animation Sequence on Page Load
+  // Smooth entrance after page mount without blocking screen
   useEffect(() => {
     const timer1 = setTimeout(() => {
       setIsLoaded(true);
-    }, 600); // Alpha flies into position after 600ms
+    }, 800);
 
     const timer2 = setTimeout(() => {
-      setShowGreetingTooltip(true);
-    }, 1400); // Speech bubble pops up after Alpha settles
+      setShowMicroTip(true);
+    }, 2000);
+
+    // Auto-dismiss micro-tip after 7 seconds so it never lingers or blocks UI
+    const timer3 = setTimeout(() => {
+      setShowMicroTip(false);
+    }, 9000);
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
+      clearTimeout(timer3);
     };
   }, []);
 
@@ -71,53 +92,82 @@ export default function AlphaChatBot() {
   useEffect(() => {
     if (isOpen) {
       scrollToBottom();
-      setShowGreetingTooltip(false);
+      setShowMicroTip(false);
     }
   }, [messages, isOpen, isTyping]);
 
-  const generateAlphaResponse = (userQuery: string): string => {
+  const generateAlphaResponse = (userQuery: string): { text: string; quickAction?: { label: string; href: string } } => {
     const query = userQuery.toLowerCase().trim();
 
-    // Check scope - if query contains no Forexmate related terms and is not a simple greeting
     const isRelevant = FOREXMATE_KEYWORDS.some(kw => query.includes(kw));
 
     if (!isRelevant) {
-      return "I am Alpha, specialized strictly in Forexmate services, currency exchange, forex cards, and international money transfers! How can I help with your travel or forex needs today? ✈️💵";
+      return {
+        text: "I am **Alpha**, specialized exclusively in MTTPL & Forexmate currency exchange, multi-currency cards, and international money transfers! How can I assist with your global travel or foreign remittance needs today?",
+        quickAction: { label: "View All Forex Services", href: "/buy-forex" }
+      };
     }
 
     if (query.includes('delivery') || query.includes('cutoff') || query.includes('time') || query.includes('today')) {
-      return "🚚 Doorstep Delivery Policy:\n\n• Orders placed before 1:00 PM are delivered same-day by 9:00 PM!\n• Orders placed after 1:00 PM are delivered next business day by 9:00 PM.\n• Same-day doorstep delivery is active across 65+ major Indian cities!";
+      return {
+        text: "🚚 **Same-Day Doorstep Delivery Policy**:\n\n• **Orders before 1:00 PM**: Delivered same-day by 9:00 PM.\n• **Orders after 1:00 PM**: Guaranteed next business day by 9:00 PM.\n• Active across 65+ Indian cities with armored security courier.",
+        quickAction: { label: "Order Cash Delivery", href: "/buy-forex" }
+      };
     }
 
     if (query.includes('rbi') || query.includes('licensed') || query.includes('license') || query.includes('safe') || query.includes('secure') || query.includes('authorized')) {
-      return "🛡️ RBI Authorized & Regulated:\n\nForexmate is a fully Reserve Bank of India (RBI) licensed Full Fledged Money Changer (FFMC) under License No. NDL-FFMC-0093-2023. All transactions are 100% FEMA & LRS compliant.";
+      return {
+        text: "🛡️ **RBI Licensed & FEMA Regulated**:\n\nForexmate (MTTPL Global Services) operates under **RBI Full Fledged Money Changer (FFMC) License No. RBI-FFMC-2026-0001**.\n\nAll rates, remittances, and cards are 100% statutory compliant under RBI LRS guidelines.",
+        quickAction: { label: "Learn About Compliance", href: "/about" }
+      };
     }
 
     if (query.includes('card') || query.includes('forex card')) {
-      return "💳 Multi-Currency Forex Cards:\n\n• Zero forex markup at interbank live exchange rates\n• Load up to 16 global currencies on 1 card\n• Worldwide ATM cash withdrawals & POS contactless tap-pay\n• Instant lock/unlock controls inside the Forexmate App.";
+      return {
+        text: "💳 **MTTPL Multi-Currency Forex Card**:\n\n• Zero forex markup locked at live interbank rates\n• Load up to 16 global currencies on 1 contactless Visa card\n• Worldwide ATM cash withdrawals & merchant POS payments\n• Instant lock/unlock controls from your customer dashboard.",
+        quickAction: { label: "Get Forex Card", href: "/forex-cards" }
+      };
     }
 
-    if (query.includes('transfer') || query.includes('wire') || query.includes('abroad') || query.includes('lrs') || query.includes('send money')) {
-      return "🏦 International Wire Transfers:\n\n• Direct bank-to-bank international money transfers for university tuition, medical treatment, or family maintenance.\n• Under RBI's Liberalised Remittance Scheme (LRS), resident Indians can remit up to $250,000 USD per financial year with 100% compliance.";
+    if (query.includes('transfer') || query.includes('wire') || query.includes('abroad') || query.includes('lrs') || query.includes('send money') || query.includes('remittance')) {
+      return {
+        text: "🏦 **Outward International Wire Transfers**:\n\n• Direct SWIFT bank-to-bank transfers for university tuition, medical expenses, or family maintenance.\n• Resident Indians can remit up to **$250,000 USD per financial year** under RBI's Liberalised Remittance Scheme (LRS).",
+        quickAction: { label: "Send Wire Transfer", href: "/transfer-money" }
+      };
     }
 
     if (query.includes('kyc') || query.includes('document') || query.includes('passport') || query.includes('pan')) {
-      return "📋 Required KYC Documents:\n\n1. Valid Indian Passport (front & back)\n2. PAN Card\n3. Confirmed Air Ticket or Overseas Visa\n\nKYC verification is completed online in under 2 minutes!";
+      return {
+        text: "📋 **Required Statutory KYC Documents**:\n\n1. Valid Indian Passport (front & back copies)\n2. Indian PAN Card\n3. Confirmed Air Ticket or Overseas Visa / University Offer Letter\n\nInstant digital KYC verification is completed online in under 2 minutes!",
+        quickAction: { label: "Start Digital KYC", href: "/kyc" }
+      };
     }
 
     if (query.includes('rate') || query.includes('markup') || query.includes('margin') || query.includes('price')) {
-      return "📈 Live Interbank Rates:\n\nWe provide real-time live interbank exchange rates with zero hidden markups. You get live rates tied directly to global market feeds!";
+      return {
+        text: "📈 **True Zero Margin Interbank Rates**:\n\nWe provide real-time interbank rates without the typical 2.5%–4% bank markups. The rate you see is the rate you pay.",
+        quickAction: { label: "Check Live Rates", href: "/rates" }
+      };
     }
 
     if (query.includes('city') || query.includes('cities') || query.includes('delhi') || query.includes('mumbai') || query.includes('bangalore')) {
-      return "📍 City Availability:\n\nWe operate doorstep delivery & branch pickup in 65+ Indian cities including Delhi NCR, Mumbai, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Jaipur, and Chandigarh!";
+      return {
+        text: "📍 **65+ Operational Cities**:\n\nDoorstep delivery & branch network available in Delhi NCR, Mumbai, Bengaluru, Hyderabad, Chennai, Pune, Kolkata, Ahmedabad, Jaipur, Chandigarh, and 55+ more cities!",
+        quickAction: { label: "Locate Nearest Branch", href: "/branches" }
+      };
     }
 
     if (query.includes('support') || query.includes('contact') || query.includes('phone') || query.includes('number') || query.includes('help')) {
-      return "🎧 24/7 Helpline & Support:\n\n• Call Us Anytime: +91-9212219191\n• Email Support: hello@forexmate.com\n• Live Chat: Right here with Alpha!";
+      return {
+        text: "🎧 **24/7 MTTPL Executive Concierge**:\n\n• Toll-Free Helpline: **+91 9212219191**\n• Email Support: **hello@forexmate.com**\n• Physical Branch Vaults open Mon–Sat 9:30 AM to 6:30 PM.",
+        quickAction: { label: "Open Support Desk", href: "/contact" }
+      };
     }
 
-    return "At Forexmate, you can buy/sell 40+ foreign currencies, order multi-currency forex cards, or transfer money abroad with zero hidden markups and same-day doorstep delivery! What specific service would you like to explore?";
+    return {
+      text: "At **Forexmate (A MTTPL Company)**, you can exchange 40+ currencies at zero hidden markups, order multi-currency forex cards, or transfer money overseas with same-day doorstep fulfillment.\n\nWhich service would you like to explore?",
+      quickAction: { label: "Book Live Rate", href: "/buy-forex" }
+    };
   };
 
   const handleSend = (textToSend?: string) => {
@@ -136,84 +186,80 @@ export default function AlphaChatBot() {
     setIsTyping(true);
 
     setTimeout(() => {
-      const responseText = generateAlphaResponse(text);
+      const resp = generateAlphaResponse(text);
       const botMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: responseText,
+        text: resp.text,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        quickAction: resp.quickAction
       };
       setMessages(prev => [...prev, botMsg]);
       setIsTyping(false);
-    }, 700);
+    }, 600);
   };
 
   return (
-    <div className={`fixed bottom-6 right-6 z-[9999] font-sans transition-all duration-1000 [transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)] ${
+    <div className={`fixed bottom-6 right-6 z-[9999] font-sans transition-all duration-700 ease-out ${
       isLoaded 
-        ? 'translate-y-0 opacity-100 scale-100 rotate-0 pointer-events-auto' 
-        : '-translate-y-[100vh] opacity-0 scale-75 -rotate-12 pointer-events-none'
+        ? 'translate-y-0 opacity-100 scale-100 pointer-events-auto' 
+        : 'translate-y-12 opacity-0 scale-90 pointer-events-none'
     }`}>
       
-      {/* Floating Greeting Speech Bubble (Visible without clicking) */}
-      {!isOpen && showGreetingTooltip && (
+      {/* ─── 1. ULTRA-COMPACT MTTPL LUXURY MICRO-TOOLTIP (Non-blocking) ─── */}
+      {!isOpen && showMicroTip && (
         <div 
           onClick={() => setIsOpen(true)}
-          className="absolute bottom-16 right-0 mb-3 w-80 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 border border-blue-500/40 text-white rounded-3xl p-4 shadow-2xl backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-4 duration-300 ring-1 ring-white/10 group cursor-pointer"
+          className="absolute bottom-14 right-0 mb-2.5 w-64 bg-slate-950/95 border border-amber-400/40 text-white rounded-2xl p-3 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-300 ring-1 ring-amber-400/20 group cursor-pointer"
         >
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              setShowGreetingTooltip(false);
+              setShowMicroTip(false);
             }} 
-            className="absolute -top-2 -right-2 bg-slate-900 text-slate-400 hover:text-white rounded-full p-1 border border-slate-700 shadow-md hover:bg-slate-800 transition-colors"
+            className="absolute -top-1.5 -right-1.5 bg-slate-900 text-slate-400 hover:text-white rounded-full p-0.5 border border-slate-700 shadow-sm hover:bg-slate-800 transition-colors"
             title="Dismiss"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3 h-3" />
           </button>
           
-          <div className="flex items-center gap-2 mb-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-400 flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" /> Alpha AI Guide
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-[9px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5 text-amber-400" /> MTTPL Concierge
             </span>
           </div>
           
-          <p className="text-xs font-semibold text-slate-100 leading-relaxed">
-            "Hey! 👋 I'm <strong className="text-blue-400 font-extrabold">Alpha</strong>. Here to guide you with live rates, forex cards & doorstep delivery!"
+          <p className="text-[11px] font-medium text-slate-200 leading-snug">
+            Need help locking live rates or forex cards? <strong className="text-amber-400">Ask Alpha</strong>
           </p>
-          
-          <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10.5px] font-extrabold text-orange-400 group-hover:text-amber-300 transition-colors">
-            <span>Ask me anything about Forexmate</span>
-            <span className="group-hover:translate-x-1 transition-transform">&rarr;</span>
-          </div>
 
-          {/* Speech bubble arrow pointer */}
-          <div className="absolute -bottom-2 right-8 w-4 h-4 bg-slate-950 border-r border-b border-blue-500/40 transform rotate-45"></div>
+          {/* Micro arrow pointer */}
+          <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-slate-950 border-r border-b border-amber-400/40 transform rotate-45"></div>
         </div>
       )}
 
-      {/* Expanded Chat Drawer */}
+      {/* ─── 2. EXPANDED MTTPL LUXURY AI DRAWER ────────────────────────── */}
       {isOpen && (
-        <div className="bg-slate-950/95 backdrop-blur-2xl border border-slate-800 shadow-2xl rounded-3xl w-[360px] sm:w-[400px] h-[540px] flex flex-col overflow-hidden text-white animate-in fade-in zoom-in-95 duration-200 mb-4 ring-1 ring-white/10">
+        <div className="bg-slate-950/95 backdrop-blur-2xl border border-amber-400/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)] rounded-3xl w-[340px] sm:w-[380px] h-[520px] flex flex-col overflow-hidden text-white animate-in fade-in zoom-in-95 duration-200 mb-3 ring-1 ring-white/10">
           
           {/* Header */}
-          <div className="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 px-5 py-4 border-b border-slate-800/80 flex items-center justify-between relative">
+          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-amber-950/40 px-4.5 py-3.5 border-b border-amber-400/20 flex items-center justify-between relative">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-11 h-11 rounded-2xl overflow-hidden shadow-[0_0_25px_rgba(59,130,246,0.6)] border border-blue-400/50 bg-slate-900 shrink-0">
+                <div className="w-10 h-10 rounded-2xl overflow-hidden shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-amber-400/60 bg-slate-900 shrink-0">
                   <img src="/alpha_avatar.png" alt="Alpha AI" className="w-full h-full object-cover" />
                 </div>
-                <span className="w-3.5 h-3.5 bg-emerald-400 border-2 border-slate-950 rounded-full absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
+                <span className="w-3 h-3 bg-emerald-400 border-2 border-slate-950 rounded-full absolute -bottom-0.5 -right-0.5 animate-pulse"></span>
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-black text-sm tracking-tight text-white">Alpha</h3>
-                  <span className="bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    AI Assistant
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-extrabold text-sm tracking-tight text-white">Alpha</h3>
+                  <span className="bg-amber-500/20 text-amber-300 border border-amber-400/30 text-[8.5px] font-black px-1.5 py-0.2 rounded-md uppercase tracking-wider">
+                    MTTPL Concierge
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 font-medium">Forexmate Official Guide</p>
+                <p className="text-[10px] text-slate-400 font-medium">24/7 Zero Margin Forex Assistant</p>
               </div>
             </div>
 
@@ -223,13 +269,14 @@ export default function AlphaChatBot() {
                 className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                 title="Reset Chat"
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw className="w-3.5 h-3.5" />
               </button>
               <button 
                 onClick={() => setIsOpen(false)} 
                 className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                title="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -242,35 +289,49 @@ export default function AlphaChatBot() {
                 className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.sender === 'bot' && (
-                  <div className="w-7 h-7 rounded-xl overflow-hidden border border-blue-500/40 shrink-0 mt-1 shadow-sm bg-slate-900">
+                  <div className="w-6 h-6 rounded-lg overflow-hidden border border-amber-400/40 shrink-0 mt-1 shadow-sm bg-slate-900">
                     <img src="/alpha_avatar.png" alt="Alpha" className="w-full h-full object-cover" />
                   </div>
                 )}
 
-                <div 
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-md leading-relaxed whitespace-pre-wrap ${
-                    msg.sender === 'user' 
-                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-br-none font-medium' 
-                      : 'bg-slate-900/90 border border-slate-800 text-slate-200 rounded-bl-none'
-                  }`}
-                >
-                  {msg.text}
-                  <div className={`text-[9px] mt-1.5 text-right font-medium ${msg.sender === 'user' ? 'text-orange-100/70' : 'text-slate-500'}`}>
-                    {msg.timestamp}
+                <div className="max-w-[82%] space-y-2">
+                  <div 
+                    className={`rounded-2xl px-3.5 py-2.5 shadow-md leading-relaxed whitespace-pre-wrap ${
+                      msg.sender === 'user' 
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold rounded-br-none' 
+                        : 'bg-slate-900/90 border border-slate-800 text-slate-200 rounded-bl-none'
+                    }`}
+                  >
+                    {msg.text}
+                    <div className={`text-[9px] mt-1 text-right font-medium ${msg.sender === 'user' ? 'text-amber-950/70' : 'text-slate-500'}`}>
+                      {msg.timestamp}
+                    </div>
                   </div>
+
+                  {/* Optional 1-Click Quick Action CTA */}
+                  {msg.quickAction && (
+                    <Link 
+                      href={msg.quickAction.href}
+                      onClick={() => setIsOpen(false)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-300 hover:bg-amber-500/25 text-[11px] font-extrabold transition-all shadow-2xs group cursor-pointer"
+                    >
+                      <span>{msg.quickAction.label}</span>
+                      <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform text-amber-400" />
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}
 
             {isTyping && (
               <div className="flex gap-2.5 items-center text-slate-400 text-xs">
-                <div className="w-7 h-7 rounded-xl overflow-hidden border border-blue-500/40 shrink-0 bg-slate-900">
+                <div className="w-6 h-6 rounded-lg overflow-hidden border border-amber-400/40 shrink-0 bg-slate-900">
                   <img src="/alpha_avatar.png" alt="Alpha" className="w-full h-full object-cover" />
                 </div>
-                <div className="bg-slate-900 border border-slate-800 px-4 py-2.5 rounded-2xl flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
-                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                <div className="bg-slate-900 border border-slate-800 px-3 py-2 rounded-2xl flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce"></span>
+                  <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                  <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
                 </div>
               </div>
             )}
@@ -278,12 +339,12 @@ export default function AlphaChatBot() {
           </div>
 
           {/* Quick Suggestion Pills */}
-          <div className="px-3 py-2 border-t border-slate-800/60 bg-slate-950/60 flex gap-2 overflow-x-auto scrollbar-hide shrink-0">
+          <div className="px-3 py-2 border-t border-slate-800/80 bg-slate-950/80 flex gap-1.5 overflow-x-auto scrollbar-hide shrink-0">
             {SUGGESTIONS.map((sug, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSend(sug)}
-                className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap transition-all shrink-0 shadow-xs cursor-pointer"
+                className="bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-amber-300 border border-slate-800 hover:border-amber-400/30 px-2.5 py-1 rounded-full text-[10.5px] font-bold whitespace-nowrap transition-all shrink-0 shadow-2xs cursor-pointer"
               >
                 {sug}
               </button>
@@ -291,7 +352,7 @@ export default function AlphaChatBot() {
           </div>
 
           {/* Input Box */}
-          <div className="p-3.5 border-t border-slate-800/80 bg-slate-900/90">
+          <div className="p-3 border-t border-slate-800/90 bg-slate-900/95">
             <form 
               onSubmit={(e) => {
                 e.preventDefault();
@@ -301,17 +362,17 @@ export default function AlphaChatBot() {
             >
               <input 
                 type="text" 
-                placeholder="Ask Alpha about forex rates, cards..." 
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 font-medium"
+                placeholder="Ask Alpha about live rates, cards..." 
+                className="flex-1 bg-slate-950 border border-slate-800 focus:border-amber-400/60 rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-500 focus:outline-none font-medium transition-colors"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
               />
               <button 
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-500 text-white p-2.5 rounded-xl shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50"
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black p-2 rounded-xl shadow-md transition-transform hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-50"
                 disabled={!inputValue.trim()}
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-3.5 h-3.5" />
               </button>
             </form>
           </div>
@@ -319,20 +380,31 @@ export default function AlphaChatBot() {
         </div>
       )}
 
-      {/* Floating Toggle Button - Sleek Small Circle Logo Avatar */}
+      {/* ─── 3. SLEEK COMPACT MTTPL LUXURY FLOATING TRIGGER ────────────── */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="group relative w-14 h-14 rounded-full bg-slate-950 border-2 border-blue-500/50 shadow-[0_0_25px_rgba(59,130,246,0.5)] flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 ring-2 ring-blue-500/30 p-1"
-          title="Chat with Alpha AI"
+          className="group relative flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full bg-slate-950/90 hover:bg-slate-900 border border-amber-400/50 shadow-[0_4px_20px_rgba(245,158,11,0.25)] backdrop-blur-md cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ring-1 ring-amber-400/20"
+          title="Chat with MTTPL Alpha Concierge"
         >
-          <div className="relative w-full h-full rounded-full overflow-hidden bg-slate-900 border border-blue-400/40">
+          <div className="relative w-8 h-8 rounded-full overflow-hidden bg-slate-900 border border-amber-400/60 shrink-0">
             <img src="/alpha_avatar.png" alt="Alpha AI" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+            <span className="w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-950 rounded-full absolute bottom-0 right-0 animate-pulse"></span>
           </div>
-          <span className="w-3.5 h-3.5 bg-emerald-400 border-2 border-slate-950 rounded-full absolute bottom-0 right-0 animate-pulse shadow-md z-10"></span>
+
+          <div className="text-left">
+            <div className="flex items-center gap-1 text-[11px] font-black text-white group-hover:text-amber-300 transition-colors">
+              <span>Alpha</span>
+              <Sparkles className="w-2.5 h-2.5 text-amber-400" />
+            </div>
+            <div className="text-[9px] font-bold text-amber-400/90 tracking-wide uppercase">
+              MTTPL AI
+            </div>
+          </div>
         </button>
       )}
 
     </div>
   );
 }
+
