@@ -6,7 +6,8 @@ import { Settings } from 'lucide-react';
 export function DevToolbar() {
   const [isOpen, setIsOpen] = useState(false);
   
-  const showToolbar = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DEV_TOOLS === 'true';
+  // Developer toolbar is turned off by default
+  const showToolbar = process.env.NEXT_PUBLIC_ENABLE_DEV_TOOLS === 'true';
 
   if (!showToolbar) return null;
 
@@ -24,3 +25,4 @@ export function DevToolbar() {
     </>
   );
 }
+

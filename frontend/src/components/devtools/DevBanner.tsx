@@ -2,8 +2,8 @@
 import React from 'react';
 
 export function DevBanner() {
-  // Check if we are in dev environment or if dev tools are enabled
-  const showBanner = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DEV_TOOLS === 'true';
+  // Developer banner is turned off by default
+  const showBanner = process.env.NEXT_PUBLIC_ENABLE_DEV_TOOLS === 'true';
 
   if (!showBanner) return null;
 
@@ -17,3 +17,4 @@ export function DevBanner() {
     </div>
   );
 }
+
