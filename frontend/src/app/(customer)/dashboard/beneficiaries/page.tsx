@@ -107,6 +107,13 @@ export default function BeneficiariesPage() {
   const [swiftCode, setSwiftCode] = useState('');
   const [address, setAddress] = useState('');
   const [country, setCountry] = useState('United States');
+  const [isCountryOpen, setIsCountryOpen] = useState(false);
+  const [countryFilter, setCountryFilter] = useState('');
+
+  const filteredCountries = WORLD_COUNTRIES.filter(c => 
+    c.name.toLowerCase().includes(countryFilter.toLowerCase()) ||
+    c.code.toLowerCase().includes(countryFilter.toLowerCase())
+  );
 
   const fetchBeneficiaries = async () => {
     setIsLoading(true);
@@ -421,28 +428,82 @@ export default function BeneficiariesPage() {
                 </div>
               </div>
 
-              {/* Recipient Country (Full World List Dropdown) */}
-              <div className="space-y-1.5">
+              {/* Recipient Country (Custom Searchable Combobox) */}
+              <div className="space-y-1.5 relative">
                 <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider block">
                   Recipient Country <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <Globe className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <select 
-                    value={country} 
-                    onChange={e => setCountry(e.target.value)}
-                    className="w-full pl-10 pr-8 py-2.5 border border-slate-200 focus:border-amber-500 rounded-xl text-xs font-bold text-slate-900 bg-slate-50/60 focus:bg-white outline-none shadow-2xs appearance-none cursor-pointer"
-                  >
-                    {WORLD_COUNTRIES.map(c => (
-                      <option key={c.name} value={c.name}>
-                        {c.flag} {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 text-xs">
-                    ▼
+                
+                {/* Trigger Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsCountryOpen(!isCountryOpen)}
+                  className="w-full pl-3.5 pr-4 py-2.5 bg-slate-50/60 border border-slate-200 hover:border-amber-400 focus:border-amber-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 flex items-center justify-between shadow-2xs transition-colors cursor-pointer text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{getCountryFlag(country)}</span>
+                    <span>{country}</span>
                   </div>
-                </div>
+                  <span className="text-slate-400 text-[10px]">▼</span>
+                </button>
+
+                {/* Dropdown Menu Overlay */}
+                {isCountryOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-20" 
+                      onClick={() => setIsCountryOpen(false)} 
+                    />
+                    <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150">
+                      {/* Search Filter Inside Dropdown */}
+                      <div className="relative mb-2">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          autoFocus
+                          value={countryFilter}
+                          onChange={e => setCountryFilter(e.target.value)}
+                          placeholder="Type country name..."
+                          className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 focus:border-amber-500 rounded-lg text-xs font-semibold outline-none placeholder:text-slate-400"
+                        />
+                      </div>
+
+                      {/* Scrollable List */}
+                      <div className="max-h-48 overflow-y-auto space-y-0.5 pr-1 scrollbar-thin">
+                        {filteredCountries.length === 0 ? (
+                          <div className="p-3 text-center text-xs text-slate-400 font-medium">
+                            No country found
+                          </div>
+                        ) : (
+                          filteredCountries.map(c => (
+                            <button
+                              key={c.name}
+                              type="button"
+                              onClick={() => {
+                                setCountry(c.name);
+                                setIsCountryOpen(false);
+                                setCountryFilter('');
+                              }}
+                              className={`w-full px-3 py-2 rounded-xl text-xs flex items-center justify-between transition-colors cursor-pointer text-left ${
+                                country === c.name 
+                                  ? 'bg-amber-500/10 text-amber-900 font-black' 
+                                  : 'text-slate-700 hover:bg-slate-100 font-semibold'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{c.flag}</span>
+                                <span>{c.name}</span>
+                              </div>
+                              {country === c.name && (
+                                <Check className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Bank Name */}
