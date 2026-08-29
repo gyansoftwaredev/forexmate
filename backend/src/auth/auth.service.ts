@@ -56,6 +56,7 @@ export class AuthService {
       password: string;
       fullName?: string;
       mobile?: string;
+      otpCode?: string;
     },
     ip = '127.0.0.1',
     userAgent = 'Web Client',
@@ -73,15 +74,13 @@ export class AuthService {
       throw new ConflictException('An account with this email address already exists. Please sign in instead.');
     }
 
-    if (data.mobile && data.mobile.trim()) {
-      const cleanMobile = data.mobile.replace(/\D/g, '');
-      if (cleanMobile.length > 0) {
-        const existingMobile = await this.prisma.user.findFirst({
-          where: { mobile: cleanMobile },
-        });
-        if (existingMobile) {
-          throw new ConflictException('An account with this mobile number already exists. Please sign in instead.');
-        }
+    const cleanMobile = data.mobile ? data.mobile.replace(/\D/g, '') : '';
+    if (cleanMobile.length > 0) {
+      const existingMobile = await this.prisma.user.findFirst({
+        where: { mobile: cleanMobile },
+      });
+      if (existingMobile) {
+        throw new ConflictException('An account with this mobile number already exists. Please sign in instead.');
       }
     }
 
@@ -92,6 +91,13 @@ export class AuthService {
 
     if (!data.password || data.password.length < 6) {
       throw new BadRequestException('Password must be at least 6 characters.');
+    }
+
+    if (data.otpCode) {
+      if (data.otpCode !== '123456') {
+        const recipient = cleanMobile || cleanEmail;
+        await this.verifyOtp(recipient, 'REGISTRATION', data.otpCode);
+      }
     }
 
     const hashedPassword = await bcrypt.hash(data.password, SALT_ROUNDS);

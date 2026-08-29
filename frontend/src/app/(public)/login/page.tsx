@@ -37,6 +37,9 @@ function CustomerLoginContent() {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regShowPassword, setRegShowPassword] = useState(false);
+  const [regOtpSent, setRegOtpSent] = useState(false);
+  const [regOtpValues, setRegOtpValues] = useState(['', '', '', '', '', '']);
+  const [regOtpTimer, setRegOtpTimer] = useState(30);
 
   // Loading & Messages
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +47,7 @@ function CustomerLoginContent() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Countdown timer for OTP
+  // Countdown timer for Sign In OTP
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (otpSent && otpTimer > 0) {
@@ -52,6 +55,15 @@ function CustomerLoginContent() {
     }
     return () => clearInterval(interval);
   }, [otpSent, otpTimer]);
+
+  // Countdown timer for Sign Up OTP
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (regOtpSent && regOtpTimer > 0) {
+      interval = setInterval(() => setRegOtpTimer((prev) => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [regOtpSent, regOtpTimer]);
 
   // Handle Send OTP
   const handleSendOtp = async (e?: React.FormEvent) => {
@@ -95,7 +107,31 @@ function CustomerLoginContent() {
     }
   };
 
-  // Handle Verify OTP
+  // Sign Up OTP handlers
+  const handleRegOtpChange = (index: number, val: string) => {
+    if (val.length > 1) val = val[val.length - 1];
+    const newOtp = [...regOtpValues];
+    newOtp[index] = val;
+    setRegOtpValues(newOtp);
+
+    if (val && index < 5) {
+      const nextInput = document.getElementById(`reg-otp-${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const handleRegOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !regOtpValues[index] && index > 0) {
+      const prevInput = document.getElementById(`reg-otp-${index - 1}`);
+      if (prevInput) prevInput.focus();
+    }
+  };
+
+  const autofillDemoRegOtp = () => {
+    setRegOtpValues(['1', '2', '3', '4', '5', '6']);
+  };
+
+  // Handle Verify OTP (Sign In)
   const handleVerifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setErrorMessage('');
@@ -136,7 +172,7 @@ function CustomerLoginContent() {
     }
   };
 
-  // Handle Password Login
+  // Handle Sign In with Password
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
@@ -174,8 +210,8 @@ function CustomerLoginContent() {
     }
   };
 
-  // Handle Sign Up
-  const handleRegister = async (e: React.FormEvent) => {
+  // Step 1: Trigger Mobile OTP for Sign Up
+  const handleRegisterSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -196,10 +232,47 @@ function CustomerLoginContent() {
       return;
     }
 
+    if (!regEmail.trim() || !regEmail.includes('@')) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
+
     if (regPassword.length < 6) {
       setErrorMessage('Password must be at least 6 characters.');
       return;
     }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/auth/otp/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient: cleanMobile, purpose: 'REGISTRATION' }),
+      });
+      await apiJson<any>(res);
+      setRegOtpSent(true);
+      setRegOtpTimer(30);
+      setRegOtpValues(['', '', '', '', '', '']);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Failed to send verification OTP.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 2: Verify Mobile OTP and Complete Sign Up
+  const handleRegisterVerifyAndSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setErrorMessage('');
+
+    const fullOtp = regOtpValues.join('');
+    if (fullOtp.length !== 6) {
+      setErrorMessage('Please enter the complete 6-digit OTP.');
+      return;
+    }
+
+    const trimmedName = regFullName.trim();
+    const cleanMobile = regMobile.replace(/\D/g, '');
 
     setIsLoading(true);
     try {
@@ -211,13 +284,14 @@ function CustomerLoginContent() {
           mobile: cleanMobile,
           email: regEmail.trim().toLowerCase(),
           password: regPassword,
+          otpCode: fullOtp,
         }),
       });
 
       const payload = await apiJson<any>(res);
       if (payload?.access_token && payload?.user) {
         login(payload.access_token, payload.user);
-        setSuccessMessage('Account created! Redirecting...');
+        setSuccessMessage('Account verified & created! Redirecting...');
         setIsSuccess(true);
         setTimeout(() => {
           router.push('/');
@@ -225,13 +299,14 @@ function CustomerLoginContent() {
         return;
       }
 
-      setSuccessMessage('Account created successfully!');
+      setSuccessMessage('Account verified & created successfully!');
       setIsSuccess(true);
       setTimeout(() => {
         setAuthAction('SIGN_IN');
+        setRegOtpSent(false);
       }, 600);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Registration failed. Email or mobile may already exist.');
+      setErrorMessage(err.message || 'Registration failed. Invalid or expired OTP.');
     } finally {
       setIsLoading(false);
     }
@@ -555,106 +630,191 @@ function CustomerLoginContent() {
 
         {/* ================= VIEW 2: SIGN UP ================= */}
         {authAction === 'SIGN_UP' && (
-          <form onSubmit={handleRegister} className="mt-5 space-y-3.5">
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
-                Full Name
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  maxLength={15}
-                  placeholder="Rahul Sharma"
-                  value={regFullName}
-                  onChange={(e) => setRegFullName(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
-                  autoFocus
-                />
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
-                Mobile Number
-              </label>
-              <div className="flex items-center bg-slate-50 border border-slate-200 focus-within:border-amber-500 focus-within:bg-white rounded-xl p-1 transition-all shadow-2xs">
-                <div className="px-2 py-1.5 bg-white rounded-lg border border-slate-200 flex items-center gap-1 text-xs font-bold text-slate-800">
-                  <span>🇮🇳</span>
-                  <span>+91</span>
+          <div>
+            {!regOtpSent ? (
+              <form onSubmit={handleRegisterSendOtp} className="mt-5 space-y-3.5">
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
+                    Full Name <span className="text-slate-400 font-normal">(Max 15 chars)</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      maxLength={15}
+                      placeholder="Rahul Sharma"
+                      value={regFullName}
+                      onChange={(e) => setRegFullName(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
+                      autoFocus
+                    />
+                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  </div>
                 </div>
-                <input
-                  type="tel"
-                  required
-                  maxLength={10}
-                  placeholder="9876543210"
-                  value={regMobile}
-                  onChange={(e) => setRegMobile(e.target.value)}
-                  className="flex-1 px-2.5 py-1.5 text-xs font-bold text-slate-900 outline-none bg-transparent"
-                />
-              </div>
-            </div>
 
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
-                Email Address
-              </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  required
-                  placeholder="rahul.sharma@example.com"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
-                />
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-              </div>
-            </div>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
+                    Mobile Number
+                  </label>
+                  <div className="flex items-center bg-slate-50 border border-slate-200 focus-within:border-amber-500 focus-within:bg-white rounded-xl p-1 transition-all shadow-2xs">
+                    <div className="px-2 py-1.5 bg-white rounded-lg border border-slate-200 flex items-center gap-1 text-xs font-bold text-slate-800">
+                      <span>🇮🇳</span>
+                      <span>+91</span>
+                    </div>
+                    <input
+                      type="tel"
+                      required
+                      maxLength={10}
+                      placeholder="9876543210"
+                      value={regMobile}
+                      onChange={(e) => setRegMobile(e.target.value)}
+                      className="flex-1 px-2.5 py-1.5 text-xs font-bold text-slate-900 outline-none bg-transparent"
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={regShowPassword ? 'text' : 'password'}
-                  required
-                  placeholder="••••••••"
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
-                />
-                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="email"
+                      required
+                      placeholder="rahul.sharma@example.com"
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3.5 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
+                    />
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1 block">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={regShowPassword ? 'text' : 'password'}
+                      required
+                      placeholder="••••••••"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-10 py-2.5 text-xs font-semibold text-slate-900 focus:bg-white focus:border-amber-500 focus:outline-none transition-all shadow-2xs"
+                    />
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <button
+                      type="button"
+                      onClick={() => setRegShowPassword(!regShowPassword)}
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {regShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
                 <button
-                  type="button"
-                  onClick={() => setRegShowPassword(!regShowPassword)}
-                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  type="submit"
+                  disabled={isLoading || !regFullName || !regMobile || !regEmail || !regPassword}
+                  className="w-full bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold py-3.5 rounded-xl text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 shadow-md hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-50 cursor-pointer mt-1"
                 >
-                  {regShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                      <span>Sending OTP...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Proceed to Mobile Verification</span>
+                      <ArrowRight className="w-4 h-4 text-slate-950" />
+                    </>
+                  )}
                 </button>
-              </div>
-            </div>
+              </form>
+            ) : (
+              <form onSubmit={handleRegisterVerifyAndSubmit} className="mt-5 space-y-4">
+                <div className="bg-amber-50/70 border border-amber-200/80 rounded-xl p-3 text-left">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-bold text-amber-900">OTP Sent to Mobile</p>
+                      <p className="text-[11px] text-amber-700 font-semibold">+91 {regMobile}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setRegOtpSent(false)}
+                      className="text-[10px] font-extrabold text-amber-800 hover:text-amber-950 underline cursor-pointer"
+                    >
+                      Edit Info
+                    </button>
+                  </div>
+                </div>
 
-            <button
-              type="submit"
-              disabled={isLoading || !regFullName || !regMobile || !regEmail || !regPassword}
-              className="w-full bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold py-3.5 rounded-xl text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 shadow-md hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-50 cursor-pointer mt-1"
-            >
-              {isLoading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
-                  <span>Creating Account...</span>
-                </>
-              ) : (
-                <>
-                  <span>Create Account & Sign In</span>
-                  <ArrowRight className="w-4 h-4 text-slate-950" />
-                </>
-              )}
-            </button>
-          </form>
+                <div>
+                  <label className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5 block text-center">
+                    Enter 6-Digit Code
+                  </label>
+                  <div className="flex items-center justify-center gap-2">
+                    {regOtpValues.map((digit, idx) => (
+                      <input
+                        key={idx}
+                        id={`reg-otp-${idx}`}
+                        type="text"
+                        maxLength={1}
+                        value={digit}
+                        onChange={(e) => handleRegOtpChange(idx, e.target.value)}
+                        onKeyDown={(e) => handleRegOtpKeyDown(idx, e)}
+                        className="w-10 h-11 text-center text-base font-black text-slate-900 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:border-amber-500 outline-none transition-all shadow-2xs"
+                        autoFocus={idx === 0}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px]">
+                  <button
+                    type="button"
+                    onClick={autofillDemoRegOtp}
+                    className="text-amber-700 font-bold hover:underline cursor-pointer"
+                  >
+                    Demo OTP: <strong>123456</strong>
+                  </button>
+
+                  <div className="text-slate-400">
+                    {regOtpTimer > 0 ? (
+                      <span>Resend in {regOtpTimer}s</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleRegisterSendOtp({ preventDefault: () => {} } as any)}
+                        className="text-amber-700 font-bold hover:underline cursor-pointer"
+                      >
+                        Resend OTP
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || regOtpValues.join('').length < 6}
+                  className="w-full bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold py-3.5 rounded-xl text-xs tracking-wider uppercase flex items-center justify-center gap-1.5 shadow-md hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                      <span>Verifying & Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Verify & Create Account</span>
+                      <ArrowRight className="w-4 h-4 text-slate-950" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+          </div>
         )}
 
         {/* Footer Security Note */}

@@ -41,6 +41,11 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty({ message: 'Mobile number is required' })
   mobile: string;
+
+  @ApiProperty({ example: '123456', required: false })
+  @IsString()
+  @IsOptional()
+  otpCode?: string;
 }
 
 export class GoogleLoginDto {
