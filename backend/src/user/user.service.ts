@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -23,18 +23,17 @@ export class UserService {
     });
   }
 
-  async getUserProfile(id: string) {
+  async getUserProfile(userId: string) {
     return this.prisma.user.findUnique({
-      where: { id },
+      where: { id: userId },
       include: {
         profiles: {
           include: {
             addresses: true,
             banks: true,
-          },
-        },
-        KycDocument: true,
-      },
+          }
+        }
+      }
     });
   }
 
@@ -51,7 +50,27 @@ export class UserService {
     }
 
     // Update CustomerProfile (panNumber)
-    if (data.panNumber) {
+    if (data.panNumber && data.panNumber.trim()) {
+      const normalizedPan = data.panNumber.trim().toUpperCase();
+      
+      // Validate PAN format (5 letters, 4 digits, 1 letter)
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(normalizedPan)) {
+        throw new BadRequestException('Invalid PAN format. PAN must be 10 characters (e.g., ABCDE1234F).');
+      }
+
+      // Check for duplicate PAN on other accounts
+      const existingPan = await this.prisma.customerProfile.findFirst({
+        where: {
+          panNumber: normalizedPan,
+          userId: { not: userId }
+        }
+      });
+
+      if (existingPan) {
+        throw new ConflictException('This PAN number is already associated with another customer account.');
+      }
+
       let profile = await this.prisma.customerProfile.findUnique({
         where: { userId },
       });
@@ -62,10 +81,17 @@ export class UserService {
         });
       }
 
-      await this.prisma.customerProfile.update({
-        where: { id: profile.id },
-        data: { panNumber: data.panNumber }
-      });
+      try {
+        await this.prisma.customerProfile.update({
+          where: { id: profile.id },
+          data: { panNumber: normalizedPan }
+        });
+      } catch (err: any) {
+        if (err.code === 'P2002') {
+          throw new ConflictException('This PAN number is already associated with another customer account.');
+        }
+        throw err;
+      }
     }
 
     return this.getUserProfile(userId);

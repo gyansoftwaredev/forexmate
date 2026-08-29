@@ -31,6 +31,7 @@ export function PersonalInfoForm() {
   });
 
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     if (profile || user) {
@@ -44,6 +45,17 @@ export function PersonalInfoForm() {
 
   const handleSave = async () => {
     if (!user?.id) return;
+    setErrorMessage('');
+    setSavedSuccess(false);
+
+    if (formData.panNumber && formData.panNumber.trim()) {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(formData.panNumber.trim().toUpperCase())) {
+        setErrorMessage('Please enter a valid 10-character PAN (e.g. ABCDE1234F).');
+        return;
+      }
+    }
+
     try {
       await updateMutation.mutateAsync({
         userId: user.id,
@@ -51,8 +63,10 @@ export function PersonalInfoForm() {
       });
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 4000);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      const msg = e?.message || 'Failed to update PAN details. Please try again.';
+      setErrorMessage(msg);
     }
   };
 
@@ -97,6 +111,13 @@ export function PersonalInfoForm() {
           <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm font-bold flex items-center gap-2.5 animate-in fade-in">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>Profile details updated successfully! Your statutory records are synchronized.</span>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800 text-xs sm:text-sm font-bold flex items-center gap-2.5 animate-in fade-in">
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+            <span>{errorMessage}</span>
           </div>
         )}
 
