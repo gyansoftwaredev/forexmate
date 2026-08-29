@@ -1192,12 +1192,18 @@ export function BookMyForexCheckoutEngine() {
                     
                     {/* Beneficiary Name */}
                     <div>
-                      <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
-                        RECIPIENT NAME <span className="text-red-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider">
+                          RECIPIENT NAME <span className="text-red-500">*</span>
+                        </label>
+                        <span className="text-[10px] font-semibold text-slate-400">
+                          {benName.length}/15 chars
+                        </span>
+                      </div>
                       <input
                         type="text"
                         required
+                        maxLength={15}
                         value={benName}
                         onChange={(e) => setBenName(e.target.value)}
                         placeholder="e.g. John Doe"

@@ -413,14 +413,20 @@ export default function BeneficiariesPage() {
               
               {/* Recipient Name */}
               <div className="space-y-1.5">
-                <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider block">
-                  Recipient Name <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider block">
+                    Recipient Name <span className="text-red-500">*</span>
+                  </label>
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    {name.length}/15 chars
+                  </span>
+                </div>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input 
                     value={name}
                     onChange={e => setName(e.target.value)}
+                    maxLength={15}
                     placeholder="e.g. John Miller"
                     required
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50/60 border border-slate-200 focus:border-amber-500 focus:bg-white rounded-xl text-xs font-bold text-slate-900 outline-none shadow-2xs placeholder:text-slate-400 placeholder:font-normal"
