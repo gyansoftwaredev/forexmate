@@ -187,15 +187,25 @@ export default function DashboardOverview() {
           <div className="md:col-span-1 bg-white/90 border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-2xs">
             <div>
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">STATUTORY HEALTH</span>
-              <span className="text-xs font-black text-emerald-700 flex items-center gap-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" /> Fully Compliant
-              </span>
+              {isKycVerified ? (
+                <span className="text-xs font-black text-emerald-700 flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" /> Fully Compliant
+                </span>
+              ) : activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING' ? (
+                <span className="text-xs font-black text-blue-700 flex items-center gap-1">
+                  <Clock className="w-4 h-4 text-blue-600" /> Under Review
+                </span>
+              ) : (
+                <span className="text-xs font-black text-amber-600 flex items-center gap-1">
+                  <ShieldAlert className="w-4 h-4 text-amber-600" /> Action Required
+                </span>
+              )}
             </div>
             <button 
               onClick={() => router.push('/dashboard/kyc')}
-              className="text-[11px] font-extrabold text-amber-700 hover:underline flex items-center gap-1"
+              className="text-[11px] font-extrabold text-amber-700 hover:underline flex items-center gap-1 cursor-pointer"
             >
-              <span>View KYC Docs</span>
+              <span>{isKycVerified ? 'View KYC Docs' : 'Upload Docs'}</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -212,18 +222,26 @@ export default function DashboardOverview() {
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-extrabold text-amber-900">Action Required: Complete Statutory KYC</h3>
+              <h3 className="text-sm font-extrabold text-amber-900">
+                {activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING'
+                  ? 'KYC Documents Submitted: Under Compliance Review'
+                  : 'Action Required: Complete Statutory KYC'}
+              </h3>
               <p className="text-xs text-amber-800 font-medium leading-relaxed">
-                As per RBI guidelines, orders above $1,000 USD require uploaded PAN card & Passport identity documents.
+                {activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING'
+                  ? 'Your identity documents have been received and are currently being reviewed by compliance officers.'
+                  : 'As per RBI guidelines, orders above $1,000 USD require uploaded PAN card & Passport identity documents.'}
               </p>
             </div>
           </div>
 
           <button 
             onClick={() => router.push('/dashboard/kyc')}
-            className="btn-gold px-5 py-2.5 rounded-xl text-xs font-black text-slate-950 shrink-0 shadow-md hover:scale-105 transition-transform"
+            className="btn-gold px-5 py-2.5 rounded-xl text-xs font-black text-slate-950 shrink-0 shadow-md hover:scale-105 transition-transform cursor-pointer"
           >
-            Upload KYC Documents Now
+            {activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING'
+              ? 'View Submission Status'
+              : 'Upload KYC Documents Now'}
           </button>
         </div>
       )}
@@ -241,8 +259,8 @@ export default function DashboardOverview() {
           </div>
           <div className="space-y-0.5">
             <div className="text-2xl font-black text-slate-900">{activeSummary.activeForexCards} Cards</div>
-            <p className="text-xs text-emerald-700 font-extrabold flex items-center gap-1">
-              <span>● $1,250 USD Balance Loaded</span>
+            <p className="text-xs text-slate-500 font-medium">
+              {activeSummary.activeForexCards > 0 ? '● Active Multi-Currency Cards' : 'No active cards issued'}
             </p>
           </div>
         </div>
@@ -257,8 +275,12 @@ export default function DashboardOverview() {
           </div>
           <div className="space-y-0.5">
             <div className="text-2xl font-black text-slate-900">{activeSummary.totalOrders} Orders</div>
-            <p className="text-xs text-amber-700 font-extrabold flex items-center gap-1">
-              <span>🏬 1 Ready for Branch Pickup</span>
+            <p className="text-xs text-slate-500 font-medium">
+              {activeSummary.pendingOrders > 0 
+                ? `⏳ ${activeSummary.pendingOrders} In Progress`
+                : activeSummary.totalOrders > 0 
+                ? 'All orders fulfilled'
+                : 'No orders placed yet'}
             </p>
           </div>
         </div>
@@ -283,17 +305,41 @@ export default function DashboardOverview() {
         <div className="rounded-2xl bg-white border border-slate-200/90 p-5 space-y-3 hover:border-amber-400/60 transition-all shadow-2xs hover:shadow-md group">
           <div className="flex justify-between items-start">
             <span className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest">KYC Status</span>
-            <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <ShieldCheck className="w-4 h-4" />
+            <div className={`w-9 h-9 rounded-xl border flex items-center justify-center group-hover:scale-110 transition-transform ${
+              isKycVerified 
+                ? 'bg-emerald-100 border-emerald-300 text-emerald-700' 
+                : activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING'
+                ? 'bg-blue-100 border-blue-200 text-blue-700'
+                : 'bg-amber-100 border-amber-300 text-amber-700'
+            }`}>
+              {isKycVerified ? <ShieldCheck className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
             </div>
           </div>
           <div className="space-y-0.5">
-            <div className="text-2xl font-black text-emerald-700 flex items-center gap-1.5">
-              <span>VERIFIED</span>
-              <span className="text-xs bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full text-emerald-800">RBI LRS</span>
+            <div className={`text-2xl font-black flex items-center gap-1.5 ${
+              isKycVerified 
+                ? 'text-emerald-700' 
+                : activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING'
+                ? 'text-blue-700'
+                : 'text-amber-600'
+            }`}>
+              <span>{isKycVerified ? 'VERIFIED' : activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING' ? 'IN REVIEW' : 'PENDING'}</span>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
+                isKycVerified 
+                  ? 'bg-emerald-100 border-emerald-300 text-emerald-800' 
+                  : activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING'
+                  ? 'bg-blue-100 border-blue-200 text-blue-800'
+                  : 'bg-amber-100 border-amber-300 text-amber-800'
+              }`}>
+                {isKycVerified ? 'RBI LRS' : activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING' ? 'REVIEWING' : 'ACTION REQ'}
+              </span>
             </div>
             <p className="text-xs text-slate-500 font-medium">
-              Zero pending compliance holds
+              {isKycVerified 
+                ? 'Zero pending compliance holds' 
+                : activeSummary.kycStatus === 'UNDER_REVIEW' || activeSummary.kycStatus === 'SUBMITTED' || activeSummary.kycStatus === 'REVIEWING'
+                ? 'Documents under compliance review'
+                : 'Pending document upload'}
             </p>
           </div>
         </div>
