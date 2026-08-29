@@ -522,7 +522,7 @@ function CustomerLoginContent() {
                           maxLength={10}
                           placeholder="9876543210"
                           value={mobileNumber}
-                          onChange={(e) => setMobileNumber(e.target.value)}
+                          onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
                           className="flex-1 px-3 py-2 text-xs font-bold text-slate-900 outline-none bg-transparent"
                           autoFocus
                         />
@@ -676,7 +676,7 @@ function CustomerLoginContent() {
                       maxLength={10}
                       placeholder="9876543210"
                       value={regMobile}
-                      onChange={(e) => setRegMobile(e.target.value)}
+                      onChange={(e) => setRegMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       className="flex-1 px-2.5 py-1.5 text-xs font-bold text-slate-900 outline-none bg-transparent"
                     />
                   </div>

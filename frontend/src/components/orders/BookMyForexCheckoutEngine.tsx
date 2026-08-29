@@ -855,9 +855,10 @@ export function BookMyForexCheckoutEngine() {
                     <input
                       type="tel"
                       required
-                      placeholder="10-digit mobile number"
+                      maxLength={10}
+                      placeholder="9876543210"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                       className="w-full pl-9 pr-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs placeholder:text-slate-400 placeholder:font-normal"
                     />
                   </div>

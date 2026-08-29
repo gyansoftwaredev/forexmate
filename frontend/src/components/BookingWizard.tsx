@@ -50,7 +50,12 @@ export default function BookingWizard() {
               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">MOBILE NUMBER</label>
               <div className="flex border-b border-gray-300 focus-within:border-blue-600 transition-colors pb-1 mb-6">
                 <span className="text-lg font-bold text-gray-900 mr-2">+91</span>
-                <input type="tel" placeholder="Enter 10 digit number" className="w-full text-lg font-bold text-gray-900 focus:outline-none bg-transparent" />
+                <input 
+                  type="tel" 
+                  maxLength={10}
+                  placeholder="9876543210" 
+                  className="w-full text-lg font-bold text-gray-900 focus:outline-none bg-transparent" 
+                />
               </div>
               
               <button 
