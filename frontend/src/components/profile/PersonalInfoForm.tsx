@@ -1,12 +1,23 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { useProfile, useUpdateProfile } from '../../features/profile/hooks/useProfile';
-import { useState, useEffect } from 'react';
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  CreditCard, 
+  ShieldCheck, 
+  CheckCircle2, 
+  Sparkles, 
+  AlertCircle, 
+  RefreshCw, 
+  Lock 
+} from 'lucide-react';
 
 export function PersonalInfoForm() {
   const { user } = useAuth();
@@ -19,62 +30,185 @@ export function PersonalInfoForm() {
     panNumber: ''
   });
 
+  const [savedSuccess, setSavedSuccess] = useState(false);
+
   useEffect(() => {
-    if (profile) {
+    if (profile || user) {
       setFormData({
-        fullName: profile.user?.fullName || user?.fullName || '',
-        phone: profile.user?.mobile || user?.mobile || '',
-        panNumber: profile.panNumber || ''
+        fullName: profile?.user?.fullName || user?.fullName || '',
+        phone: profile?.user?.mobile || user?.mobile || '',
+        panNumber: profile?.panNumber || ''
       });
     }
   }, [profile, user]);
 
   const handleSave = async () => {
     if (!user?.id) return;
-    await updateMutation.mutateAsync({
-      userId: user.id,
-      data: formData
-    });
+    try {
+      await updateMutation.mutateAsync({
+        userId: user.id,
+        data: formData
+      });
+      setSavedSuccess(true);
+      setTimeout(() => setSavedSuccess(false), 4000);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   if (isLoading) {
-    return <div className="p-8 text-center text-gray-500">Loading...</div>;
+    return (
+      <Card className="border-slate-200 shadow-sm p-12 text-center">
+        <div className="flex flex-col items-center justify-center gap-3">
+          <RefreshCw className="w-8 h-8 animate-spin text-amber-600" />
+          <p className="text-sm font-bold text-slate-600">Loading profile details...</p>
+        </div>
+      </Card>
+    );
   }
 
   return (
-    <Card className="border-gray-200 shadow-sm">
-      <CardHeader>
-        <CardTitle className="text-xl font-extrabold text-gray-900">Personal Information</CardTitle>
-        <CardDescription className="text-gray-500 font-medium">
-          Update your personal details and contact information.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Full Name</label>
-            <Input value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} placeholder="John Doe" />
+    <Card className="border-slate-200 shadow-sm rounded-3xl overflow-hidden bg-white">
+      <CardHeader className="bg-gradient-to-r from-slate-50 to-amber-50/30 border-b border-slate-100 p-6 sm:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="p-1.5 bg-amber-100 text-amber-800 rounded-lg">
+                <User className="w-4 h-4" />
+              </span>
+              <CardTitle className="text-xl font-display font-extrabold text-slate-900">
+                Personal Information
+              </CardTitle>
+            </div>
+            <CardDescription className="text-slate-500 font-medium text-xs sm:text-sm">
+              Update your registered KYC identity and statutory contact details.
+            </CardDescription>
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Email Address</label>
-            <Input value={user?.email || ''} disabled className="bg-gray-50" />
-            <p className="text-[10px] text-gray-500 font-medium mt-1">Contact support to change your email.</p>
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">Phone Number</label>
-            <Input value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+91 9876543210" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-700 uppercase tracking-wider">PAN Number</label>
-            <Input value={formData.panNumber} onChange={e => setFormData({...formData, panNumber: e.target.value.toUpperCase()})} placeholder="ABCDE1234F" className="uppercase" />
+
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold shrink-0">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>NSDL & UIDAI Ready</span>
           </div>
         </div>
-        <div className="flex justify-end pt-4 border-t border-gray-100">
-          <Button onClick={handleSave} disabled={updateMutation.isPending} className="bg-blue-600 hover:bg-blue-700 font-bold px-8">
-            {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
-          </Button>
+      </CardHeader>
+
+      <CardContent className="p-6 sm:p-8 space-y-6">
+        {savedSuccess && (
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs sm:text-sm font-bold flex items-center gap-2.5 animate-in fade-in">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <span>Profile details updated successfully! Your statutory records are synchronized.</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Full Name (As per PAN)</span>
+              <span className="text-slate-400 font-normal">{formData.fullName.length}/15</span>
+            </label>
+            <div className="relative">
+              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                maxLength={15}
+                value={formData.fullName}
+                onChange={e => setFormData({ ...formData, fullName: e.target.value.slice(0, 15) })}
+                placeholder="Full Name"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/60 border border-slate-200 focus:border-amber-500 focus:bg-white rounded-2xl text-xs sm:text-sm font-bold text-slate-900 outline-none transition-all shadow-2xs placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+
+          {/* Email Address */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Email Address</span>
+              <span className="text-[10px] text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded">Primary Account</span>
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="email"
+                value={user?.email || ''}
+                disabled
+                className="w-full pl-10 pr-10 py-3 bg-slate-100/80 border border-slate-200 rounded-2xl text-xs sm:text-sm font-bold text-slate-600 cursor-not-allowed outline-none shadow-2xs"
+              />
+              <Lock className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+            </div>
+            <p className="text-[10px] text-slate-400 font-medium">To update primary email, contact customer support.</p>
+          </div>
+
+          {/* Phone Number */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider">
+              Registered Mobile Number
+            </label>
+            <div className="flex items-center bg-slate-50/60 border border-slate-200 focus-within:border-amber-500 focus-within:bg-white rounded-2xl p-1 transition-all shadow-2xs">
+              <div className="px-2.5 py-1.5 bg-white rounded-xl border border-slate-200 flex items-center gap-1 text-xs font-bold text-slate-800 shrink-0">
+                <span>🇮🇳</span>
+                <span>+91</span>
+              </div>
+              <input
+                type="tel"
+                maxLength={10}
+                value={formData.phone}
+                onChange={e => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                placeholder="9876543210"
+                className="flex-1 px-3 py-2 text-xs sm:text-sm font-bold text-slate-900 outline-none bg-transparent"
+              />
+            </div>
+          </div>
+
+          {/* PAN Number */}
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-extrabold text-slate-700 uppercase tracking-wider flex items-center justify-between">
+              <span>Permanent Account Number (PAN)</span>
+              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">RBI Mandatory</span>
+            </label>
+            <div className="relative">
+              <CreditCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                maxLength={10}
+                value={formData.panNumber}
+                onChange={e => setFormData({ ...formData, panNumber: e.target.value.toUpperCase().slice(0, 10) })}
+                placeholder="ABCDE1234F"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50/60 border border-slate-200 focus:border-amber-500 focus:bg-white rounded-2xl text-xs sm:text-sm font-black text-slate-900 tracking-wider uppercase outline-none transition-all shadow-2xs placeholder:text-slate-400"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Security & Verification Guarantee Box */}
+        <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-200/80 flex items-start gap-3 text-xs text-slate-600 font-medium">
+          <Sparkles className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <p className="leading-relaxed">
+            Your personal information is verified against official records during forex note delivery and outward remittances in compliance with RBI FEMA guidelines.
+          </p>
+        </div>
+
+        <div className="flex justify-end pt-4 border-t border-slate-100">
+          <button
+            onClick={handleSave}
+            disabled={updateMutation.isPending}
+            className="px-8 py-3.5 bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-md hover:scale-[1.01] active:scale-98 transition-all disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+          >
+            {updateMutation.isPending ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                <span>Saving Changes...</span>
+              </>
+            ) : (
+              <>
+                <span>Save Changes</span>
+                <CheckCircle2 className="w-4 h-4 text-slate-950" />
+              </>
+            )}
+          </button>
         </div>
       </CardContent>
     </Card>
   );
 }
+
