@@ -1,9 +1,11 @@
 import React from 'react';
-import { CheckCircle2, Circle, Clock, FileCheck, Shield, Sparkles, Inbox, Award } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, FileCheck, Shield, Sparkles, Inbox, Award, Send, Landmark, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Order {
   status: string;
+  orderNumber?: string;
+  productType?: string;
   complianceStatus?: string;
   currentStage?: string;
   deliveryMethod?: string;
@@ -21,8 +23,8 @@ export function StatusTimeline({ order }: { order: Order }) {
   const stage = order.currentStage || 'KYC_STAGE';
 
   // 1. Determine KYC Status
-  const kycCompleted = compliance === 'APPROVED' || compliance === 'VERIFIED' || stage !== 'KYC_STAGE';
-  const kycCurrent = stage === 'KYC_STAGE' && !kycCompleted;
+  const kycCompleted = compliance === 'APPROVED' || compliance === 'VERIFIED' || (stage !== 'KYC_STAGE' && currentStatus !== 'PENDING_KYC');
+  const kycCurrent = (stage === 'KYC_STAGE' || currentStatus === 'PENDING_KYC') && !kycCompleted;
 
   // 2. Determine Compliance Review
   const complianceCompleted = compliance === 'APPROVED' || compliance === 'VERIFIED';
@@ -39,37 +41,74 @@ export function StatusTimeline({ order }: { order: Order }) {
   // 5. Overall Completed
   const isCompleted = currentStatus === 'COMPLETED' || currentStatus === 'DELIVERED';
 
+  const isWire = order.productType === 'REMITTANCE' || order.orderNumber?.includes('WIRE') || order.deliveryMethod === 'WIRE_TRANSFER';
+  const isSell = order.status === 'CASH_SELL' || order.productType === 'CASH_SELL';
+
   const getFulfillmentDescription = () => {
     const isPickup = order.deliveryMethod === 'PICKUP' || order.deliveryMethod === 'STORE_PICKUP';
     
     if (stage === 'INVENTORY_STAGE') {
-      return isPickup ? 'Preparing Cash' : 'Preparing Delivery';
+      return isPickup ? 'Reserving currency notes at branch' : 'Packaging secured home delivery';
     }
     
     if (stage === 'FULFILLMENT_STAGE') {
       if (isPickup) {
         return (order.fulfillmentStatus === 'ASSIGNED_TO_CASHIER' || (order as any).complianceLocked || (order as any).currentStage === 'BRANCH_EXECUTION_STAGE')
-          ? 'Ready For Pickup' 
-          : 'Preparing Cash';
+          ? 'Cash ready for collection at branch vault' 
+          : 'Preparing physical currency allocation';
       } else {
         return order.fulfillmentStatus === 'ASSIGNED_TO_DELIVERY' 
-          ? 'Out For Delivery' 
-          : 'Preparing Delivery';
+          ? 'Out for doorstep delivery by armored courier' 
+          : 'Packaging sealed forex kit';
       }
     }
     
     if (currentStatus === 'COMPLETED' || currentStatus === 'DELIVERED') {
-      return 'Completed';
+      return 'Fulfillment completed';
     }
     
-    return isPickup ? 'Preparing Cash' : 'Preparing Delivery';
+    return isPickup ? 'Preparing Cash Handover' : 'Preparing Secured Delivery';
   };
 
-  const isSell = order.status === 'CASH_SELL' || (order as any).productType === 'CASH_SELL';
-
-  const steps = isSell ? [
+  const steps = isWire ? [
     {
-      label: 'Submitted & KYC',
+      label: 'Order Placed & Identity Recorded',
+      description: 'Order created, PAN & statutory declarations captured',
+      completed: kycCompleted,
+      current: kycCurrent,
+      icon: Inbox
+    },
+    {
+      label: 'RBI LRS & Sanctions Screening',
+      description: 'Verification against Liberalised Remittance limits ($250k USD)',
+      completed: complianceCompleted,
+      current: complianceCurrent,
+      icon: Shield
+    },
+    {
+      label: 'Fund Settlement & Routing',
+      description: 'INR settlement confirmation and SWIFT network routing',
+      completed: prepCompleted,
+      current: prepCurrent,
+      icon: Landmark
+    },
+    {
+      label: 'SWIFT MT103 Wire Dispatch',
+      description: 'International wire broadcast to beneficiary bank',
+      completed: handoverCompleted,
+      current: handoverCurrent,
+      icon: Send
+    },
+    {
+      label: 'Settled & Completed',
+      description: 'Funds credited to foreign account and final receipt generated',
+      completed: isCompleted,
+      current: isCompleted,
+      icon: Award
+    }
+  ] : isSell ? [
+    {
+      label: 'Submitted & Identity Check',
       description: 'Order placed, awaiting customer identity verification',
       completed: kycCompleted,
       current: kycCurrent,
@@ -77,42 +116,42 @@ export function StatusTimeline({ order }: { order: Order }) {
     },
     {
       label: 'Compliance Review',
-      description: 'Reviewing compliance documents and security regulations',
+      description: 'Reviewing statutory documents and forex ownership regulations',
       completed: complianceCompleted,
       current: complianceCurrent,
       icon: Shield
     },
     {
-      label: 'Fulfillment Handover',
+      label: 'Currency Handover & Instant INR Payout',
       description: getFulfillmentDescription(),
       completed: handoverCompleted,
       current: handoverCurrent,
       icon: FileCheck
     },
     {
-      label: 'Completed',
-      description: 'Transaction fully settled and closed',
+      label: 'Settled & Completed',
+      description: 'Transaction settled and funds wired to Indian bank account',
       completed: isCompleted,
       current: isCompleted,
       icon: Award
     }
   ] : [
     {
-      label: 'Submitted & KYC',
+      label: 'Order Placed & Identity Check',
       description: 'Order placed, awaiting customer identity verification',
       completed: kycCompleted,
       current: kycCurrent,
       icon: Inbox
     },
     {
-      label: 'Compliance Review',
+      label: 'Statutory Compliance Review',
       description: 'Reviewing against LRS limits and security regulations',
       completed: complianceCompleted,
       current: complianceCurrent,
       icon: Shield
     },
     {
-      label: 'Branch Prep & Allocation',
+      label: 'Branch Prep & Vault Allocation',
       description: 'Reserving physical currency notes / forex cards from branch inventory',
       completed: prepCompleted,
       current: prepCurrent,
@@ -135,41 +174,55 @@ export function StatusTimeline({ order }: { order: Order }) {
   ];
 
   return (
-    <div className="py-4">
+    <div className="py-2">
       <div className="relative">
-        {/* Progress Line */}
-        <div className="absolute left-5 top-2.5 h-[90%] w-0.5 bg-gray-100" />
+        {/* Continuous Connecting Track */}
+        <div className="absolute left-4.5 top-3.5 bottom-6 w-0.5 bg-slate-200" />
         
-        <div className="space-y-8">
+        <div className="space-y-6">
           {steps.map((step, idx) => {
             const Icon = step.icon;
             return (
-              <div key={idx} className="relative flex gap-5 group">
-                {/* Circle Icon Container */}
+              <div key={idx} className="relative flex items-start gap-4 group">
+                {/* Node Icon Container */}
                 <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center relative z-10 shrink-0 transition-all duration-300 shadow-sm",
+                  "w-9 h-9 rounded-full flex items-center justify-center relative z-10 shrink-0 transition-all duration-300 shadow-2xs",
                   step.completed 
-                    ? "bg-emerald-500 text-white" 
+                    ? "bg-gradient-to-tr from-emerald-600 to-emerald-500 text-white ring-4 ring-emerald-100" 
                     : step.current 
-                      ? "bg-blue-600 text-white ring-4 ring-blue-100" 
-                      : "bg-white border-2 border-gray-200 text-gray-400 group-hover:border-gray-300"
+                      ? "bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 font-black ring-4 ring-amber-200/80 animate-pulse" 
+                      : "bg-white border-2 border-slate-200 text-slate-400 group-hover:border-slate-300"
                 )}>
                   {step.completed ? (
-                    <CheckCircle2 className="w-5.5 h-5.5" />
+                    <CheckCircle2 className="w-5 h-5 text-white stroke-[2.5]" />
                   ) : (
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-4 h-4" />
                   )}
                 </div>
 
                 {/* Step Metadata */}
-                <div className="pt-0.5">
+                <div className="pt-0.5 flex-1">
+                  <div className="flex items-center justify-between">
+                    <p className={cn(
+                      "text-xs font-extrabold tracking-tight transition-colors",
+                      step.completed 
+                        ? "text-emerald-900" 
+                        : step.current 
+                          ? "text-amber-900 font-black flex items-center gap-1.5" 
+                          : "text-slate-600"
+                    )}>
+                      <span>{step.label}</span>
+                      {step.current && (
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-200 text-amber-950 uppercase tracking-widest border border-amber-300">
+                          Active
+                        </span>
+                      )}
+                    </p>
+                  </div>
                   <p className={cn(
-                    "text-sm font-bold transition-colors",
-                    step.completed ? "text-emerald-700" : step.current ? "text-blue-600" : "text-gray-600"
+                    "text-[11px] mt-0.5 font-medium leading-relaxed",
+                    step.completed ? "text-emerald-700/80" : step.current ? "text-amber-800/90" : "text-slate-400"
                   )}>
-                    {step.label}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1 font-medium leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -181,4 +234,5 @@ export function StatusTimeline({ order }: { order: Order }) {
     </div>
   );
 }
+
 

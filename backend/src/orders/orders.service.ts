@@ -437,10 +437,21 @@ export class OrdersService {
         quote: { include: { currency: true } },
         branch: true,
         tasks: true,
+        profile: { include: { user: true } },
+        pickupHandover: true,
+        deliveryJob: true,
+        session: true,
         items: {
           include: {
             product: true,
-            currency: true
+            currency: true,
+            remittance: {
+              include: {
+                purpose: true,
+                beneficiary: true,
+                partner: true
+              }
+            }
           }
         },
         history: { orderBy: { createdAt: 'desc' } }
