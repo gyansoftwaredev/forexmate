@@ -113,7 +113,7 @@ export default function BeneficiariesPage() {
   const [address, setAddress] = useState('');
   const [country, setCountry] = useState('United States');
   const [isCountryOpen, setIsCountryOpen] = useState(false);
-  const [countryFilter, setCountryFilter] = useState('');
+  const [countrySearch, setCountrySearch] = useState('');
 
   const fetchBeneficiaries = async () => {
     setIsLoading(true);
