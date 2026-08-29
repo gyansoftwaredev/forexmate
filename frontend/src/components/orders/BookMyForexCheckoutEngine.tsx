@@ -244,7 +244,8 @@ export function BookMyForexCheckoutEngine() {
   const [payoutAccountType, setPayoutAccountType] = useState<'SAVINGS' | 'CURRENT'>(draftState.payoutAccountType || 'SAVINGS');
   const [sourceOfForex, setSourceOfForex] = useState(draftState.sourceOfForex || 'Returned from Overseas Travel');
 
-  // Remittance Specific State (Overseas Beneficiary)
+  // Remittance Specific State (Overseas Beneficiary & Remitter Status)
+  const [remitterResidentStatus, setRemitterResidentStatus] = useState(draftState.remitterResidentStatus || 'RESIDENT_INDIAN');
   const [benName, setBenName] = useState(draftState.beneficiaryName || '');
   const [benCountry, setBenCountry] = useState(draftState.beneficiaryCountry || '');
   const [benBank, setBenBank] = useState(draftState.beneficiaryBank || '');
@@ -447,6 +448,7 @@ export function BookMyForexCheckoutEngine() {
       phone,
       email,
       pan,
+      remitterResidentStatus,
       destinations: destinationCountries,
       destination: destinationCountries.join(', '),
       departureDate: startDate,
@@ -888,7 +890,7 @@ export function BookMyForexCheckoutEngine() {
 
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <div className={`grid grid-cols-1 ${isRemittance || isSell ? 'md:grid-cols-2' : 'md:grid-cols-3'} gap-4 pt-2`}>
                 
                 {/* PAN Number */}
                 <div>
@@ -938,7 +940,7 @@ export function BookMyForexCheckoutEngine() {
                   )}
                 </div>
 
-                {/* Conditional Fields: Sell Forex Source vs Buy/Card Travel Countries */}
+                {/* Conditional Fields: Sell Forex Source vs Buy/Card Travel Countries vs Remitter Resident Status */}
                 {isSell ? (
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -962,11 +964,17 @@ export function BookMyForexCheckoutEngine() {
                       Remitter Resident Status <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value="RESIDENT_INDIAN"
-                      disabled
-                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 bg-slate-100 outline-none"
+                      value={remitterResidentStatus}
+                      onChange={(e) => {
+                        setRemitterResidentStatus(e.target.value);
+                        updateDraft({ remitterResidentStatus: e.target.value });
+                      }}
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 focus:bg-white outline-none bg-white shadow-2xs cursor-pointer transition-colors"
                     >
                       <option value="RESIDENT_INDIAN">Resident Indian Individual (LRS Eligible)</option>
+                      <option value="NRI_NRE_NRO">Non-Resident Indian (NRI / NRE / NRO)</option>
+                      <option value="FOREIGN_NATIONAL">Foreign National Resident in India</option>
+                      <option value="CORPORATE_ENTITY">Corporate / Business Entity</option>
                     </select>
                   </div>
                 ) : (
