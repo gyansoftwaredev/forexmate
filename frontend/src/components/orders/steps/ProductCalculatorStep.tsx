@@ -6,7 +6,7 @@ import { useQuoteStore } from '@/stores/quoteStore';
 import { useRates } from '@/hooks/useRates';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, MapPin, Calendar, Briefcase, Plus, Edit2, Info, CheckCircle2, Ticket, Globe, Landmark, User2, X, ChevronDown, Upload, FileText, AlertCircle, Sparkles } from 'lucide-react';
+import { ArrowRight, MapPin, Calendar, Briefcase, Plus, Edit2, Info, CheckCircle2, Ticket, Globe, Landmark, User2, X, ChevronDown, Upload, FileText, AlertCircle, Sparkles, Banknote, CreditCard, ArrowLeftRight, Send, Package, Receipt, Building2, Truck, Zap, PartyPopper, TriangleAlert, Bike, ShoppingCart } from 'lucide-react';
 
 import { CitySelectorModal } from '../CitySelectorModal';
 import { SameDayDeliveryModal } from '../SameDayDeliveryModal';
@@ -848,81 +848,87 @@ export function ProductCalculatorStep() {
       <div className="relative z-10">
       
       {/* Product Switcher Tabs */}
-      <div className="flex flex-wrap border border-slate-200/90 mb-6 bg-slate-100/90 p-1.5 rounded-2xl gap-1.5 shadow-inner backdrop-blur-md">
+      <div className="flex flex-wrap border border-slate-200/80 mb-6 bg-slate-100/70 p-1 rounded-2xl gap-1 shadow-inner">
         <button
           type="button"
           onClick={() => handleTabSwitch('CASH')}
-          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             product === 'CASH'
-              ? 'bg-white text-slate-900 shadow-md border border-slate-200/90 ring-1 ring-amber-500/25 scale-[1.01]'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 ring-1 ring-amber-400/30'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           }`}
         >
-          <span className="text-base">💵</span> Buy Notes
+          <Banknote className="w-3.5 h-3.5 shrink-0" />
+          <span>Buy Notes</span>
         </button>
         <button
           type="button"
           onClick={() => handleTabSwitch('CARD')}
-          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             product === 'CARD'
-              ? 'bg-white text-slate-900 shadow-md border border-slate-200/90 ring-1 ring-blue-500/25 scale-[1.01]'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 ring-1 ring-blue-400/30'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           }`}
         >
-          <span className="text-base">💳</span> Forex Card
+          <CreditCard className="w-3.5 h-3.5 shrink-0" />
+          <span>Forex Card</span>
         </button>
         <button
           type="button"
           onClick={() => handleTabSwitch('CASH_SELL')}
-          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             product === 'CASH_SELL'
-              ? 'bg-white text-slate-900 shadow-md border border-slate-200/90 ring-1 ring-emerald-500/25 scale-[1.01]'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 ring-1 ring-emerald-400/30'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           }`}
         >
-          <span className="text-base">🔄</span> Sell Forex
+          <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
+          <span>Sell Forex</span>
         </button>
         <button
           type="button"
           onClick={() => handleTabSwitch('REMITTANCE')}
-          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`flex-1 py-2.5 px-2 rounded-xl text-xs font-bold tracking-wide transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             product === 'REMITTANCE'
-              ? 'bg-white text-slate-900 shadow-md border border-slate-200/90 ring-1 ring-indigo-500/25 scale-[1.01]'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+              ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 ring-1 ring-indigo-400/30'
+              : 'text-slate-500 hover:text-slate-800 hover:bg-white/50'
           }`}
         >
-          <span className="text-base">✈️</span> Send Remittance
+          <Send className="w-3.5 h-3.5 shrink-0" />
+          <span>Remittance</span>
         </button>
       </div>
 
       {/* Top Doorstep Delivery Ribbon */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-700 bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-emerald-50/50 p-3.5 px-4 rounded-2xl border border-amber-200/80 shadow-2xs">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-xs font-medium text-slate-600 bg-slate-50/80 p-3 px-4 rounded-xl border border-slate-200/80">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="flex h-2.5 w-2.5 relative shrink-0">
+          <span className="flex h-2 w-2 relative shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
           </span>
-          <span className="text-slate-600">Guaranteed Doorstep Delivery by</span>
-          <span className="font-extrabold text-slate-950 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+          <span>Guaranteed delivery by</span>
+          <span className="font-semibold text-slate-800 bg-white px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs text-[11px]">
             {deliveryDay}, 9:00 PM
           </span>
-          <span className="text-slate-600">in</span>
+          <span>in</span>
           <button
             type="button"
             onClick={() => setIsCityModalOpen(true)}
-            className="font-black text-blue-700 bg-white hover:bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-200 shadow-2xs transition-all flex items-center gap-1 cursor-pointer hover:border-blue-300"
+            className="font-semibold text-blue-700 bg-white hover:bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200 shadow-2xs transition-all flex items-center gap-1 cursor-pointer hover:border-blue-300 text-[11px]"
           >
-            <span>📍 {selectedCity}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-blue-600" />
+            <MapPin className="w-3 h-3 text-blue-500" />
+            <span>{selectedCity}</span>
+            <ChevronDown className="w-3 h-3 text-blue-500" />
           </button>
         </div>
         <button
           type="button"
           onClick={() => setIsDeliveryPolicyOpen(true)}
-          className="text-xs font-bold text-amber-800 hover:text-amber-950 bg-amber-100/70 hover:bg-amber-200/80 px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer border border-amber-200"
+          className="text-[11px] font-semibold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-md transition-all flex items-center gap-1 cursor-pointer border border-amber-200"
           title="Click for Same-Day Delivery Policy"
         >
-          <span>⚡ Same-Day Policy</span>
+          <Zap className="w-3 h-3" />
+          <span>Same-Day Policy</span>
         </button>
       </div>
 
@@ -932,10 +938,13 @@ export function ProductCalculatorStep() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Required Amount Card */}
-          <Card className="shadow-sm border-slate-200/90 rounded-3xl overflow-visible bg-white">
-            <div className="p-6 pb-5">
-              <h2 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
-                <span className="text-lg">💰</span> Required Amount
+          <Card className="shadow-sm border-slate-200/80 rounded-2xl overflow-visible bg-white">
+            <div className="p-5 pb-4">
+              <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                  <ShoppingCart className="w-3.5 h-3.5 text-amber-600" />
+                </span>
+                Required Amount
               </h2>
               
               {/* Highlight Exchange Rate & Total Conversion Prominently */}
@@ -1059,10 +1068,13 @@ export function ProductCalculatorStep() {
 
           {/* Fulfillment Options Card — SHOWN ONLY FOR CASH BUY, CASH SELL & CARD */}
           {!isRemittance && (
-            <Card className="shadow-sm border-slate-200/90 rounded-3xl bg-white overflow-hidden">
-              <div className="p-6">
-                <h2 className="text-base font-black text-slate-900 mb-1 flex items-center gap-2">
-                  <span className="text-lg">📦</span> Fulfillment Method
+            <Card className="shadow-sm border-slate-200/80 rounded-2xl bg-white overflow-hidden">
+              <div className="p-5">
+                <h2 className="text-sm font-bold text-slate-900 mb-1 flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
+                    <Package className="w-3.5 h-3.5 text-slate-600" />
+                  </span>
+                  Fulfillment Method
                 </h2>
                 <p className="text-xs text-slate-500 mb-5 font-medium">
                   {product === 'CASH_SELL' ? 'Choose how you would like to hand over your foreign currency' : 'Choose how you would like to receive your foreign exchange'}
@@ -1080,14 +1092,14 @@ export function ProductCalculatorStep() {
                       }`}
                     >
                       <div className="flex items-center gap-2.5 mb-1.5">
-                        <span className="w-8 h-8 rounded-xl bg-blue-100/70 text-blue-700 flex items-center justify-center text-sm font-bold shrink-0">
-                          🏢
+                        <span className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-200/80 text-blue-600 flex items-center justify-center shrink-0">
+                          <Building2 className="w-4 h-4" />
                         </span>
-                        <div className="font-black text-slate-900 text-sm">
+                        <div className="font-semibold text-slate-900 text-sm">
                           {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
                         </div>
                       </div>
-                      <div className="text-[11px] text-slate-500 font-medium pl-10">
+                      <div className="text-[11px] text-slate-500 pl-9">
                         {product === 'CASH_SELL' ? 'Visit our branch vault to verify cash & get paid' : 'Collect directly from our authorized branch vault'}
                       </div>
                     </div>
@@ -1097,14 +1109,14 @@ export function ProductCalculatorStep() {
                       title={`No physical branches currently in ${selectedCity}. Doorstep delivery is available.`}
                     >
                       <div className="flex items-center gap-2.5 mb-1.5">
-                        <span className="w-8 h-8 rounded-xl bg-slate-200/70 text-slate-400 flex items-center justify-center text-sm font-bold shrink-0">
-                          🏢
+                        <span className="w-7 h-7 rounded-lg bg-slate-100 border border-slate-200 text-slate-400 flex items-center justify-center shrink-0">
+                          <Building2 className="w-4 h-4" />
                         </span>
-                        <div className="font-bold text-slate-400 text-sm">
+                        <div className="font-semibold text-slate-400 text-sm">
                           {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
                         </div>
                       </div>
-                      <div className="text-[11px] text-slate-400 pl-10 font-medium">
+                      <div className="text-[11px] text-slate-400 pl-9">
                         Not available in this city
                       </div>
                     </div>
@@ -1120,15 +1132,15 @@ export function ProductCalculatorStep() {
                     }`}
                   >
                     <div className="flex items-center gap-2.5 mb-1.5">
-                      <span className="w-8 h-8 rounded-xl bg-amber-100/70 text-amber-700 flex items-center justify-center text-sm font-bold shrink-0">
-                        🛵
+                      <span className="w-7 h-7 rounded-lg bg-amber-50 border border-amber-200/80 text-amber-600 flex items-center justify-center shrink-0">
+                        <Truck className="w-4 h-4" />
                       </span>
-                      <div className="font-black text-slate-900 text-sm">
+                      <div className="font-semibold text-slate-900 text-sm">
                         {product === 'CASH_SELL' ? 'Home Collection' : 'Home Delivery'}
                       </div>
                     </div>
-                    <div className="text-[11px] text-slate-500 font-medium pl-10">
-                      {product === 'CASH_SELL' ? 'Our armored executive will collect currency from your doorstep' : 'Guaranteed safe delivery to your home or office address'}
+                    <div className="text-[11px] text-slate-500 pl-9">
+                      {product === 'CASH_SELL' ? 'Our executive will collect currency from your doorstep' : 'Guaranteed safe delivery to your home or office address'}
                     </div>
                   </div>
                 </div>
@@ -1137,7 +1149,7 @@ export function ProductCalculatorStep() {
                 {deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
                   <div className="bg-amber-50 border border-amber-300 text-amber-950 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200 shadow-2xs">
                     <div className="flex items-start gap-2.5">
-                      <span className="text-xl shrink-0">⚠️</span>
+                      <TriangleAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                       <div className="text-xs space-y-0.5">
                         <p className="font-extrabold text-amber-900">
                           Doorstep Delivery requires a minimum order value of ₹25,000.
@@ -1178,8 +1190,8 @@ export function ProductCalculatorStep() {
                   </div>
                 ) : (
                   totalCurrencyInrValue >= 25000 && (
-                    <div className="bg-blue-50/70 border border-blue-200/60 rounded-2xl p-3.5 flex items-center gap-2.5 text-xs text-blue-900 font-medium animate-in fade-in duration-200">
-                      <span className="text-base shrink-0">🚚</span>
+                    <div className="bg-blue-50/60 border border-blue-200/60 rounded-xl p-3 flex items-center gap-2.5 text-xs text-blue-900 font-medium animate-in fade-in duration-200">
+                      <Truck className="w-4 h-4 text-blue-600 shrink-0" />
                       <span>Guaranteed safe doorstep delivery in <strong>{selectedCity}</strong>. You will provide your delivery address and coordination contact in Step 4.</span>
                     </div>
                   )
@@ -1836,9 +1848,9 @@ export function ProductCalculatorStep() {
 
           {/* Amount Breakup */}
           <Card className="shadow-sm border-slate-200/90 rounded-3xl overflow-hidden bg-white">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
-                <span>🧾</span> Amount Breakup
+            <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <Receipt className="w-3.5 h-3.5 text-slate-500" /> Amount Breakup
               </h3>
               <span className="text-[10px] font-bold text-slate-400 font-mono">INR</span>
             </div>
@@ -1877,8 +1889,9 @@ export function ProductCalculatorStep() {
                       <span className="font-black text-indigo-700 text-lg font-mono">₹ {remCalc.totalInr?.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                     </div>
                     {remCalc.thresholdExceeded && (
-                      <div className="mt-2 bg-orange-50 border border-orange-200 rounded-xl p-3 text-[11px] text-orange-700 font-medium">
-                        ⚠️ Your cumulative LRS spending has exceeded ₹7 Lakhs. Higher TCS rate applies.
+                      <div className="mt-2 bg-orange-50 border border-orange-200 rounded-xl p-3 text-[11px] text-orange-700 font-medium flex items-start gap-1.5">
+                        <TriangleAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                        <span>Your cumulative LRS spending has exceeded ₹7 Lakhs. Higher TCS rate applies.</span>
                       </div>
                     )}
                   </>
@@ -2002,9 +2015,9 @@ export function ProductCalculatorStep() {
 
               {/* Applied coupon success banner */}
               {appliedOffer && (
-                <div className="bg-emerald-50/90 border border-emerald-200 rounded-2xl p-3 flex items-center justify-between text-xs text-emerald-950 shadow-2xs animate-in fade-in duration-200">
+                <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs text-emerald-950 animate-in fade-in duration-200">
                   <div className="flex items-center gap-2">
-                    <span className="text-base">🎉</span>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <div>
                       <span className="font-black font-mono block text-emerald-950">{appliedOffer.code} Applied</span>
                       <span className="text-[11px] text-emerald-700 font-bold">{appliedOffer.description}</span>
