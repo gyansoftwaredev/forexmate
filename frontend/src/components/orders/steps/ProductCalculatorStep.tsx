@@ -846,65 +846,83 @@ export function ProductCalculatorStep() {
 
       <div className="relative z-10">
       
-      {/* Product Switcher Tabs (Issue 1 & 2) */}
-      <div className="flex flex-wrap border border-gray-200 mb-6 bg-gray-100/80 p-1.5 rounded-2xl gap-1 shadow-inner">
+      {/* Product Switcher Tabs */}
+      <div className="flex flex-wrap border border-slate-200/90 mb-6 bg-slate-100/90 p-1.5 rounded-2xl gap-1.5 shadow-inner backdrop-blur-md">
         <button
           type="button"
           onClick={() => handleTabSwitch('CASH')}
-          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${
-            product === 'CASH' ? 'bg-white text-blue-600 shadow-sm border border-gray-200 ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            product === 'CASH'
+              ? 'bg-white text-slate-900 shadow-md border border-slate-200/90 ring-1 ring-amber-500/25 scale-[1.01]'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
           }`}
         >
-          <span>💵</span> Buy Notes
+          <span className="text-base">💵</span> Buy Notes
         </button>
         <button
           type="button"
           onClick={() => handleTabSwitch('CARD')}
-          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${
-            product === 'CARD' ? 'bg-white text-blue-600 shadow-sm border border-gray-200 ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            product === 'CARD'
+              ? 'bg-white text-slate-900 shadow-md border border-slate-200/90 ring-1 ring-blue-500/25 scale-[1.01]'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
           }`}
         >
-          <span>💳</span> Forex Card
+          <span className="text-base">💳</span> Forex Card
         </button>
         <button
           type="button"
           onClick={() => handleTabSwitch('CASH_SELL')}
-          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${
-            product === 'CASH_SELL' ? 'bg-white text-emerald-600 shadow-sm border border-gray-200 ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            product === 'CASH_SELL'
+              ? 'bg-white text-slate-900 shadow-md border border-slate-200/90 ring-1 ring-emerald-500/25 scale-[1.01]'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
           }`}
         >
-          <span>🔄</span> Sell Forex
+          <span className="text-base">🔄</span> Sell Forex
         </button>
         <button
           type="button"
           onClick={() => handleTabSwitch('REMITTANCE')}
-          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${
-            product === 'REMITTANCE' ? 'bg-white text-indigo-600 shadow-sm border border-gray-200 ring-1 ring-black/5' : 'text-gray-600 hover:text-gray-900 hover:bg-white/50'
+          className={`flex-1 py-3 px-3 rounded-xl text-xs md:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            product === 'REMITTANCE'
+              ? 'bg-white text-slate-900 shadow-md border border-slate-200/90 ring-1 ring-indigo-500/25 scale-[1.01]'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
           }`}
         >
-          <span>✈️</span> Send Remittance
+          <span className="text-base">✈️</span> Send Remittance
         </button>
       </div>
 
-      {/* Top Banner Info */}
       {/* Top Doorstep Delivery Ribbon */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 text-[13px] font-medium text-gray-700 bg-gray-50/80 p-3 rounded-xl border border-gray-100">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="mr-1 text-lg">🛵</span> Guaranteed Doorstep Delivery by <span className="font-bold text-gray-900 mx-0.5">{deliveryDay}, 9:00 PM</span> in 
-          <span 
-            className="text-blue-600 font-bold ml-1 cursor-pointer hover:underline bg-blue-50 px-2 py-0.5 rounded border border-blue-100"
-            onClick={() => setIsCityModalOpen(true)}
-          >
-            {selectedCity} ▾
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-slate-700 bg-gradient-to-r from-amber-50/90 via-orange-50/40 to-emerald-50/50 p-3.5 px-4 rounded-2xl border border-amber-200/80 shadow-2xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="flex h-2.5 w-2.5 relative shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
+          <span className="text-slate-600">Guaranteed Doorstep Delivery by</span>
+          <span className="font-extrabold text-slate-950 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs">
+            {deliveryDay}, 9:00 PM
+          </span>
+          <span className="text-slate-600">in</span>
           <button
-            onClick={() => setIsDeliveryPolicyOpen(true)}
-            className="ml-1 text-base hover:scale-110 transition-transform cursor-pointer"
-            title="Click for Same-Day Delivery Policy"
+            type="button"
+            onClick={() => setIsCityModalOpen(true)}
+            className="font-black text-blue-700 bg-white hover:bg-blue-50 px-2.5 py-1 rounded-xl border border-blue-200 shadow-2xs transition-all flex items-center gap-1 cursor-pointer hover:border-blue-300"
           >
-            👈
+            <span>📍 {selectedCity}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-blue-600" />
           </button>
         </div>
+        <button
+          type="button"
+          onClick={() => setIsDeliveryPolicyOpen(true)}
+          className="text-xs font-bold text-amber-800 hover:text-amber-950 bg-amber-100/70 hover:bg-amber-200/80 px-3 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer border border-amber-200"
+          title="Click for Same-Day Delivery Policy"
+        >
+          <span>⚡ Same-Day Policy</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -913,31 +931,35 @@ export function ProductCalculatorStep() {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Required Amount Card */}
-          <Card className="shadow-sm border-gray-200 rounded-2xl overflow-visible">
+          <Card className="shadow-sm border-slate-200/90 rounded-3xl overflow-visible bg-white">
             <div className="p-6 pb-5">
-              <h2 className="text-[17px] font-bold text-gray-900 mb-4">Required Amount</h2>
+              <h2 className="text-base font-black text-slate-900 mb-4 flex items-center gap-2">
+                <span className="text-lg">💰</span> Required Amount
+              </h2>
               
-              {/* Highlight Exchange Rate & Total Conversion Prominently (Issue 6) */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50/50 border border-blue-200/80 rounded-xl p-3.5 mb-5 flex flex-wrap items-center justify-between gap-3 shadow-xs">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">Live Interbank Rate:</span>
-                  <span className="text-sm font-black text-blue-700 bg-white px-2.5 py-0.5 rounded-md border border-blue-200/60 shadow-2xs">
+              {/* Highlight Exchange Rate & Total Conversion Prominently */}
+              <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/40 to-amber-50/30 border border-blue-200/80 rounded-2xl p-3.5 mb-5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                  <span className="text-xs font-black text-slate-700 uppercase tracking-wider">Live Interbank Rate:</span>
+                  <span className="text-sm font-black font-mono text-blue-700 bg-white px-3 py-0.5 rounded-lg border border-blue-200/70 shadow-2xs">
                     1 {currency} = ₹{adjustedRate?.toFixed(2) || '0.00'}
                   </span>
                 </div>
-                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-2.5 py-1 rounded-full border border-emerald-200">
-                  ✔ Zero Hidden Charges
+                <span className="text-[11px] font-black text-emerald-800 bg-emerald-100/90 px-3 py-1 rounded-full border border-emerald-200/80 flex items-center gap-1 shadow-2xs">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Zero Hidden Margin</span>
                 </span>
               </div>
               
-              <div className="bg-gray-50/80 rounded-2xl p-4 sm:p-5 border border-gray-200/80 space-y-4 shadow-2xs">
+              <div className="bg-slate-50/80 rounded-2xl p-4 sm:p-5 border border-slate-200/80 space-y-4 shadow-2xs">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
                   {/* Luxury Currency Selector Dropdown */}
                   <div className="sm:col-span-6">
                     <CurrencyDropdown
                       value={currency}
                       onChange={(newCurr) => updateDraft({ currency: newCurr })}
+
                       ratesData={rates}
                       rateType={isSell ? 'sell' : isRemittance ? 'remittance' : 'buy'}
                       label="Select Currency"
@@ -1036,36 +1058,52 @@ export function ProductCalculatorStep() {
 
           {/* Fulfillment Options Card — SHOWN ONLY FOR CASH BUY, CASH SELL & CARD */}
           {!isRemittance && (
-            <Card className="shadow-sm border-gray-200 rounded-2xl">
+            <Card className="shadow-sm border-slate-200/90 rounded-3xl bg-white overflow-hidden">
               <div className="p-6">
-                <h2 className="text-[17px] font-bold text-gray-900 mb-2">Fulfillment Options</h2>
-                <p className="text-[13px] text-gray-500 mb-6">
+                <h2 className="text-base font-black text-slate-900 mb-1 flex items-center gap-2">
+                  <span className="text-lg">📦</span> Fulfillment Method
+                </h2>
+                <p className="text-xs text-slate-500 mb-5 font-medium">
                   {product === 'CASH_SELL' ? 'Choose how you would like to hand over your foreign currency' : 'Choose how you would like to receive your foreign exchange'}
                 </p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
                   {/* Branch Pickup / Visit (Active only if city has branches) */}
                   {hasBranchesInCity ? (
                     <div 
                       onClick={() => updateDraft({ deliveryMethod: 'PICKUP', branchId: availableCityBranches[0]?.id })}
-                      className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${deliveryMethod === 'PICKUP' ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}
+                      className={`border-2 p-4 rounded-2xl cursor-pointer transition-all flex flex-col justify-between ${
+                        deliveryMethod === 'PICKUP' 
+                          ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-2 ring-blue-500/20' 
+                          : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50/50'
+                      }`}
                     >
-                      <div className="font-bold text-gray-900 mb-1">
-                        {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
+                      <div className="flex items-center gap-2.5 mb-1.5">
+                        <span className="w-8 h-8 rounded-xl bg-blue-100/70 text-blue-700 flex items-center justify-center text-sm font-bold shrink-0">
+                          🏢
+                        </span>
+                        <div className="font-black text-slate-900 text-sm">
+                          {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-gray-500">
-                        {product === 'CASH_SELL' ? 'Visit our branch office to verify cash & get paid' : 'Collect notes/card directly from our branch office'}
+                      <div className="text-[11px] text-slate-500 font-medium pl-10">
+                        {product === 'CASH_SELL' ? 'Visit our branch vault to verify cash & get paid' : 'Collect directly from our authorized branch vault'}
                       </div>
                     </div>
                   ) : (
                     <div 
-                      className="border-2 border-dashed border-gray-200 bg-gray-50/70 p-4 rounded-xl text-center relative cursor-not-allowed opacity-60 select-none"
+                      className="border-2 border-dashed border-slate-200 bg-slate-50/70 p-4 rounded-2xl relative cursor-not-allowed opacity-60 select-none flex flex-col justify-between"
                       title={`No physical branches currently in ${selectedCity}. Doorstep delivery is available.`}
                     >
-                      <div className="font-bold text-gray-400 mb-1">
-                        {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
+                      <div className="flex items-center gap-2.5 mb-1.5">
+                        <span className="w-8 h-8 rounded-xl bg-slate-200/70 text-slate-400 flex items-center justify-center text-sm font-bold shrink-0">
+                          🏢
+                        </span>
+                        <div className="font-bold text-slate-400 text-sm">
+                          {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-gray-400">
+                      <div className="text-[11px] text-slate-400 pl-10 font-medium">
                         Not available in this city
                       </div>
                     </div>
@@ -1074,20 +1112,29 @@ export function ProductCalculatorStep() {
                   {/* Home Delivery / Home Collection */}
                   <div 
                     onClick={() => updateDraft({ deliveryMethod: 'HOME_DELIVERY' })}
-                    className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${deliveryMethod === 'HOME_DELIVERY' ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}
+                    className={`border-2 p-4 rounded-2xl cursor-pointer transition-all flex flex-col justify-between ${
+                      deliveryMethod === 'HOME_DELIVERY' 
+                        ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-2 ring-blue-500/20' 
+                        : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50/50'
+                    }`}
                   >
-                    <div className="font-bold text-gray-900 mb-1">
-                      {product === 'CASH_SELL' ? 'Home Collection' : 'Home Delivery'}
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                      <span className="w-8 h-8 rounded-xl bg-amber-100/70 text-amber-700 flex items-center justify-center text-sm font-bold shrink-0">
+                        🛵
+                      </span>
+                      <div className="font-black text-slate-900 text-sm">
+                        {product === 'CASH_SELL' ? 'Home Collection' : 'Home Delivery'}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-gray-500">
-                      {product === 'CASH_SELL' ? 'Our executive will collect currency notes from your doorstep' : 'Get it delivered safely to your home or office address'}
+                    <div className="text-[11px] text-slate-500 font-medium pl-10">
+                      {product === 'CASH_SELL' ? 'Our armored executive will collect currency from your doorstep' : 'Guaranteed safe delivery to your home or office address'}
                     </div>
                   </div>
                 </div>
 
                 {/* Warning when Doorstep is selected but under ₹25,000 threshold */}
                 {deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
-                  <div className="bg-amber-50 border border-amber-300 text-amber-950 rounded-xl p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200 shadow-2xs">
+                  <div className="bg-amber-50 border border-amber-300 text-amber-950 rounded-2xl p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200 shadow-2xs">
                     <div className="flex items-start gap-2.5">
                       <span className="text-xl shrink-0">⚠️</span>
                       <div className="text-xs space-y-0.5">
@@ -1103,7 +1150,7 @@ export function ProductCalculatorStep() {
                       <button
                         type="button"
                         onClick={() => updateDraft({ deliveryMethod: 'PICKUP', branchId: availableCityBranches[0]?.id })}
-                        className="whitespace-nowrap px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-lg transition-colors shadow-2xs cursor-pointer"
+                        className="whitespace-nowrap px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl transition-colors shadow-2xs cursor-pointer"
                       >
                         Switch to Branch Pickup
                       </button>
@@ -1112,12 +1159,14 @@ export function ProductCalculatorStep() {
                 )}
 
                 {deliveryMethod === 'PICKUP' && hasBranchesInCity ? (
-                  <div className="space-y-2 animate-in fade-in duration-200">
-                    <label className="block text-[13px] font-bold text-gray-900 mb-1">Select Pickup Branch</label>
+                  <div className="space-y-2 animate-in fade-in duration-200 bg-slate-50/80 border border-slate-200 rounded-2xl p-4">
+                    <label className="block text-xs font-black text-slate-900 uppercase tracking-wider mb-1">
+                      Select Pickup Branch in {selectedCity}
+                    </label>
                     <select 
                       value={branchId}
                       onChange={(e) => updateDraft({ branchId: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:border-blue-500 outline-none bg-white font-medium text-gray-700 shadow-2xs"
+                      className="w-full border border-slate-300 rounded-xl px-4 py-3 text-xs focus:border-blue-500 outline-none bg-white font-bold text-slate-800 shadow-2xs"
                     >
                       {availableCityBranches.map((b: any) => (
                         <option key={b.id} value={b.id}>
@@ -1128,15 +1177,16 @@ export function ProductCalculatorStep() {
                   </div>
                 ) : (
                   totalCurrencyInrValue >= 25000 && (
-                    <div className="bg-blue-50/70 border border-blue-200/60 rounded-xl p-3.5 flex items-center gap-2.5 text-xs text-blue-900 font-medium animate-in fade-in duration-200">
-                      <span className="text-base">🚚</span>
-                      <span>Guaranteed safe doorstep delivery. You will provide your delivery address and coordination contact in Step 4.</span>
+                    <div className="bg-blue-50/70 border border-blue-200/60 rounded-2xl p-3.5 flex items-center gap-2.5 text-xs text-blue-900 font-medium animate-in fade-in duration-200">
+                      <span className="text-base shrink-0">🚚</span>
+                      <span>Guaranteed safe doorstep delivery in <strong>{selectedCity}</strong>. You will provide your delivery address and coordination contact in Step 4.</span>
                     </div>
                   )
                 )}
               </div>
             </Card>
           )}
+
 
 
 
@@ -1712,7 +1762,8 @@ export function ProductCalculatorStep() {
           )}
 
           <div className="space-y-2">
-            <Button 
+            <button 
+              type="button"
               onClick={handleQuote} 
               disabled={
                 isLocking || 
@@ -1728,12 +1779,18 @@ export function ProductCalculatorStep() {
                   (deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue < 25000)
                 ))
               }
-              className={`w-full md:w-1/3 text-white font-bold py-6 rounded-lg text-sm shadow-sm transition-all tracking-wider disabled:opacity-50 ${
-                isSell ? 'bg-emerald-500 hover:bg-emerald-600' : isRemittance ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-orange-500 hover:bg-orange-600'
-              }`}
+              className={`w-full sm:w-auto px-10 py-4 font-black rounded-2xl text-sm shadow-md transition-all tracking-wider flex items-center justify-center gap-2 cursor-pointer ${
+                isSell 
+                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white shadow-emerald-500/20' 
+                  : isRemittance 
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-indigo-500/20' 
+                    : 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-slate-950 shadow-orange-500/20'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              {isLocking ? 'PROCESSING...' : 'CONTINUE'}
-            </Button>
+              <span>{isLocking ? 'PROCESSING...' : 'LOCK RATE & CONTINUE'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
 
             {!isRemittance && deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
               <p className="text-[12px] font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded-lg p-2.5 max-w-md shadow-2xs">
@@ -1754,159 +1811,171 @@ export function ProductCalculatorStep() {
         <div className="lg:col-span-1 space-y-4">
           
           {/* Product Box */}
-          <Card className="shadow-sm border-gray-200 rounded-xl">
-            <div className="p-4 flex justify-between items-center">
-              <div>
-                <h3 className="font-extrabold text-gray-900 text-[15px] mb-1">{productName}</h3>
-                <p className="text-[11px] text-gray-700 mb-1"><strong>Best</strong> Rates & <strong>Genuine</strong> {product === 'CASH' ? 'Notes' : 'Card'}</p>
+          <Card className="shadow-xs border-slate-200/90 rounded-2xl bg-gradient-to-br from-white to-slate-50/70 p-4 relative overflow-hidden">
+            <div className="flex justify-between items-center relative z-10">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <h3 className="font-black text-slate-900 text-sm tracking-tight">{productName}</h3>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium">
+                  100% Genuine Currency • Zero Hidden Margin
+                </p>
                 <button 
                   onClick={() => setIsKnowMoreOpen(true)} 
-                  className="text-blue-600 text-[11px] font-bold hover:underline cursor-pointer"
+                  className="text-blue-600 hover:text-blue-800 text-[11px] font-black hover:underline cursor-pointer inline-flex items-center gap-0.5 pt-1"
                 >
-                  Know More ➔
+                  <span>View Product Specs</span>
+                  <span>➔</span>
                 </button>
               </div>
-              <div className="w-14 h-9 bg-green-50 rounded-md border border-green-200/50 flex flex-col justify-center items-center overflow-hidden relative shadow-sm">
-                 <div className="absolute inset-0 bg-green-200 opacity-20 pattern-dots"></div>
-                 <div className="text-[7px] font-bold text-green-800 z-10">{currency}</div>
-                 <div className="text-[9px] font-bold text-green-700 z-10">NOTE</div>
+              <div className="w-16 h-11 bg-gradient-to-br from-amber-50 to-amber-100/70 rounded-xl border border-amber-200/80 flex flex-col justify-center items-center overflow-hidden shadow-2xs shrink-0">
+                <span className="text-[8px] font-black text-amber-900 font-mono">{currency}</span>
+                <span className="text-[9px] font-black text-amber-700 uppercase tracking-wider">{product === 'CASH' ? 'NOTE' : 'CARD'}</span>
               </div>
             </div>
           </Card>
 
           {/* Amount Breakup */}
-          <Card className="shadow-sm border-gray-200 rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
-              <h3 className="font-extrabold text-gray-900 text-[15px]">Amount Breakup</h3>
+          <Card className="shadow-sm border-slate-200/90 rounded-3xl overflow-hidden bg-white">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-black text-slate-900 text-sm flex items-center gap-2">
+                <span>🧾</span> Amount Breakup
+              </h3>
+              <span className="text-[10px] font-bold text-slate-400 font-mono">INR</span>
             </div>
             
             <div className="p-4 space-y-2.5">
               {isRemittance ? (
                 // REMITTANCE Breakup
                 isCalcLoading ? (
-                  <div className="text-center text-gray-400 text-sm py-4">Calculating...</div>
+                  <div className="text-center text-slate-400 text-xs py-4 font-medium">Calculating live fee...</div>
                 ) : remCalc ? (
                   <>
-                    <div className="flex justify-between items-center text-[13px]">
-                      <span className="text-gray-900 font-medium">Transfer Amount</span>
-                      <span className="font-bold text-gray-900">{remCalc.foreignAmount} {currency}</span>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-slate-700 font-medium">Transfer Amount</span>
+                      <span className="font-black text-slate-900 font-mono">{remCalc.foreignAmount} {currency}</span>
                     </div>
-                    <div className="flex justify-between items-center text-[11px] text-gray-500 pl-2">
+                    <div className="flex justify-between items-center text-[11px] text-slate-500 pl-2">
                       <span>• Rate: ₹{remCalc.exchangeRate?.toFixed(2)}</span>
-                      <span>₹ {remCalc.inrSubtotal?.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                      <span className="font-mono">₹ {remCalc.inrSubtotal?.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                     </div>
-                    <div className="flex justify-between items-center text-[13px] pt-1">
-                      <span className="text-gray-900 font-medium">Transfer Fee</span>
-                      <span className="font-bold text-gray-900">₹ {remCalc.feeAmount?.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    <div className="flex justify-between items-center text-xs pt-1">
+                      <span className="text-slate-700 font-medium">Transfer Fee</span>
+                      <span className="font-black text-slate-900 font-mono">₹ {remCalc.feeAmount?.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                     </div>
-                    <div className="flex justify-between items-center text-[13px] border-b border-gray-200/60 pb-3">
-                      <span className="text-gray-900 font-medium flex items-center gap-1">
+                    <div className="flex justify-between items-center text-xs border-b border-slate-200/60 pb-3">
+                      <span className="text-slate-700 font-medium flex items-center gap-1">
                         TCS Tax
-                        {remCalc.thresholdExceeded && <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold">Threshold Crossed</span>}
+                        {remCalc.thresholdExceeded && <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-black">Threshold Crossed</span>}
                       </span>
-                      <span className="font-bold text-gray-900">₹ {remCalc.tcsAmount?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                      <span className="font-black text-slate-900 font-mono">₹ {remCalc.tcsAmount?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between items-center pt-1.5 pb-1">
+                    <div className="flex justify-between items-center pt-2 pb-1 bg-indigo-50/50 p-3 rounded-2xl border border-indigo-100">
                       <div>
-                        <span className="text-gray-900 font-bold block text-[13px]">Total Payable (INR)</span>
-                        <span className="text-[10px] text-gray-500">Incl. Transfer Fee & TCS</span>
+                        <span className="text-slate-900 font-black block text-xs">Total Payable (INR)</span>
+                        <span className="text-[10px] text-slate-500">Incl. Transfer Fee & TCS</span>
                       </div>
-                      <span className="font-extrabold text-indigo-700 text-[17px]">₹ {remCalc.totalInr?.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                      <span className="font-black text-indigo-700 text-lg font-mono">₹ {remCalc.totalInr?.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                     </div>
                     {remCalc.thresholdExceeded && (
-                      <div className="mt-2 bg-orange-50 border border-orange-200 rounded-lg p-3 text-[11px] text-orange-700 font-medium">
+                      <div className="mt-2 bg-orange-50 border border-orange-200 rounded-xl p-3 text-[11px] text-orange-700 font-medium">
                         ⚠️ Your cumulative LRS spending has exceeded ₹7 Lakhs. Higher TCS rate applies.
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="text-center text-gray-400 text-sm py-4">
+                  <div className="text-center text-slate-400 text-xs py-4">
                     Enter amount, select country & purpose to see fee breakdown.
                   </div>
                 )
               ) : (
                 // CASH BUY / CASH SELL Breakup
                 <>
-                  <div className="flex justify-between items-center text-[13px]">
-                    <span className="text-gray-900 font-medium">Total Currency Value</span>
-                    <span className="font-bold text-gray-900">₹ {Math.round(totalCurrencyInrValue).toLocaleString('en-IN')}</span>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-700 font-medium">Total Currency Value</span>
+                    <span className="font-black text-slate-900 font-mono">₹ {Math.round(totalCurrencyInrValue).toLocaleString('en-IN')}</span>
                   </div>
-                  <div className="flex justify-between items-center text-[11px] text-gray-500 pl-2">
+                  <div className="flex justify-between items-center text-[11px] text-slate-500 pl-2">
                     <span>• {amount || 0} {currency} @ {adjustedRate?.toFixed(2) || '0.00'}</span>
-                    <span>₹ {inrEquivalent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    <span className="font-mono">₹ {inrEquivalent.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                   </div>
                   {extraCurrenciesCalculated.map((c, idx) => (
                     <div key={idx} className="flex justify-between items-center text-[11px] text-blue-600 font-medium pl-2">
                       <span>• {c.amount} {c.currency} @ {c.rate.toFixed(2)}</span>
-                      <span>₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}</span>
+                      <span className="font-mono">₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}</span>
                     </div>
                   ))}
                   
-                  <div className="flex justify-between items-center text-[13px] pt-1">
-                    <span className="text-gray-900 font-medium">Service Charge</span>
-                    <span className="font-bold text-gray-900">₹ {serviceCharge}</span>
+                  <div className="flex justify-between items-center text-xs pt-1">
+                    <span className="text-slate-700 font-medium">Service Charge</span>
+                    <span className="font-black text-slate-900 font-mono">₹ {serviceCharge}</span>
                   </div>
                   
-                  <div className="flex justify-between items-center text-[13px] border-b border-gray-200/60 pb-3">
-                    <span className="text-gray-900 font-medium">GST</span>
-                    <span className="font-bold text-gray-900">₹ {gst}</span>
+                  <div className="flex justify-between items-center text-xs border-b border-slate-200/60 pb-3">
+                    <span className="text-slate-700 font-medium">GST</span>
+                    <span className="font-black text-slate-900 font-mono">₹ {gst}</span>
                   </div>
 
                   {appliedDiscount > 0 && (
-                    <div className="flex justify-between items-center text-[13px] text-emerald-700 font-extrabold pt-1">
+                    <div className="flex justify-between items-center text-xs text-emerald-700 font-black pt-1 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200">
                       <span className="flex items-center gap-1">
                         <span>Promo Code ({appliedOffer?.code})</span>
                       </span>
-                      <span>- ₹ {appliedDiscount}</span>
+                      <span className="font-mono">- ₹ {appliedDiscount}</span>
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center pt-1.5 pb-1">
+                  <div className="flex justify-between items-center pt-2 pb-1 bg-amber-50/50 p-3 rounded-2xl border border-amber-200/80">
                     <div>
-                      <span className="text-gray-900 font-bold block text-[13px]">
-                        {product === 'CASH_SELL' ? 'Total Amount to Receive' : 'Total Payable Amount'}
+                      <span className="text-slate-900 font-black block text-xs">
+                        {product === 'CASH_SELL' ? 'Total to Receive' : 'Total Payable Amount'}
                       </span>
-                      <span className="text-[10px] text-gray-500">
-                        {product === 'CASH_SELL' ? 'After GST & Service charge' : 'Incl GST & Service charge'}
+                      <span className="text-[10px] text-slate-500">
+                        {product === 'CASH_SELL' ? 'After GST & charges' : 'Incl. GST & Zero Margin'}
                       </span>
                     </div>
-                    <span className="font-extrabold text-gray-900 text-[18px]">₹ {payableAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                    <span className="font-black text-slate-950 text-lg font-mono">₹ {payableAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                   </div>
                 </>
               )}
             </div>
             
-            <div className="bg-[#f8f9fa] py-2.5 text-center border-t border-gray-100">
-              <span className="text-[11px] text-gray-500 font-medium">{getEligibilityMessage()}</span>
+            <div className="bg-slate-50 py-2.5 px-4 text-center border-t border-slate-100">
+              <span className="text-[11px] text-slate-600 font-semibold">{getEligibilityMessage()}</span>
             </div>
           </Card>
 
-          {/* Offers Card */}
-          <Card className="shadow-sm border-gray-200 rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-              <h3 className="font-extrabold text-gray-900 text-[15px] flex items-center gap-1.5">
+          {/* Offers & Coupons Card (Luxury Voucher Vault) */}
+          <Card className="shadow-sm border-slate-200/90 rounded-3xl overflow-hidden bg-white">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-black text-slate-900 text-sm flex items-center gap-1.5">
                 <Ticket className="w-4 h-4 text-amber-500 transform -rotate-45" />
-                <span>Available Offers & Coupons</span>
+                <span>Offers & Coupons</span>
               </h3>
-              {appliedOffer && (
-                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                  Coupon Applied
+              {appliedOffer ? (
+                <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                  Applied ✓
+                </span>
+              ) : (
+                <span className="text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                  {DUMMY_OFFERS.length} Available
                 </span>
               )}
             </div>
 
             <div className="p-4 space-y-3.5">
               {/* Input bar */}
-              <div className="flex items-center gap-1.5 border border-gray-200 rounded-xl p-1 bg-gray-50/70 hover:bg-white transition-all focus-within:border-amber-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-amber-500/20 shadow-2xs">
-                <div className="pl-1.5 opacity-60 text-gray-500">
-                  <Ticket className="w-3.5 h-3.5 transform -rotate-45" />
+              <div className="flex items-center gap-1.5 border border-slate-200 rounded-full p-1 bg-slate-50/80 focus-within:border-amber-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-amber-500/20 shadow-2xs transition-all">
+                <div className="pl-3 text-amber-500">
+                  <Sparkles className="w-3.5 h-3.5" />
                 </div>
                 <input 
                   type="text" 
                   value={couponInput}
                   onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                  placeholder="Enter coupon code" 
-                  className="bg-transparent flex-1 min-w-0 py-1 px-1 text-[11px] font-mono font-bold focus:outline-none uppercase placeholder:font-sans placeholder:normal-case placeholder:text-[11px] placeholder:text-gray-400 text-gray-900"
+                  placeholder="HAVE A PROMO CODE?" 
+                  className="bg-transparent flex-1 min-w-0 py-1.5 px-1.5 text-xs font-mono font-black focus:outline-none uppercase placeholder:font-sans placeholder:normal-case placeholder:text-slate-400 text-slate-900"
                 />
                 <button 
                   type="button"
@@ -1915,10 +1984,10 @@ export function ProductCalculatorStep() {
                       handleApplyInputCoupon();
                     }
                   }}
-                  className={`font-extrabold text-[11px] px-3 py-1.5 rounded-lg transition-colors uppercase shrink-0 ${
+                  className={`font-black text-xs px-4 py-1.5 rounded-full transition-all uppercase shrink-0 shadow-2xs cursor-pointer ${
                     appliedOffer?.code === couponInput
-                      ? 'bg-emerald-600 text-white cursor-default shadow-2xs'
-                      : 'bg-slate-900 hover:bg-amber-600 text-white cursor-pointer shadow-2xs'
+                      ? 'bg-emerald-600 text-white cursor-default'
+                      : 'bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-white'
                   }`}
                 >
                   {appliedOffer?.code === couponInput ? 'APPLIED ✓' : 'APPLY'}
@@ -1927,18 +1996,21 @@ export function ProductCalculatorStep() {
 
               {/* Notice error message */}
               {couponError && (
-                <p className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 p-2.5 rounded-lg flex items-center gap-1.5">
+                <p className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 p-2.5 rounded-xl flex items-center gap-1.5">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{couponError}</span>
                 </p>
               )}
 
-              {/* Applied coupon success badge */}
+              {/* Applied coupon success banner */}
               {appliedOffer && (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between text-xs text-emerald-900">
-                  <div>
-                    <span className="font-black font-mono block text-emerald-950">{appliedOffer.code} Applied</span>
-                    <span className="text-[11px] text-emerald-700 font-medium">{appliedOffer.description}</span>
+                <div className="bg-emerald-50/90 border border-emerald-200 rounded-2xl p-3 flex items-center justify-between text-xs text-emerald-950 shadow-2xs animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🎉</span>
+                    <div>
+                      <span className="font-black font-mono block text-emerald-950">{appliedOffer.code} Applied</span>
+                      <span className="text-[11px] text-emerald-700 font-bold">{appliedOffer.description}</span>
+                    </div>
                   </div>
                   <button 
                     onClick={() => {
@@ -1946,16 +2018,16 @@ export function ProductCalculatorStep() {
                       setCouponInput('');
                       setCouponError(null);
                     }}
-                    className="text-rose-600 font-bold hover:underline text-[11px] ml-2"
+                    className="text-rose-600 font-bold hover:underline text-[11px] ml-2 cursor-pointer"
                   >
                     Remove
                   </button>
                 </div>
               )}
 
-              {/* Selectable Dummy Offers */}
+              {/* Selectable Dummy Offers (Luxury Voucher Tickets) */}
               <div className="space-y-2.5 pt-1">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 block">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block">
                   Select an Offer Below
                 </span>
 
@@ -1967,22 +2039,30 @@ export function ProductCalculatorStep() {
                   return (
                     <div 
                       key={offer.code}
-                      className={`p-3 rounded-xl border transition-all text-left ${
+                      className={`p-3.5 rounded-2xl border transition-all text-left relative overflow-hidden ${
                         isSelected
-                          ? 'bg-amber-50/80 border-amber-500 ring-1 ring-amber-500/30'
+                          ? 'bg-amber-50/90 border-amber-500 ring-2 ring-amber-500/20 shadow-xs'
                           : isEligible
-                            ? 'bg-white border-gray-200 hover:border-amber-400 hover:shadow-xs cursor-pointer'
-                            : 'bg-gray-50/60 border-gray-200/70 opacity-70'
+                            ? 'bg-white border-slate-200 hover:border-amber-400 hover:shadow-xs cursor-pointer'
+                            : 'bg-slate-50/60 border-slate-200/70 opacity-70'
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-black text-xs bg-slate-900 text-amber-400 px-2 py-0.5 rounded border border-slate-800">
-                            {offer.code}
-                          </span>
-                          <span className="text-[9px] font-extrabold text-amber-700 bg-amber-100/80 px-1.5 py-0.5 rounded uppercase">
-                            {offer.tag}
-                          </span>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-black text-xs bg-amber-100/80 text-amber-950 px-2.5 py-0.5 rounded-lg border border-amber-300/80">
+                              {offer.code}
+                            </span>
+                            <span className="text-[9px] font-black text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full uppercase border border-emerald-200/60">
+                              {offer.tag}
+                            </span>
+                          </div>
+                          <div className="text-xs font-black text-slate-900 pt-0.5">
+                            {offer.title}
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            {offer.description}
+                          </p>
                         </div>
 
                         {isEligible ? (
@@ -1993,31 +2073,25 @@ export function ProductCalculatorStep() {
                                 handleSelectOffer(offer);
                               }
                             }}
-                            className={`text-[11px] font-black px-3 py-1 rounded-lg transition-all ${
+                            className={`text-xs font-black px-3.5 py-1.5 rounded-xl transition-all shrink-0 ${
                               isSelected
                                 ? 'bg-emerald-600 text-white shadow-2xs cursor-default'
-                                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-2xs cursor-pointer'
+                                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-2xs cursor-pointer hover:scale-105 active:scale-95'
                             }`}
                           >
                             {isSelected ? 'APPLIED ✓' : 'APPLY'}
                           </button>
                         ) : (
-                          <span className="text-[10px] font-bold text-gray-400 bg-gray-200/70 px-2 py-0.5 rounded">
-                            Locked
+                          <span className="text-[10px] font-bold text-slate-400 bg-slate-200/70 px-2.5 py-1 rounded-lg shrink-0">
+                            Locked 🔒
                           </span>
                         )}
                       </div>
 
-                      <div className="text-xs font-bold text-gray-900 mt-1">
-                        {offer.title}
-                      </div>
-                      <p className="text-[11px] text-gray-500 font-medium">
-                        {offer.description}
-                      </p>
-
                       {!isEligible && (
-                        <div className="mt-1.5 text-[10px] font-bold text-amber-700 flex items-center gap-1">
-                          <span>🔒 Add ₹ {(offer.minAmount - currentInrVal).toLocaleString('en-IN')} more to unlock</span>
+                        <div className="mt-2 pt-2 border-t border-slate-200/60 text-[10px] font-extrabold text-amber-800 flex items-center justify-between">
+                          <span>🔒 Add ₹{(offer.minAmount - currentInrVal).toLocaleString('en-IN')} more to unlock</span>
+                          <span className="text-slate-400 font-medium font-mono">Min ₹{offer.minAmount.toLocaleString('en-IN')}</span>
                         </div>
                       )}
                     </div>
@@ -2029,6 +2103,7 @@ export function ProductCalculatorStep() {
           </Card>
 
         </div>
+
       </div>
 
       </div>
