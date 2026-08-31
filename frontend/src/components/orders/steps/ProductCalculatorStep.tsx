@@ -1054,14 +1054,17 @@ export function ProductCalculatorStep() {
                 </div>
               ))}
 
-              <div className="mt-5">
-                <button 
-                  onClick={() => setShowAddCurrencyModal(true)}
-                  className="text-blue-600 font-bold text-[13px] flex items-center hover:underline"
-                >
-                  + Add Another Currency
-                </button>
-              </div>
+              {Boolean(amount && parseFloat(amount) > 0) && (
+                <div className="mt-4">
+                  <button 
+                    onClick={() => setShowAddCurrencyModal(true)}
+                    className="text-blue-600 font-bold text-xs flex items-center hover:underline cursor-pointer"
+                  >
+                    + Add Another Currency
+                  </button>
+                </div>
+              )}
+
             </div>
           </Card>
 
@@ -1676,7 +1679,8 @@ export function ProductCalculatorStep() {
                             onChange={(e) => updateDraft({ destination: e.target.value })}
                             className="border border-gray-300 rounded-lg px-3 py-1.5 text-xs font-semibold focus:border-blue-500 outline-none max-w-xs"
                           >
-                            <option value="">Select Primary Country</option>
+                            <option value="">Select Country</option>
+
                             {DESTINATION_COUNTRIES.map((c) => (
                               <option key={c.code} value={c.code}>
                                 {c.flag} {c.name}
