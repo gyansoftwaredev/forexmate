@@ -160,6 +160,24 @@ export class AdminService {
       throw new BadRequestException('Company profile not initialized.');
     }
 
+    let resolvedCityId = dto.cityId;
+    if (!resolvedCityId && dto.branchCity) {
+      let matchedCity = await this.prisma.city.findFirst({
+        where: { name: { equals: dto.branchCity.trim(), mode: 'insensitive' } }
+      });
+      if (!matchedCity) {
+        matchedCity = await this.prisma.city.create({
+          data: {
+            name: dto.branchCity.trim(),
+            state: dto.branchCity.trim(),
+            country: 'India',
+            createdById: userId,
+          }
+        });
+      }
+      resolvedCityId = matchedCity.id;
+    }
+
     const branch = await this.prisma.branch.create({
       data: {
         companyId: company.id,
@@ -167,7 +185,7 @@ export class AdminService {
         branchName: dto.branchName,
         branchAddress: dto.branchAddress,
         branchCity: dto.branchCity,
-        cityId: dto.cityId,
+        cityId: resolvedCityId,
         branchType: dto.branchType || 'MAIN_BRANCH',
         lat: dto.lat,
         lng: dto.lng,
@@ -176,6 +194,9 @@ export class AdminService {
         workingHours: dto.workingHours || '09:00 AM - 06:00 PM',
         vaultCapacity: dto.vaultCapacity ? dto.vaultCapacity : 10000000.00,
       },
+      include: {
+        city: true,
+      }
     });
 
     await this.prisma.auditLog.create({
@@ -196,10 +217,24 @@ export class AdminService {
       throw new NotFoundException('Branch not found');
     }
 
+    const updateData = { ...dto };
+    if (!updateData.cityId && updateData.branchCity) {
+      const matchedCity = await this.prisma.city.findFirst({
+        where: { name: { equals: updateData.branchCity.trim(), mode: 'insensitive' } }
+      });
+      if (matchedCity) {
+        updateData.cityId = matchedCity.id;
+      }
+    }
+
     const updated = await this.prisma.branch.update({
       where: { id },
-      data: dto,
+      data: updateData,
+      include: {
+        city: true,
+      }
     });
+
 
     await this.prisma.auditLog.create({
       data: {

@@ -1,6 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { PublicService } from './public.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('Public Website API')
 @Controller('public')
@@ -23,10 +23,19 @@ export class PublicController {
 
   @Get('branches')
   @ApiOperation({ summary: 'Get active branches for public storefront' })
+  @ApiQuery({ name: 'city', required: false, description: 'Optional city to filter branches' })
   @ApiResponse({ status: 200, description: 'Branches returned' })
-  getBranches() {
-    return this.publicService.getActiveBranches();
+  getBranches(@Query('city') city?: string) {
+    return this.publicService.getActiveBranches(city);
   }
+
+  @Get('cities')
+  @ApiOperation({ summary: 'Get active cities with branch lists' })
+  @ApiResponse({ status: 200, description: 'Active cities returned' })
+  getCities() {
+    return this.publicService.getActiveCities();
+  }
+
 
   @Get('testimonials')
   @ApiOperation({ summary: 'Get active testimonials for public storefront' })

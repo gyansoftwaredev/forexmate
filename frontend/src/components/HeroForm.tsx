@@ -9,6 +9,7 @@ import {
 import { CitySelectorModal } from './orders/CitySelectorModal';
 import { SameDayDeliveryModal } from './orders/SameDayDeliveryModal';
 import { CashbackOfferModal } from './orders/CashbackOfferModal';
+import { getActiveBranches } from '@/lib/api-public';
 
 import { ALL_CURRENCIES_MAP, ALL_CURRENCIES_LIST, getCurrencyInfo } from '@/lib/currencyMetadata';
 
@@ -29,6 +30,8 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [isDeliveryPolicyOpen, setIsDeliveryPolicyOpen] = useState(false);
   const [isCashbackModalOpen, setIsCashbackModalOpen] = useState(false);
+  const [fulfillmentMode, setFulfillmentMode] = useState<'DOORSTEP' | 'BRANCH'>('DOORSTEP');
+  const [branches, setBranches] = useState<any[]>([]);
 
   // Live products configuration status from admin catalog
   const [productsStatus, setProductsStatus] = useState<Record<string, boolean>>({
@@ -38,14 +41,45 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
     FOREX_CARD: true,
   });
 
-  // Fulfillment mode for Buy, Sell & Card
-  const [fulfillmentMode, setFulfillmentMode] = useState<'DOORSTEP' | 'BRANCH'>('DOORSTEP');
-
   // Remittance-specific state
   const [remittancePurpose, setRemittancePurpose] = useState<string>('EDUCATION');
 
   const router = useRouter();
   const { data: apiRatesData } = useRates();
+
+  React.useEffect(() => {
+    getActiveBranches()
+      .then((data) => {
+        if (Array.isArray(data)) setBranches(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const hasBranchesInCity = React.useMemo(() => {
+    if (!selectedCity || branches.length === 0) return true;
+    const target = selectedCity.toLowerCase().trim();
+    return branches.some((b: any) => {
+      const bCity = (b.branchCity || b.city?.name || '').toLowerCase().trim();
+      const bState = (b.city?.state || '').toLowerCase().trim();
+      const bAddr = (b.branchAddress || '').toLowerCase().trim();
+      const bName = (b.branchName || '').toLowerCase().trim();
+      if (bCity === target || bCity.includes(target) || target.includes(bCity)) return true;
+      if (bState && (bState === target || bState.includes(target) || target.includes(bState))) return true;
+      if ((target === 'bangalore' || target === 'bengaluru') && (bCity.includes('bangalore') || bCity.includes('bengaluru') || bAddr.includes('bengaluru') || bAddr.includes('bangalore'))) return true;
+      if (target === 'delhi' && (bCity.includes('delhi') || bAddr.includes('delhi') || bName.includes('delhi') || bCity.includes('nct') || bState.includes('delhi'))) return true;
+      if (target === 'mumbai' && (bCity.includes('mumbai') || bAddr.includes('mumbai') || bName.includes('mumbai'))) return true;
+      if (target === 'agra' && (bCity.includes('agra') || bAddr.includes('agra') || bName.includes('agra'))) return true;
+      return false;
+    });
+  }, [branches, selectedCity]);
+
+  // If selectedCity has no branches and fulfillmentMode is BRANCH, auto-switch to DOORSTEP
+  React.useEffect(() => {
+    if (!hasBranchesInCity && fulfillmentMode === 'BRANCH') {
+      setFulfillmentMode('DOORSTEP');
+    }
+  }, [hasBranchesInCity, fulfillmentMode]);
+
 
   React.useEffect(() => {
     const fetchPublicProducts = async () => {
@@ -411,10 +445,15 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
                   className="w-full bg-slate-50 border border-slate-200 hover:border-amber-500 text-slate-900 font-bold text-xs rounded-2xl p-3.5 focus:outline-none shadow-2xs"
                 >
                   <option value="DOORSTEP">🏠 Doorstep Delivery</option>
-                  <option value="BRANCH">🏢 Branch Pickup</option>
+                  {hasBranchesInCity ? (
+                    <option value="BRANCH">🏢 Branch Pickup ({selectedCity})</option>
+                  ) : (
+                    <option value="BRANCH" disabled>🏢 Branch Pickup (Not in {selectedCity})</option>
+                  )}
                 </select>
               </div>
             )}
+
           </div>
 
         </div>

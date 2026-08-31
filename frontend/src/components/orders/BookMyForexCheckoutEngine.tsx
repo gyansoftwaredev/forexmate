@@ -9,9 +9,11 @@ import {
   Info, Landmark 
 } from 'lucide-react';
 import API_URL, { authFetch, apiJson } from '@/lib/api';
+import { getActiveBranches } from '@/lib/api-public';
 import { ALL_CURRENCIES_MAP, getCurrencyFlag, getCurrencyName } from '@/lib/currencyMetadata';
 import { useRates } from '@/hooks/useRates';
 import { useAuth } from '@/context/AuthContext';
+
 
 interface RbiDocRequirement {
   id: string;
@@ -288,6 +290,24 @@ export function BookMyForexCheckoutEngine() {
   const [pickupDate, setPickupDate] = useState<string>(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
   const [pickupTimeSlot, setPickupTimeSlot] = useState<string>('10:00 AM - 1:00 PM');
   const [pickupBranch, setPickupBranch] = useState<string>(draftState.deliveryBranch || 'Delhi Connaught Place Vault Branch');
+  const [selectedBranchObj, setSelectedBranchObj] = useState<any>(null);
+
+  useEffect(() => {
+    getActiveBranches()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const found = data.find((b: any) => b.id === draftState.branchId) || 
+                        data.find((b: any) => (b.branchCity || '').toLowerCase() === (draftState.city || '').toLowerCase()) ||
+                        data[0];
+          if (found) {
+            setSelectedBranchObj(found);
+            setPickupBranch(`${found.branchName} (${found.branchCity}) - ${found.branchAddress}`);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [draftState.branchId, draftState.city]);
+
 
   // Step 5 Review State
   const [selectedPaymentMode, setSelectedPaymentMode] = useState<'UPI' | 'NET_BANKING' | 'CREDIT_CARD' | 'BANK_TRANSFER'>('UPI');
@@ -1507,14 +1527,22 @@ export function BookMyForexCheckoutEngine() {
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-slate-900 text-xs flex items-center gap-2">
                       <Building2 className="w-4 h-4 text-amber-600" />
-                      {pickupBranch}
+                      {selectedBranchObj?.branchName || pickupBranch}
                     </span>
-                    <span className="text-xs text-emerald-700 font-bold">Open Mon - Sat</span>
+                    <span className="text-xs text-emerald-700 font-bold">
+                      {selectedBranchObj?.workingHours || 'Open Mon - Sat'}
+                    </span>
                   </div>
                   <p className="text-xs text-slate-600 font-medium">
-                    Inner Circle, Block F, Connaught Place, New Delhi - 110001
+                    {selectedBranchObj?.branchAddress ? `${selectedBranchObj.branchAddress}, ${selectedBranchObj.branchCity}` : 'Connaught Place, New Delhi - 110001'}
                   </p>
+                  {selectedBranchObj?.phone && (
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      📞 Branch Phone: {selectedBranchObj.phone}
+                    </p>
+                  )}
                 </div>
+
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>

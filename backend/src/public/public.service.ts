@@ -40,21 +40,70 @@ export class PublicService {
   }
 
   // 3. Get Branches
-  async getActiveBranches() {
+  async getActiveBranches(city?: string) {
+    const trimmedCity = city?.trim();
     return this.prisma.branch.findMany({
+      where: {
+        status: 'ACTIVE',
+        ...(trimmedCity ? {
+          OR: [
+            { branchCity: { equals: trimmedCity, mode: 'insensitive' } },
+            { branchCity: { contains: trimmedCity, mode: 'insensitive' } },
+            { branchAddress: { contains: trimmedCity, mode: 'insensitive' } },
+            { branchName: { contains: trimmedCity, mode: 'insensitive' } },
+            { city: { name: { equals: trimmedCity, mode: 'insensitive' } } },
+            { city: { state: { equals: trimmedCity, mode: 'insensitive' } } },
+          ]
+        } : {})
+      },
       select: {
         id: true,
         branchCode: true,
         branchName: true,
         branchAddress: true,
         branchCity: true,
+        cityId: true,
         workingHours: true,
+        phone: true,
+        email: true,
+        city: {
+          select: {
+            id: true,
+            name: true,
+            state: true,
+          }
+        }
       },
       orderBy: {
-        branchCode: 'desc'
+        branchName: 'asc'
       }
     });
   }
+
+  // 3b. Get Active Cities
+  async getActiveCities() {
+    return this.prisma.city.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        state: true,
+        country: true,
+        branches: {
+          where: { status: 'ACTIVE' },
+          select: {
+            id: true,
+            branchName: true,
+            branchCode: true,
+            branchCity: true,
+            branchAddress: true,
+          }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+  }
+
 
   // 4. Get Testimonials
   async getTestimonials() {

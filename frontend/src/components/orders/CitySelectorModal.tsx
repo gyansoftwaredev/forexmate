@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Search, MapPin, X } from 'lucide-react';
+import { getActiveCities } from '@/lib/api-public';
+
 
 const popularCities = [
   { name: 'Delhi', state: 'Delhi (NCT)', img: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=120&h=120&fit=crop&q=80' },
@@ -89,6 +91,7 @@ export function CitySelectorModal({
 }) {
   const [search, setSearch] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [dbCities, setDbCities] = useState<any[]>([]);
 
   const handleSelectCity = (cityName: string) => {
     if (typeof onSelect === 'function') onSelect(cityName);
@@ -98,12 +101,37 @@ export function CitySelectorModal({
 
   useEffect(() => {
     setMounted(true);
+    getActiveCities()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDbCities(data);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const mergedAllCities = useMemo(() => {
+    const list = [...allCities];
+    dbCities.forEach((dbc: any) => {
+      if (
+        !list.some(c => c.name.toLowerCase() === dbc.name.toLowerCase()) &&
+        !popularCities.some(c => c.name.toLowerCase() === dbc.name.toLowerCase())
+      ) {
+        list.push({
+          name: dbc.name,
+          state: dbc.state || 'India',
+          img: undefined as any
+        });
+      }
+    });
+    return list.sort((a, b) => a.name.localeCompare(b.name));
+  }, [dbCities]);
 
   if (!isOpen || !mounted) return null;
 
   const filteredPopular = popularCities.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.state.toLowerCase().includes(search.toLowerCase()));
-  const filteredAll = allCities.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.state.toLowerCase().includes(search.toLowerCase()));
+  const filteredAll = mergedAllCities.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.state.toLowerCase().includes(search.toLowerCase()));
+
 
   const modalContent = (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
