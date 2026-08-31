@@ -1038,12 +1038,7 @@ export function ProductCalculatorStep() {
           {!isRemittance && (
             <Card className="shadow-sm border-gray-200 rounded-2xl">
               <div className="p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-[17px] font-bold text-gray-900">Fulfillment Options</h2>
-                  <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg">
-                    City: <strong className="text-slate-900">{selectedCity}</strong>
-                  </span>
-                </div>
+                <h2 className="text-[17px] font-bold text-gray-900 mb-2">Fulfillment Options</h2>
                 <p className="text-[13px] text-gray-500 mb-6">
                   {product === 'CASH_SELL' ? 'Choose how you would like to hand over your foreign currency' : 'Choose how you would like to receive your foreign exchange'}
                 </p>
@@ -1053,31 +1048,25 @@ export function ProductCalculatorStep() {
                   {hasBranchesInCity ? (
                     <div 
                       onClick={() => updateDraft({ deliveryMethod: 'PICKUP', branchId: availableCityBranches[0]?.id })}
-                      className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${deliveryMethod === 'PICKUP' ? 'border-blue-500 bg-blue-50/50 shadow-sm ring-1 ring-blue-500/30' : 'border-gray-200 hover:border-blue-300'}`}
+                      className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${deliveryMethod === 'PICKUP' ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}
                     >
-                      <div className="flex items-center justify-center gap-1.5 font-bold text-gray-900 mb-1">
-                        <span>{product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}</span>
-                        <span className="bg-blue-100 text-blue-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase">
-                          {availableCityBranches.length} {availableCityBranches.length === 1 ? 'branch' : 'branches'}
-                        </span>
+                      <div className="font-bold text-gray-900 mb-1">
+                        {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
                       </div>
                       <div className="text-[11px] text-gray-500">
-                        {product === 'CASH_SELL' ? `Visit our ${selectedCity} branch to verify cash & get paid` : `Collect directly from our ${selectedCity} branch`}
+                        {product === 'CASH_SELL' ? 'Visit our branch office to verify cash & get paid' : 'Collect notes/card directly from our branch office'}
                       </div>
                     </div>
                   ) : (
                     <div 
-                      className="border-2 border-dashed border-gray-200 bg-gray-50/70 p-4 rounded-xl text-center relative cursor-not-allowed opacity-75 select-none"
+                      className="border-2 border-dashed border-gray-200 bg-gray-50/70 p-4 rounded-xl text-center relative cursor-not-allowed opacity-60 select-none"
                       title={`No physical branches currently in ${selectedCity}. Doorstep delivery is available.`}
                     >
-                      <span className="absolute top-2 right-2 bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase border border-amber-200">
-                        Home Delivery Only
-                      </span>
                       <div className="font-bold text-gray-400 mb-1">
                         {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
                       </div>
                       <div className="text-[11px] text-gray-400">
-                        No branch open in {selectedCity} yet
+                        Not available in this city
                       </div>
                     </div>
                   )}
@@ -1085,29 +1074,16 @@ export function ProductCalculatorStep() {
                   {/* Home Delivery / Home Collection */}
                   <div 
                     onClick={() => updateDraft({ deliveryMethod: 'HOME_DELIVERY' })}
-                    className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${deliveryMethod === 'HOME_DELIVERY' ? 'border-blue-500 bg-blue-50/50 shadow-sm ring-1 ring-blue-500/30' : 'border-gray-200 hover:border-blue-300'}`}
+                    className={`border-2 p-4 rounded-xl cursor-pointer text-center transition-all ${deliveryMethod === 'HOME_DELIVERY' ? 'border-blue-500 bg-blue-50/50 shadow-sm' : 'border-gray-200 hover:border-blue-300'}`}
                   >
-                    <div className="flex items-center justify-center gap-1.5 font-bold text-gray-900 mb-1">
-                      <span>{product === 'CASH_SELL' ? 'Home Collection' : 'Home Delivery'}</span>
-                      <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase">
-                        Available in {selectedCity}
-                      </span>
+                    <div className="font-bold text-gray-900 mb-1">
+                      {product === 'CASH_SELL' ? 'Home Collection' : 'Home Delivery'}
                     </div>
                     <div className="text-[11px] text-gray-500">
-                      {product === 'CASH_SELL' ? 'Our executive will collect currency notes from your doorstep' : `Get it delivered safely to your home/office in ${selectedCity}`}
+                      {product === 'CASH_SELL' ? 'Our executive will collect currency notes from your doorstep' : 'Get it delivered safely to your home or office address'}
                     </div>
                   </div>
                 </div>
-
-                {/* Info Note when selected city does NOT have physical branches */}
-                {!hasBranchesInCity && (
-                  <div className="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5 mb-4 flex items-center gap-2.5 text-xs text-amber-900 font-medium animate-in fade-in duration-200">
-                    <span className="text-base">📍</span>
-                    <span>
-                      Physical branch pickup is not yet open in <strong>{selectedCity}</strong>. Your order will be fulfilled via guaranteed <strong>Doorstep Delivery</strong>.
-                    </span>
-                  </div>
-                )}
 
                 {/* Warning when Doorstep is selected but under ₹25,000 threshold */}
                 {deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
@@ -1136,15 +1112,8 @@ export function ProductCalculatorStep() {
                 )}
 
                 {deliveryMethod === 'PICKUP' && hasBranchesInCity ? (
-                  <div className="space-y-2 animate-in fade-in duration-200 bg-slate-50 border border-slate-200/80 rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="block text-[13px] font-bold text-gray-900">
-                        Select Pickup Branch in {selectedCity}
-                      </label>
-                      <span className="text-[11px] font-bold text-blue-600">
-                        {availableCityBranches.length} {availableCityBranches.length === 1 ? 'branch' : 'branches'} in {selectedCity}
-                      </span>
-                    </div>
+                  <div className="space-y-2 animate-in fade-in duration-200">
+                    <label className="block text-[13px] font-bold text-gray-900 mb-1">Select Pickup Branch</label>
                     <select 
                       value={branchId}
                       onChange={(e) => updateDraft({ branchId: e.target.value })}
@@ -1152,7 +1121,7 @@ export function ProductCalculatorStep() {
                     >
                       {availableCityBranches.map((b: any) => (
                         <option key={b.id} value={b.id}>
-                          {b.branchName} — {b.branchAddress} ({b.branchCity})
+                          {b.branchName} ({b.branchCity}) - {b.branchAddress}
                         </option>
                       ))}
                     </select>
@@ -1161,13 +1130,14 @@ export function ProductCalculatorStep() {
                   totalCurrencyInrValue >= 25000 && (
                     <div className="bg-blue-50/70 border border-blue-200/60 rounded-xl p-3.5 flex items-center gap-2.5 text-xs text-blue-900 font-medium animate-in fade-in duration-200">
                       <span className="text-base">🚚</span>
-                      <span>Guaranteed safe doorstep delivery in <strong>{selectedCity}</strong>. You will provide your exact address and coordination phone in Step 4.</span>
+                      <span>Guaranteed safe doorstep delivery. You will provide your delivery address and coordination contact in Step 4.</span>
                     </div>
                   )
                 )}
               </div>
             </Card>
           )}
+
 
 
           {/* ─── REMITTANCE SPECIFIC FUNNEL (REORDERED & DYNAMIC) ─────────────────────────────── */}

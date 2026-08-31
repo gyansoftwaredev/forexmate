@@ -445,14 +445,13 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
                   className="w-full bg-slate-50 border border-slate-200 hover:border-amber-500 text-slate-900 font-bold text-xs rounded-2xl p-3.5 focus:outline-none shadow-2xs"
                 >
                   <option value="DOORSTEP">🏠 Doorstep Delivery</option>
-                  {hasBranchesInCity ? (
-                    <option value="BRANCH">🏢 Branch Pickup ({selectedCity})</option>
-                  ) : (
-                    <option value="BRANCH" disabled>🏢 Branch Pickup (Not in {selectedCity})</option>
-                  )}
+                  <option value="BRANCH" disabled={!hasBranchesInCity}>
+                    🏢 Branch Pickup{!hasBranchesInCity ? ' (Not Available)' : ''}
+                  </option>
                 </select>
               </div>
             )}
+
 
           </div>
 
