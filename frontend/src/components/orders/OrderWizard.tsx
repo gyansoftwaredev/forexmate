@@ -50,13 +50,13 @@ export function OrderWizard() {
         </div>
       )}
 
-      <Card className="shadow-lg border-0 bg-slate-50/50 min-h-[500px] rounded-3xl overflow-hidden">
+      <div className="w-full min-h-[500px] overflow-visible">
         {checkoutStep === 1 ? (
           <ProductCalculatorStep />
         ) : (
           <BookMyForexCheckoutEngine />
         )}
-      </Card>
+      </div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ interface CurrencyDropdownProps {
   rateType?: 'buy' | 'sell' | 'remittance' | 'card';
   label?: string;
   className?: string;
+  darkMode?: boolean;
 }
 
 export function CurrencyDropdown({
@@ -20,6 +21,7 @@ export function CurrencyDropdown({
   rateType = 'buy',
   label = 'Select Currency',
   className = '',
+  darkMode = false,
 }: CurrencyDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,9 +91,15 @@ export function CurrencyDropdown({
   return (
     <div className={`relative ${isOpen ? 'z-[120]' : 'z-10'} ${className}`} ref={dropdownRef}>
       {label && (
-        <label className="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+        <label className={`block text-[11px] font-extrabold uppercase tracking-wider mb-1.5 flex items-center justify-between ${
+          darkMode ? 'text-slate-300' : 'text-gray-700'
+        }`}>
           <span>{label}</span>
-          <span className="text-[10px] font-bold text-amber-700 normal-case bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+          <span className={`text-[10px] font-bold normal-case px-2 py-0.5 rounded-full border ${
+            darkMode 
+              ? 'text-cyan-400 bg-cyan-950/40 border-cyan-500/30' 
+              : 'text-amber-700 bg-amber-50 border-amber-200'
+          }`}>
             {rateType === 'sell' ? 'Buyback Rate' : 'Live Rate'}: ₹{currentRate.toFixed(2)}
           </span>
         </label>
@@ -101,27 +109,33 @@ export function CurrencyDropdown({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full bg-white border rounded-2xl p-3 flex items-center justify-between transition-all cursor-pointer shadow-2xs text-left ${
-          isOpen
-            ? 'border-amber-500 ring-2 ring-amber-500/20 shadow-md'
-            : 'border-gray-200 hover:border-amber-400 hover:shadow-xs'
+        className={`w-full border rounded-xl p-3 flex items-center justify-between transition-all cursor-pointer shadow-2xs text-left ${
+          darkMode
+            ? isOpen 
+              ? 'bg-slate-800/90 border-cyan-500 ring-2 ring-cyan-500/20 text-white' 
+              : 'bg-slate-900/60 hover:bg-slate-800/70 border-white/10 hover:border-white/20 text-white'
+            : isOpen
+              ? 'bg-white border-amber-500 ring-2 ring-amber-500/20 shadow-md text-gray-900'
+              : 'bg-white border-gray-200 hover:border-amber-400 hover:shadow-xs text-gray-900'
         }`}
       >
         <div className="flex items-center gap-3 min-w-0">
           <span className="text-2xl shrink-0 select-none">{selectedMeta.flag}</span>
           <div className="min-w-0">
-            <div className="text-sm font-black text-gray-900 flex items-center gap-1.5 truncate">
+            <div className={`text-sm font-black flex items-center gap-1.5 truncate ${darkMode ? 'text-white' : 'text-gray-900'}`}>
               <span>{selectedMeta.code}</span>
-              <span className="text-gray-500 text-xs font-semibold truncate">• {selectedMeta.name}</span>
+              <span className={`text-xs font-semibold truncate ${darkMode ? 'text-slate-400' : 'text-gray-500'}`}>• {selectedMeta.name}</span>
             </div>
-            <div className="text-[11px] text-amber-700 font-extrabold flex items-center gap-1">
+            <div className={`text-[11px] font-extrabold flex items-center gap-1 ${darkMode ? 'text-cyan-400' : 'text-amber-700'}`}>
               <span>1 {selectedMeta.code} = ₹{currentRate.toFixed(2)} INR</span>
             </div>
           </div>
         </div>
 
-        <div className={`p-1.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-400 transition-transform duration-200 shrink-0 ml-2 ${
-          isOpen ? 'rotate-180 text-amber-600 bg-amber-50 border-amber-200' : ''
+        <div className={`p-1.5 rounded-lg border transition-transform duration-200 shrink-0 ml-2 ${
+          darkMode 
+            ? isOpen ? 'rotate-180 text-cyan-400 bg-cyan-950/60 border-cyan-500/40' : 'text-slate-400 bg-slate-800/80 border-white/10'
+            : isOpen ? 'rotate-180 text-amber-600 bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200 text-gray-400'
         }`}>
           <ChevronDown className="w-4 h-4" />
         </div>
@@ -129,24 +143,32 @@ export function CurrencyDropdown({
 
       {/* Luxury Custom Popover Dropdown */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200/90 rounded-3xl shadow-2xl z-[150] p-3 animate-in fade-in zoom-in-95 duration-150 ring-1 ring-black/10">
+        <div className={`absolute left-0 right-0 top-full mt-2 rounded-2xl shadow-2xl z-[150] p-3 animate-in fade-in zoom-in-95 duration-150 border ${
+          darkMode 
+            ? 'bg-slate-900/95 backdrop-blur-2xl border-white/15 text-white ring-1 ring-white/10' 
+            : 'bg-white border-gray-200/90 text-gray-900 ring-1 ring-black/10'
+        }`}>
           
           {/* Search Header */}
           <div className="relative mb-2">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search 40+ currencies (e.g. USD, Euro, Yen)..."
-              className="w-full bg-gray-50 border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-xs font-bold text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:bg-white transition-all shadow-inner"
+              placeholder="Search 40+ currencies (e.g. USD, EUR, GBP)..."
+              className={`w-full rounded-xl py-2 pl-9 pr-3 text-xs font-bold transition-all border ${
+                darkMode
+                  ? 'bg-slate-800/80 border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500'
+                  : 'bg-gray-50 border-gray-200 text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-amber-500 focus:bg-white'
+              }`}
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs font-bold"
               >
                 ✕
               </button>
@@ -156,7 +178,7 @@ export function CurrencyDropdown({
           {/* Currencies Scroll List */}
           <div className="max-h-64 overflow-y-auto scrollbar-thin space-y-1 pr-1">
             {filteredCurrencies.length === 0 ? (
-              <div className="py-6 text-center text-xs font-bold text-gray-400">
+              <div className="py-6 text-center text-xs font-bold text-slate-400">
                 No currencies found matching &quot;{searchQuery}&quot;
               </div>
             ) : (
@@ -176,7 +198,9 @@ export function CurrencyDropdown({
                     className={`w-full p-2.5 rounded-xl flex items-center justify-between text-left transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
-                        : 'hover:bg-amber-50/70 text-gray-800'
+                        : darkMode
+                          ? 'hover:bg-white/10 text-slate-200'
+                          : 'hover:bg-amber-50/70 text-gray-800'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -184,7 +208,13 @@ export function CurrencyDropdown({
                       <div className="min-w-0">
                         <div className="text-xs font-black truncate flex items-center gap-1.5">
                           <span>{curr.code}</span>
-                          <span className={`text-[11px] truncate font-normal ${isSelected ? 'text-slate-900' : 'text-gray-500'}`}>
+                          <span className={`text-[11px] truncate font-normal ${
+                            isSelected 
+                              ? 'text-slate-900' 
+                              : darkMode 
+                                ? 'text-slate-400' 
+                                : 'text-gray-500'
+                          }`}>
                             - {curr.name}
                           </span>
                         </div>
@@ -206,8 +236,10 @@ export function CurrencyDropdown({
           </div>
 
           {/* Quick Footer Info */}
-          <div className="pt-2 mt-1.5 border-t border-gray-100 flex items-center justify-between text-[10px] text-gray-400 px-1 font-bold">
-            <span>✨ 40+ Currencies Supported</span>
+          <div className={`pt-2 mt-1.5 border-t flex items-center justify-between text-[10px] px-1 font-bold ${
+            darkMode ? 'border-white/10 text-slate-400' : 'border-gray-100 text-gray-400'
+          }`}>
+            <span>40+ Currencies Available</span>
             <span>Live Interbank Linked</span>
           </div>
         </div>
