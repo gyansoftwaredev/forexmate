@@ -6,7 +6,8 @@ import { useQuoteStore } from '@/stores/quoteStore';
 import { useRates } from '@/hooks/useRates';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, MapPin, Calendar, Briefcase, Plus, Edit2, Info, CheckCircle2, Ticket, Globe, Landmark, User2, X, ChevronDown, Upload, FileText, AlertCircle } from 'lucide-react';
+import { ArrowRight, MapPin, Calendar, Briefcase, Plus, Edit2, Info, CheckCircle2, Ticket, Globe, Landmark, User2, X, ChevronDown, Upload, FileText, AlertCircle, Sparkles } from 'lucide-react';
+
 import { CitySelectorModal } from '../CitySelectorModal';
 import { SameDayDeliveryModal } from '../SameDayDeliveryModal';
 import { calculateForexGst } from '@/lib/gstCalculator';
