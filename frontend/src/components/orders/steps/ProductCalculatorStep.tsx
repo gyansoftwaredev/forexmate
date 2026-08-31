@@ -387,9 +387,18 @@ export function ProductCalculatorStep() {
     loadBranches();
   }, []);
 
+  const getBranchCityName = (b: any): string => {
+    if (!b) return '';
+    if (typeof b.city === 'string') return b.city;
+    if (b.city && typeof b.city === 'object' && typeof b.city.name === 'string') return b.city.name;
+    if (b.cityName && typeof b.cityName === 'string') return b.cityName;
+    return '';
+  };
+
   const availableCityBranches = useMemo(() => {
-    if (!selectedCity) return [];
-    return branches.filter((b) => b.city?.toLowerCase() === selectedCity.toLowerCase());
+    if (!selectedCity || !Array.isArray(branches)) return [];
+    const target = selectedCity.trim().toLowerCase();
+    return branches.filter((b) => getBranchCityName(b).trim().toLowerCase() === target);
   }, [branches, selectedCity]);
 
   const hasBranchesInCity = availableCityBranches.length > 0;
@@ -530,8 +539,9 @@ export function ProductCalculatorStep() {
 
   // Branch Selection logic
   useEffect(() => {
-    if (branches.length > 0 && selectedCity) {
-      const cityBranches = branches.filter((b) => b.city?.toLowerCase() === selectedCity.toLowerCase());
+    if (Array.isArray(branches) && branches.length > 0 && selectedCity) {
+      const target = selectedCity.trim().toLowerCase();
+      const cityBranches = branches.filter((b) => getBranchCityName(b).trim().toLowerCase() === target);
       if (cityBranches.length > 0) {
         if (!branchId || !cityBranches.some((b) => b.id === branchId)) {
           updateDraft({ branchId: cityBranches[0].id });
@@ -1180,7 +1190,7 @@ export function ProductCalculatorStep() {
                       >
                         {availableCityBranches.map((b) => (
                           <option key={b.id} value={b.id} className="bg-slate-900 text-white">
-                            {b.name} ({b.city}) - {b.address}
+                            {b.name} ({getBranchCityName(b) || selectedCity}) - {b.address}
                           </option>
                         ))}
                       </select>
