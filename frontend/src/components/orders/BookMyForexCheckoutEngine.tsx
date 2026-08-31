@@ -451,6 +451,7 @@ export function BookMyForexCheckoutEngine() {
   
   // Fee & Tax rules per product
   const serviceCharge = isSell ? 0 : isRemittance ? 0 : 150;
+  const deliveryCharge = (!isBranchPickup && !isRemittance && !isSell) ? 150 : 0;
   const gst = isSell ? 0 : calculateForexGst(totalCurrencyInr);
   const discountVal = draftState.appliedOffer?.discountAmount || appliedDiscount || 0;
   const simCharge = (addSimCard && !isSell) ? 235 : 0;
@@ -458,7 +459,7 @@ export function BookMyForexCheckoutEngine() {
   // Total to pay / receive
   const finalTotalPayable = isSell 
     ? 0 
-    : Math.max(0, totalCurrencyInr + serviceCharge + gst + simCharge - discountVal);
+    : Math.max(0, totalCurrencyInr + serviceCharge + deliveryCharge + gst + simCharge - discountVal);
   const netInrPayout = Math.round(totalCurrencyInr);
 
   // Sync state changes
@@ -1756,6 +1757,12 @@ export function BookMyForexCheckoutEngine() {
                         <span>Service Fee</span>
                         <span className="font-bold text-slate-900">₹{serviceCharge}</span>
                       </div>
+                      {!isBranchPickup && (
+                        <div className="flex justify-between">
+                          <span>Delivery Charges</span>
+                          <span className="font-bold text-slate-900">₹{deliveryCharge}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span>GST (Tax)</span>
                         <span className="font-bold text-slate-900">₹{gst}</span>
@@ -1957,6 +1964,12 @@ export function BookMyForexCheckoutEngine() {
                       <span>Service Fee:</span>
                       <span className="font-bold text-slate-900">₹{serviceCharge}</span>
                     </div>
+                    {!isBranchPickup && (
+                      <div className="flex justify-between text-slate-700">
+                        <span>Delivery Charges:</span>
+                        <span className="font-bold text-slate-900">₹{deliveryCharge}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-slate-700">
                       <span>GST (Tax):</span>
                       <span className="font-bold text-slate-900">₹{gst}</span>

@@ -716,13 +716,14 @@ export function ProductCalculatorStep() {
   const hasAnyCurrency = parsedAmount > 0 || extraCurrenciesCalculated.some(c => parseFloat(c.amount) > 0);
 
   const serviceCharge = hasAnyCurrency ? 150 : 0;
+  const deliveryCharge = (!isRemittance && deliveryMethod === 'HOME_DELIVERY' && hasAnyCurrency) ? 150 : 0;
   const gst = totalCurrencyInrValue > 0 ? calculateForexGst(totalCurrencyInrValue) : 0;
 
   const appliedDiscount = appliedOffer ? appliedOffer.discountAmount : 0;
 
   const basePayableAmount = product === 'CASH_SELL'
-    ? (totalCurrencyInrValue > 0 ? (totalCurrencyInrValue - serviceCharge - gst) : 0)
-    : (totalCurrencyInrValue > 0 ? (totalCurrencyInrValue + serviceCharge + gst) : 0);
+    ? (totalCurrencyInrValue > 0 ? (totalCurrencyInrValue - serviceCharge - deliveryCharge - gst) : 0)
+    : (totalCurrencyInrValue > 0 ? (totalCurrencyInrValue + serviceCharge + deliveryCharge + gst) : 0);
 
   const payableAmount = product === 'CASH_SELL'
     ? basePayableAmount
@@ -771,6 +772,7 @@ export function ProductCalculatorStep() {
       extraCurrencies,
       totalCurrencyInrValue,
       serviceCharge,
+      deliveryCharge,
       gst,
       payableAmount,
     });
@@ -1937,6 +1939,15 @@ export function ProductCalculatorStep() {
                     <span className="text-slate-700 font-medium">Service Charge</span>
                     <span className="font-black text-slate-900 font-mono">₹ {serviceCharge}</span>
                   </div>
+
+                  {!isRemittance && (
+                    <div className="flex justify-between items-center text-xs pt-1">
+                      <span className="text-slate-700 font-medium">Delivery Charges</span>
+                      <span className="font-black text-slate-900 font-mono">
+                        {deliveryMethod === 'HOME_DELIVERY' ? `₹ ${deliveryCharge}` : 'FREE (Pickup)'}
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="flex justify-between items-center text-xs border-b border-slate-200/60 pb-3">
                     <span className="text-slate-700 font-medium">GST</span>
