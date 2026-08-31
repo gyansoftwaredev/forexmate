@@ -1830,12 +1830,9 @@ export function ProductCalculatorStep() {
                   <span>➔</span>
                 </button>
               </div>
-              <div className="w-16 h-11 bg-gradient-to-br from-amber-50 to-amber-100/70 rounded-xl border border-amber-200/80 flex flex-col justify-center items-center overflow-hidden shadow-2xs shrink-0">
-                <span className="text-[8px] font-black text-amber-900 font-mono">{currency}</span>
-                <span className="text-[9px] font-black text-amber-700 uppercase tracking-wider">{product === 'CASH' ? 'NOTE' : 'CARD'}</span>
-              </div>
             </div>
           </Card>
+
 
           {/* Amount Breakup */}
           <Card className="shadow-sm border-slate-200/90 rounded-3xl overflow-hidden bg-white">
