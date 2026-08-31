@@ -696,97 +696,138 @@ export function ProductCalculatorStep() {
   };
 
   return (
-    <div className="w-full text-left relative text-white selection:bg-cyan-500 selection:text-black">
+    <div className="w-full text-left relative text-white selection:bg-cyan-500 selection:text-black py-4">
       
+      {/* Top Floating App Bar (Brand on left, Security & Profile on right) */}
+      <div className="flex items-center justify-between gap-4 pb-6 pt-1 px-1">
+        {/* Brand Logo */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 p-0.5 shadow-xl shadow-amber-500/25 flex items-center justify-center">
+            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-amber-400" />
+            </div>
+          </div>
+          <div>
+            <div className="font-black text-lg tracking-tight text-white flex items-center gap-1.5 font-sans">
+              <span>ForexMate</span>
+            </div>
+            <div className="text-[10px] uppercase tracking-[0.25em] font-extrabold text-amber-400/90">
+              Premium Forex Services
+            </div>
+          </div>
+        </div>
 
+        {/* Status Indicators & Profile */}
+        <div className="flex items-center gap-3.5">
+          <div className="bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs px-4 py-2 rounded-full flex items-center gap-2 font-bold shadow-md">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>100% Secure</span>
+          </div>
 
-      {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="bg-slate-900/80 border border-white/10 text-slate-300 text-xs px-4 py-2 rounded-full flex items-center gap-2 font-medium shadow-md">
+            <span>Zero Hidden Charges</span>
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+          </div>
+
+          <div 
+            onClick={() => {
+              if (!user) setShowAuthModal(true);
+            }}
+            className="w-9 h-9 rounded-full bg-gradient-to-tr from-slate-800 to-slate-700 border border-white/20 text-white font-black text-sm flex items-center justify-center shadow-lg cursor-pointer hover:border-amber-400 hover:scale-105 transition-all"
+            title={user ? `Logged in as ${user.name || user.email}` : "Click to sign in"}
+          >
+            {user ? (user.name ? user.name[0].toUpperCase() : 'U') : 'N'}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Wide Layout Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
         
-        {/* LEFT COLUMN: Floating Glass Navigation Sidebar */}
-        <div className="lg:col-span-3 xl:col-span-2 space-y-4">
-          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-3 shadow-2xl space-y-1">
-            <div className="px-3 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
+        {/* LEFT COLUMN: Floating Glass Navigation Sidebar (Popped from left edge) */}
+        <div className="lg:col-span-2 xl:col-span-2 space-y-4">
+          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-3.5 shadow-2xl space-y-1.5">
+            <div className="px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
               Menu
             </div>
 
             <button
               type="button"
               onClick={() => router.push('/dashboard')}
-              className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+              className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
             >
-              <LayoutDashboard className="w-4 h-4 text-slate-400" />
+              <LayoutDashboard className="w-4 h-4 text-slate-400 shrink-0" />
               <span>Dashboard</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSwitch('CASH')}
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+              className={`w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
                 product === 'CASH'
                   ? 'bg-gradient-to-r from-amber-500/25 to-amber-500/5 border border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/10'
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              <Banknote className="w-4 h-4" />
+              <Banknote className="w-4 h-4 shrink-0" />
               <span>Buy Forex</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSwitch('CARD')}
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+              className={`w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
                 product === 'CARD'
                   ? 'bg-gradient-to-r from-amber-500/25 to-amber-500/5 border border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/10'
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              <CreditCard className="w-4 h-4" />
+              <CreditCard className="w-4 h-4 shrink-0" />
               <span>Forex Card</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSwitch('REMITTANCE')}
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+              className={`w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
                 product === 'REMITTANCE'
                   ? 'bg-gradient-to-r from-amber-500/25 to-amber-500/5 border border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/10'
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-4 h-4 shrink-0" />
               <span>Send Remittance</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleTabSwitch('CASH_SELL')}
-              className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
+              className={`w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
                 product === 'CASH_SELL'
                   ? 'bg-gradient-to-r from-amber-500/25 to-amber-500/5 border border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/10'
                   : 'text-slate-300 hover:text-white hover:bg-white/10'
               }`}
             >
-              <ArrowLeftRight className="w-4 h-4" />
+              <ArrowLeftRight className="w-4 h-4 shrink-0" />
               <span>Sell Forex</span>
             </button>
 
-            <div className="pt-2 pb-1 border-t border-white/10 mt-2">
+            <div className="pt-3 pb-1 border-t border-white/10 mt-2 space-y-1">
               <button
                 type="button"
                 onClick={() => router.push('/dashboard/orders')}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+                className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
               >
-                <ClipboardList className="w-4 h-4 text-slate-400" />
+                <ClipboardList className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>Orders</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => router.push('/dashboard/beneficiaries')}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+                className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
               >
-                <Users className="w-4 h-4 text-slate-400" />
+                <Users className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>Beneficiaries</span>
               </button>
 
@@ -796,18 +837,18 @@ export function ProductCalculatorStep() {
                   const el = document.getElementById('offers-card');
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+                className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
               >
-                <Tag className="w-4 h-4 text-slate-400" />
+                <Tag className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>Offers</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => router.push('/support')}
-                className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+                className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
               >
-                <Headphones className="w-4 h-4 text-slate-400" />
+                <Headphones className="w-4 h-4 text-slate-400 shrink-0" />
                 <span>Support</span>
               </button>
             </div>
@@ -819,7 +860,7 @@ export function ProductCalculatorStep() {
                   onClick={() => logout()}
                   className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-950/40 transition-all flex items-center gap-3 cursor-pointer text-left"
                 >
-                  <LogOut className="w-4 h-4 text-rose-400" />
+                  <LogOut className="w-4 h-4 text-rose-400 shrink-0" />
                   <span>Logout</span>
                 </button>
               </div>
@@ -827,72 +868,72 @@ export function ProductCalculatorStep() {
           </div>
         </div>
 
-        {/* CENTER COLUMN: Main Funnel Cards */}
-        <div className="lg:col-span-6 xl:col-span-7 space-y-6">
+        {/* CENTER COLUMN: Main Wide Funnel Cards */}
+        <div className="lg:col-span-6 xl:col-span-6 space-y-6">
           
-          {/* Card 1: Amount & Currency */}
-          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden space-y-5">
+          {/* Card 1: Amount & Currency (Enlarged & Spacious) */}
+          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden space-y-6">
             {/* Header / Stepper Number */}
-            <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-400 font-bold text-xs flex items-center justify-center shrink-0 shadow-xs">
+            <div className="flex items-center gap-3.5">
+              <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-400 font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
                 1
               </div>
               <div>
-                <h2 className="font-extrabold text-base text-white tracking-tight">
+                <h2 className="font-black text-lg text-white tracking-tight">
                   Amount & Currency
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs sm:text-sm text-slate-400">
                   Enter amount and select your preferred currency
                 </p>
               </div>
             </div>
 
             {/* Dual Hero Panels: You Pay & Live Interbank Rate */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               {/* You Pay Display Box */}
-              <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 space-y-1">
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+              <div className="bg-slate-800/40 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-1.5 flex flex-col justify-between shadow-inner">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   {isSell ? 'You Handover (INR Value)' : 'You Pay'}
                 </div>
-                <div className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight flex items-baseline gap-1">
-                  <span className="text-slate-400 text-xl font-sans">₹</span>
+                <div className="text-3xl sm:text-4xl font-black text-white font-mono tracking-tight flex items-baseline gap-1.5">
+                  <span className="text-slate-400 text-2xl font-sans">₹</span>
                   <span>{Math.round(inrEquivalent || 0).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="text-[11px] text-slate-400 font-medium italic truncate">
+                <div className="text-xs text-slate-400 font-medium italic truncate pt-1">
                   {numberToWordsINR(inrEquivalent || 0) || 'Enter forex amount below'}
                 </div>
               </div>
 
               {/* Live Rate Display Box */}
-              <div className="bg-slate-800/40 border border-white/5 rounded-2xl p-4 space-y-1.5 flex flex-col justify-between">
+              <div className="bg-slate-800/40 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-2 flex flex-col justify-between shadow-inner">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Live Interbank Rate
                   </span>
-                  <span className="bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <span className="bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
                     <span>LIVE</span>
                   </span>
                 </div>
                 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-lg font-black text-white font-mono">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="text-xl sm:text-2xl font-black text-white font-mono">
                     1 {currency} = ₹{adjustedRate?.toFixed(2) || '0.00'}
                   </span>
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/50 border border-emerald-500/20 px-2 py-0.5 rounded">
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/20 px-2 py-0.5 rounded-md">
                     +0.12 (0.14%)
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>Zero Hidden Margin</span>
                 </div>
               </div>
             </div>
 
             {/* Inputs: Select Currency & Forex Amount */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 sm:gap-5 items-start pt-1">
               <div className="sm:col-span-6">
                 <CurrencyDropdown
                   value={currency}
@@ -905,7 +946,7 @@ export function ProductCalculatorStep() {
               </div>
 
               <div className="sm:col-span-6">
-                <label className="block text-[11px] font-extrabold text-slate-300 uppercase tracking-wider mb-1.5">
+                <label className="block text-xs font-extrabold text-slate-300 uppercase tracking-wider mb-1.5">
                   {isSell ? 'You Handover (Forex Amount)' : 'You Receive (Forex Amount)'}
                 </label>
                 <div className="relative">
@@ -915,10 +956,10 @@ export function ProductCalculatorStep() {
                     value={amount}
                     onChange={(e) => updateDraft({ amount: e.target.value })}
                     placeholder="1000.00"
-                    className="w-full bg-slate-900/60 border border-white/10 rounded-xl px-3.5 py-3 pr-16 text-sm font-bold text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono shadow-inner"
+                    className="w-full bg-slate-900/70 border border-white/15 rounded-xl px-4 py-3.5 pr-16 text-base font-black text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono shadow-inner"
                   />
-                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                    <span className="text-xs font-black text-slate-300 bg-slate-800 px-2 py-1 rounded-md border border-white/10">
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <span className="text-xs font-black text-slate-300 bg-slate-800 px-2.5 py-1 rounded-md border border-white/10">
                       {currency}
                     </span>
                     <button
@@ -944,7 +985,7 @@ export function ProductCalculatorStep() {
                     </button>
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-[11px] text-slate-400 mt-1 px-0.5">
+                <div className="flex justify-between items-center text-xs text-slate-400 mt-1.5 px-0.5">
                   <span>Rate: 1 {currency} = ₹{adjustedRate?.toFixed(2)}</span>
                   <span className="text-cyan-400 font-bold font-mono">
                     Forex Value: ₹{inrEquivalent ? inrEquivalent.toLocaleString('en-IN') : '0.00'}
@@ -955,18 +996,18 @@ export function ProductCalculatorStep() {
 
             {/* Additional Currencies Rows */}
             {extraCurrenciesCalculated.map((c, idx) => (
-              <div key={idx} className="bg-slate-800/50 border border-white/10 rounded-2xl p-3.5 flex items-center justify-between text-xs">
+              <div key={idx} className="bg-slate-800/50 border border-white/10 rounded-2xl p-4 flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-bold text-white">{getCurrencyName(c.currency)}</span>
-                  <span className="text-slate-300 bg-slate-900/80 px-2.5 py-1 rounded-lg border border-white/10 font-mono">
+                  <span className="text-slate-300 bg-slate-900/80 px-3 py-1 rounded-lg border border-white/10 font-mono">
                     {c.amount} {c.currency} = <strong className="text-cyan-400">₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}</strong>
                   </span>
-                  <span className="text-slate-400 font-mono">@ ₹{c.rate.toFixed(2)}</span>
+                  <span className="text-slate-400 font-mono text-xs">@ ₹{c.rate.toFixed(2)}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => updateExtraCurrencies(extraCurrencies.filter((_, i) => i !== idx))}
-                  className="text-rose-400 hover:text-rose-300 text-xs font-bold bg-rose-950/40 border border-rose-500/20 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                  className="text-rose-400 hover:text-rose-300 text-xs font-bold bg-rose-950/40 border border-rose-500/20 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                 >
                   Remove
                 </button>
@@ -979,7 +1020,7 @@ export function ProductCalculatorStep() {
                 <button
                   type="button"
                   onClick={() => setShowAddCurrencyModal(true)}
-                  className="text-cyan-400 hover:text-cyan-300 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                  className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm font-bold flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <span>+ Add Another Currency</span>
                 </button>
@@ -987,64 +1028,64 @@ export function ProductCalculatorStep() {
             )}
           </div>
 
-          {/* Card 2: Fulfillment Method & Travel Details */}
-          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-6">
+          {/* Card 2: Fulfillment Method & Travel Details (Enlarged & Spacious) */}
+          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-6">
             
             {/* Stepper Tabs Bar */}
-            <div className="flex flex-wrap items-center gap-2 border-b border-white/10 pb-4">
+            <div className="flex flex-wrap items-center gap-2.5 border-b border-white/10 pb-5">
               <button
                 type="button"
-                className="px-4 py-1.5 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-400/30 flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-5 py-2 rounded-full text-xs sm:text-sm font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-400/30 flex items-center gap-2 shadow-xs cursor-pointer"
               >
-                <Package className="w-3.5 h-3.5" />
+                <Package className="w-4 h-4" />
                 <span>1 Fulfillment Method</span>
               </button>
 
               <button
                 type="button"
-                className="px-4 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="px-5 py-2 rounded-full text-xs sm:text-sm font-semibold text-slate-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
               >
-                <Plane className="w-3.5 h-3.5" />
+                <Plane className="w-4 h-4" />
                 <span>2 Travel Details</span>
               </button>
 
               <button
                 type="button"
-                className="px-4 py-1.5 rounded-full text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="px-5 py-2 rounded-full text-xs sm:text-sm font-semibold text-slate-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
               >
-                <Receipt className="w-3.5 h-3.5" />
+                <Receipt className="w-4 h-4" />
                 <span>3 Review & Pay</span>
               </button>
             </div>
 
             {/* Top Doorstep Delivery Ribbon */}
-            <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-medium text-slate-300 bg-slate-800/40 p-3 px-4 rounded-2xl border border-white/5">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-medium text-slate-300 bg-slate-800/40 p-4 rounded-2xl border border-white/5">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="flex h-2 w-2 relative shrink-0">
+                <span className="flex h-2.5 w-2.5 relative shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
                 <span>Guaranteed delivery by</span>
-                <span className="font-bold text-white bg-slate-800 px-2.5 py-0.5 rounded-md border border-white/10 text-[11px]">
+                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-lg border border-white/10 text-xs font-mono">
                   {deliveryDay}, 9:00 PM
                 </span>
                 <span>to</span>
                 <button
                   type="button"
                   onClick={() => setIsCityModalOpen(true)}
-                  className="font-bold text-cyan-400 hover:text-cyan-300 bg-slate-900/80 hover:bg-slate-900 px-2.5 py-0.5 rounded-md border border-cyan-500/30 transition-all flex items-center gap-1 cursor-pointer text-[11px]"
+                  className="font-bold text-cyan-400 hover:text-cyan-300 bg-slate-900/80 hover:bg-slate-900 px-3 py-1 rounded-lg border border-cyan-500/30 transition-all flex items-center gap-1.5 cursor-pointer text-xs"
                 >
-                  <MapPin className="w-3 h-3 text-cyan-400" />
+                  <MapPin className="w-3.5 h-3.5 text-cyan-400" />
                   <span>{selectedCity}</span>
-                  <ChevronDown className="w-3 h-3 text-cyan-400" />
+                  <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
                 </button>
               </div>
               <button
                 type="button"
                 onClick={() => setIsDeliveryPolicyOpen(true)}
-                className="text-[11px] font-semibold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
               >
-                <Zap className="w-3 h-3" />
+                <Zap className="w-3.5 h-3.5" />
                 <span>Same-Day Policy</span>
               </button>
             </div>
@@ -1052,28 +1093,28 @@ export function ProductCalculatorStep() {
             {/* Fulfillment Options (Only shown when not Remittance) */}
             {!isRemittance && (
               <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   {/* Branch Pickup */}
                   {hasBranchesInCity ? (
                     <div
                       onClick={() => updateDraft({ deliveryMethod: 'PICKUP', branchId: availableCityBranches[0]?.id })}
-                      className={`border p-4 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
+                      className={`border p-5 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
                         deliveryMethod === 'PICKUP'
                           ? 'border-cyan-400 bg-cyan-950/30 ring-1 ring-cyan-500/40 shadow-lg shadow-cyan-500/10'
                           : 'border-white/10 bg-slate-800/30 hover:border-white/20 hover:bg-slate-800/50'
                       }`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className={`p-2 rounded-xl border ${
+                      <div className="flex items-start gap-3.5">
+                        <div className={`p-2.5 rounded-xl border ${
                           deliveryMethod === 'PICKUP' ? 'bg-cyan-500/20 border-cyan-400/40 text-cyan-400' : 'bg-slate-800 border-white/10 text-slate-400'
                         }`}>
                           <Building2 className="w-5 h-5" />
                         </div>
                         <div>
-                          <div className="font-bold text-sm text-white">
+                          <div className="font-bold text-sm sm:text-base text-white">
                             {product === 'CASH_SELL' ? 'Branch Visit' : 'Branch Pickup'}
                           </div>
-                          <div className="text-xs text-slate-400 mt-0.5">
+                          <div className="text-xs text-slate-400 mt-1">
                             {product === 'CASH_SELL' ? 'Visit our branch vault to verify & get paid' : 'Collect directly from our authorized branch vault'}
                           </div>
                         </div>
@@ -1087,15 +1128,15 @@ export function ProductCalculatorStep() {
                     </div>
                   ) : (
                     <div
-                      className="border border-dashed border-white/10 bg-slate-900/30 p-4 rounded-2xl cursor-not-allowed opacity-50 select-none flex items-start gap-3"
+                      className="border border-dashed border-white/10 bg-slate-900/30 p-5 rounded-2xl cursor-not-allowed opacity-50 select-none flex items-start gap-3.5"
                       title={`No branches in ${selectedCity}`}
                     >
-                      <div className="p-2 rounded-xl bg-slate-800 border border-white/10 text-slate-500">
+                      <div className="p-2.5 rounded-xl bg-slate-800 border border-white/10 text-slate-500">
                         <Building2 className="w-5 h-5" />
                       </div>
                       <div>
                         <div className="font-bold text-sm text-slate-400">Branch Pickup</div>
-                        <div className="text-xs text-slate-500 mt-0.5">Not available in {selectedCity}</div>
+                        <div className="text-xs text-slate-500 mt-1">Not available in {selectedCity}</div>
                       </div>
                     </div>
                   )}
@@ -1103,23 +1144,23 @@ export function ProductCalculatorStep() {
                   {/* Home Delivery */}
                   <div
                     onClick={() => updateDraft({ deliveryMethod: 'HOME_DELIVERY' })}
-                    className={`border p-4 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
+                    className={`border p-5 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
                       deliveryMethod === 'HOME_DELIVERY'
                         ? 'border-cyan-400 bg-cyan-950/30 ring-1 ring-cyan-500/40 shadow-lg shadow-cyan-500/10'
                         : 'border-white/10 bg-slate-800/30 hover:border-white/20 hover:bg-slate-800/50'
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-xl border ${
+                    <div className="flex items-start gap-3.5">
+                      <div className={`p-2.5 rounded-xl border ${
                         deliveryMethod === 'HOME_DELIVERY' ? 'bg-cyan-500/20 border-cyan-400/40 text-cyan-400' : 'bg-slate-800 border-white/10 text-slate-400'
                       }`}>
                         <Truck className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="font-bold text-sm text-white">
+                        <div className="font-bold text-sm sm:text-base text-white">
                           {product === 'CASH_SELL' ? 'Home Collection' : 'Home Delivery'}
                         </div>
-                        <div className="text-xs text-slate-400 mt-0.5">
+                        <div className="text-xs text-slate-400 mt-1">
                           {product === 'CASH_SELL' ? 'Our executive will collect currency from your doorstep' : 'Guaranteed safe delivery to your address'}
                         </div>
                       </div>
@@ -1135,7 +1176,7 @@ export function ProductCalculatorStep() {
 
                 {/* Branch Dropdown selector if Pickup */}
                 {deliveryMethod === 'PICKUP' && hasBranchesInCity && (
-                  <div className="bg-slate-800/40 border border-white/10 rounded-2xl p-4 space-y-2">
+                  <div className="bg-slate-800/40 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-2">
                     <label className="block text-xs font-bold text-slate-300">
                       Select Pickup Branch in {selectedCity}
                     </label>
@@ -1143,7 +1184,7 @@ export function ProductCalculatorStep() {
                       <select
                         value={branchId}
                         onChange={(e) => updateDraft({ branchId: e.target.value })}
-                        className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 pr-10 text-xs font-bold text-white focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
+                        className="w-full bg-slate-900 border border-white/10 rounded-xl p-3.5 pr-10 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
                       >
                         {availableCityBranches.map((b) => (
                           <option key={b.id} value={b.id} className="bg-slate-900 text-white">
@@ -1160,7 +1201,7 @@ export function ProductCalculatorStep() {
 
             {/* Travel Details Form */}
             {!isSell && (
-              <div className="space-y-4 pt-2 border-t border-white/10">
+              <div className="space-y-4 pt-4 border-t border-white/10">
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
                   Travel Details
                 </div>
@@ -1172,7 +1213,7 @@ export function ProductCalculatorStep() {
                   </label>
                   <div className="flex flex-wrap gap-2.5 items-center">
                     {destination && (
-                      <div className="flex items-center bg-cyan-950/60 border border-cyan-500/40 px-3.5 py-1.5 rounded-xl text-xs font-bold text-cyan-300 shadow-sm">
+                      <div className="flex items-center bg-cyan-950/60 border border-cyan-500/40 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-cyan-300 shadow-sm">
                         <span>{destination}</span>
                         <button
                           type="button"
@@ -1186,7 +1227,7 @@ export function ProductCalculatorStep() {
                               updateDraft({ destination: '' });
                             }
                           }}
-                          className="ml-2 text-slate-400 hover:text-rose-400 font-bold text-xs cursor-pointer"
+                          className="ml-2.5 text-slate-400 hover:text-rose-400 font-bold text-xs cursor-pointer"
                           title="Remove country"
                         >
                           ✕
@@ -1195,12 +1236,12 @@ export function ProductCalculatorStep() {
                     )}
 
                     {extraCountries.map((c, idx) => (
-                      <div key={idx} className="flex items-center bg-slate-800 border border-white/10 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-300">
+                      <div key={idx} className="flex items-center bg-slate-800 border border-white/10 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300">
                         <span>{c}</span>
                         <button
                           type="button"
                           onClick={() => setExtraCountries(prev => prev.filter((_, i) => i !== idx))}
-                          className="ml-2 text-slate-400 hover:text-rose-400 font-bold text-xs cursor-pointer"
+                          className="ml-2.5 text-slate-400 hover:text-rose-400 font-bold text-xs cursor-pointer"
                           title="Remove country"
                         >
                           ✕
@@ -1212,7 +1253,7 @@ export function ProductCalculatorStep() {
                       <select
                         value={destination}
                         onChange={(e) => updateDraft({ destination: e.target.value })}
-                        className="bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs font-semibold text-white focus:border-cyan-500 outline-none max-w-xs cursor-pointer"
+                        className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold text-white focus:border-cyan-500 outline-none max-w-xs cursor-pointer"
                       >
                         <option value="" className="bg-slate-900 text-white">Select Country</option>
                         {DESTINATION_COUNTRIES.map((c) => (
@@ -1227,7 +1268,7 @@ export function ProductCalculatorStep() {
                       <button
                         type="button"
                         onClick={() => setShowAddCountryModal(true)}
-                        className="border border-white/10 hover:border-cyan-500 rounded-xl px-3 py-2 text-[11px] font-bold text-cyan-400 hover:bg-cyan-950/30 uppercase tracking-wider transition-all cursor-pointer"
+                        className="border border-white/10 hover:border-cyan-500 rounded-xl px-4 py-2 text-xs font-bold text-cyan-400 hover:bg-cyan-950/30 uppercase tracking-wider transition-all cursor-pointer"
                       >
                         + Add Country
                       </button>
@@ -1236,7 +1277,7 @@ export function ProductCalculatorStep() {
                 </div>
 
                 {/* Travel Dates */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">Departure Date *</label>
                     <input
@@ -1245,7 +1286,7 @@ export function ProductCalculatorStep() {
                       max={maxTravelDateStr}
                       value={departureDate}
                       onChange={(e) => handleDepartureDateChange(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-cyan-500"
                     />
                   </div>
 
@@ -1257,7 +1298,7 @@ export function ProductCalculatorStep() {
                         min={departureDate || todayStr}
                         value={returnDate}
                         onChange={(e) => updateDraft({ returnDate: e.target.value })}
-                        className="w-full bg-slate-900 border border-white/10 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-cyan-500"
                       />
                     </div>
                   )}
@@ -1269,7 +1310,7 @@ export function ProductCalculatorStep() {
                   <select
                     value={purpose}
                     onChange={(e) => updateDraft({ purpose: e.target.value })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-xs font-bold text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-3.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
                   >
                     <option value="" className="bg-slate-900 text-white">Select Purpose</option>
                     <option value="HOLIDAY" className="bg-slate-900 text-white">Holiday / Leisure Travel</option>
@@ -1284,17 +1325,17 @@ export function ProductCalculatorStep() {
             )}
           </div>
 
-          {/* Sticky Bottom Action Capsule */}
-          <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 shadow-2xl flex flex-wrap items-center justify-between gap-4 sticky bottom-4 z-40">
+          {/* Sticky Bottom Action Capsule (Wide & Prominent) */}
+          <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-wrap items-center justify-between gap-4 sticky bottom-4 z-40">
             {/* Live Rate Lock Countdown Clock */}
-            <div className="flex items-center gap-3 bg-slate-950/70 border border-white/10 px-4 py-2.5 rounded-2xl shadow-inner">
+            <div className="flex items-center gap-3.5 bg-slate-950/70 border border-white/10 px-5 py-3 rounded-2xl shadow-inner">
               <Lock className="w-4 h-4 text-amber-400" />
-              <div className="text-xs font-bold text-slate-300">
+              <div className="text-xs sm:text-sm font-bold text-slate-300">
                 <span>Rate Locked For: </span>
-                <span className="font-mono text-white font-extrabold ml-1 tracking-wider text-sm text-amber-400">
+                <span className="font-mono text-white font-black ml-1.5 tracking-wider text-base text-amber-400">
                   {formatMinutes} : {formatSeconds}
                 </span>
-                <span className="text-[10px] text-slate-500 ml-1.5">Min Sec</span>
+                <span className="text-[10px] text-slate-500 ml-1.5 uppercase font-semibold">Min Sec</span>
               </div>
             </div>
 
@@ -1309,7 +1350,7 @@ export function ProductCalculatorStep() {
                 (deliveryMethod === 'PICKUP' && !branchId) ||
                 (deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue < 25000)
               }
-              className="flex-1 sm:flex-none px-8 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
+              className="flex-1 sm:flex-none px-10 py-4 rounded-2xl font-black text-sm sm:text-base bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-xl shadow-amber-500/30 transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
             >
               <Lock className="w-4 h-4" />
               <span>{isLocking ? 'LOCKING RATE...' : 'LOCK RATE & CONTINUE'}</span>
@@ -1319,7 +1360,7 @@ export function ProductCalculatorStep() {
 
           {/* Validation Warning Notice */}
           {!isRemittance && deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
-            <div className="bg-amber-950/40 border border-amber-500/30 rounded-2xl p-3.5 text-xs text-amber-300 flex items-center gap-2">
+            <div className="bg-amber-950/40 border border-amber-500/30 rounded-2xl p-4 text-xs sm:text-sm text-amber-300 flex items-center gap-2.5">
               <TriangleAlert className="w-4 h-4 text-amber-400 shrink-0" />
               <span>Doorstep delivery requires minimum ₹25,000 order value. Switch to Branch Pickup or add more currency to proceed.</span>
             </div>
@@ -1327,32 +1368,32 @@ export function ProductCalculatorStep() {
 
         </div>
 
-        {/* RIGHT COLUMN: Order Summary & Voucher Vault */}
-        <div className="lg:col-span-3 xl:col-span-3 space-y-6">
+        {/* RIGHT COLUMN: Order Summary & Voucher Vault (Wide & Spacious) */}
+        <div className="lg:col-span-4 xl:col-span-4 space-y-6">
           
           {/* Card 1: Order Summary */}
-          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Receipt className="w-4 h-4 text-amber-400" />
-                <h3 className="font-extrabold text-sm text-white">Order Summary</h3>
+          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <Receipt className="w-5 h-5 text-amber-400" />
+                <h3 className="font-black text-base text-white">Order Summary</h3>
               </div>
-              <span className="text-[10px] font-bold text-slate-400 font-mono">INR</span>
+              <span className="text-xs font-bold text-slate-400 font-mono">INR</span>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-3.5 text-xs sm:text-sm">
               <div className="flex justify-between items-center text-slate-300">
                 <span>Total Currency Value</span>
-                <span className="font-bold text-white font-mono">₹ {Math.round(totalCurrencyInrValue).toLocaleString('en-IN')}.00</span>
+                <span className="font-bold text-white font-mono text-sm sm:text-base">₹ {Math.round(totalCurrencyInrValue).toLocaleString('en-IN')}.00</span>
               </div>
 
-              <div className="flex justify-between items-center text-[11px] text-slate-400 pl-2">
+              <div className="flex justify-between items-center text-xs text-slate-400 pl-2">
                 <span>{amount || 0} {currency} @ ₹{adjustedRate?.toFixed(2)}</span>
                 <span className="font-mono">₹ {inrEquivalent.toLocaleString('en-IN')}.00</span>
               </div>
 
               {extraCurrenciesCalculated.map((c, idx) => (
-                <div key={idx} className="flex justify-between items-center text-[11px] text-cyan-400 pl-2">
+                <div key={idx} className="flex justify-between items-center text-xs text-cyan-400 pl-2">
                   <span>{c.amount} {c.currency} @ ₹{c.rate.toFixed(2)}</span>
                   <span className="font-mono">₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}.00</span>
                 </div>
@@ -1378,58 +1419,58 @@ export function ProductCalculatorStep() {
               </div>
 
               {appliedDiscount > 0 && (
-                <div className="flex justify-between items-center text-emerald-400 font-bold bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/30">
+                <div className="flex justify-between items-center text-emerald-400 font-bold bg-emerald-950/40 p-3 rounded-xl border border-emerald-500/30 text-xs sm:text-sm">
                   <span>Promo Discount ({appliedOffer?.code})</span>
                   <span className="font-mono">- ₹ {appliedDiscount}.00</span>
                 </div>
               )}
 
               {/* Glowing Golden Total Payable */}
-              <div className="pt-3 border-t border-white/10 space-y-1">
+              <div className="pt-4 border-t border-white/10 space-y-1.5">
                 <div className="flex justify-between items-baseline">
                   <div>
-                    <span className="text-white font-black block text-xs">
+                    <span className="text-white font-black block text-sm">
                       {product === 'CASH_SELL' ? 'Total to Receive' : 'Total Payable Amount'}
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-xs text-slate-400">
                       Incl. GST & Zero Margin
                     </span>
                   </div>
-                  <span className="font-black text-amber-400 text-xl font-mono tracking-tight drop-shadow-md">
+                  <span className="font-black text-amber-400 text-2xl sm:text-3xl font-mono tracking-tight drop-shadow-md">
                     ₹ {payableAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}.00
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-800/50 p-2.5 rounded-xl text-center border border-white/5">
-              <span className="text-[11px] text-emerald-400 font-bold flex items-center justify-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="bg-slate-800/50 p-3.5 rounded-2xl text-center border border-white/5">
+              <span className="text-xs sm:text-sm text-emerald-400 font-bold flex items-center justify-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 {getEligibilityMessage()}
               </span>
             </div>
           </div>
 
           {/* Card 2: Offers & Coupons Vault */}
-          <div id="offers-card" className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Ticket className="w-4 h-4 text-amber-400" />
-                <h3 className="font-extrabold text-sm text-white">Offers & Coupons</h3>
+          <div id="offers-card" className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <Ticket className="w-5 h-5 text-amber-400" />
+                <h3 className="font-black text-base text-white">Offers & Coupons</h3>
               </div>
-              <span className="text-[10px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2 py-0.5 rounded-full">
+              <span className="text-xs font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-full">
                 {DUMMY_OFFERS.length} Available
               </span>
             </div>
 
             {/* Coupon input */}
-            <div className="flex items-center gap-2 bg-slate-950/70 border border-white/10 rounded-xl p-1.5 focus-within:border-cyan-500 transition-all">
+            <div className="flex items-center gap-2 bg-slate-950/70 border border-white/10 rounded-2xl p-2 focus-within:border-cyan-500 transition-all">
               <input
                 type="text"
                 value={couponInput}
                 onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                 placeholder="ENTER PROMO CODE"
-                className="bg-transparent flex-1 min-w-0 px-2 text-xs font-mono font-bold focus:outline-none uppercase placeholder:normal-case placeholder:text-slate-500 text-white"
+                className="bg-transparent flex-1 min-w-0 px-3 text-xs sm:text-sm font-mono font-bold focus:outline-none uppercase placeholder:normal-case placeholder:text-slate-500 text-white"
               />
               <button
                 type="button"
@@ -1438,7 +1479,7 @@ export function ProductCalculatorStep() {
                     handleApplyInputCoupon();
                   }
                 }}
-                className={`font-bold text-xs px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                className={`font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all cursor-pointer ${
                   appliedOffer?.code === couponInput
                     ? 'bg-emerald-500 text-slate-950'
                     : 'bg-white/10 hover:bg-amber-500 hover:text-slate-950 text-white'
@@ -1449,14 +1490,14 @@ export function ProductCalculatorStep() {
             </div>
 
             {couponError && (
-              <div className="text-[11px] text-rose-400 bg-rose-950/40 border border-rose-500/30 p-2 rounded-xl flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              <div className="text-xs text-rose-400 bg-rose-950/40 border border-rose-500/30 p-3 rounded-2xl flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{couponError}</span>
               </div>
             )}
 
             {/* Offers list */}
-            <div className="space-y-2.5 pt-1">
+            <div className="space-y-3 pt-1">
               {DUMMY_OFFERS.map((offer) => {
                 const currentInrVal = inrEquivalent || 0;
                 const isEligible = currentInrVal >= offer.minAmount;
@@ -1465,7 +1506,7 @@ export function ProductCalculatorStep() {
                 return (
                   <div
                     key={offer.code}
-                    className={`p-3 rounded-2xl border transition-all text-left ${
+                    className={`p-4 rounded-2xl border transition-all text-left ${
                       isSelected
                         ? 'bg-amber-500/10 border-amber-400/60 ring-1 ring-amber-400/20'
                         : isEligible
@@ -1473,20 +1514,20 @@ export function ProductCalculatorStep() {
                           : 'bg-slate-900/30 border-white/5 opacity-50'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-mono font-bold text-[10px] bg-slate-800 text-amber-300 px-2 py-0.5 rounded border border-amber-400/30">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-xs bg-slate-800 text-amber-300 px-2.5 py-0.5 rounded border border-amber-400/30">
                             {offer.code}
                           </span>
-                          <span className="text-[9px] font-bold text-emerald-400 uppercase">
+                          <span className="text-[10px] font-bold text-emerald-400 uppercase">
                             {offer.tag}
                           </span>
                         </div>
-                        <div className="text-xs font-bold text-white">
+                        <div className="text-sm font-bold text-white">
                           {offer.title}
                         </div>
-                        <p className="text-[11px] text-slate-400">
+                        <p className="text-xs text-slate-400">
                           {offer.description}
                         </p>
                       </div>
@@ -1497,7 +1538,7 @@ export function ProductCalculatorStep() {
                           onClick={() => {
                             if (!isSelected) handleSelectOffer(offer);
                           }}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-xl transition-all shrink-0 cursor-pointer ${
+                          className={`text-xs font-bold px-4 py-2 rounded-xl transition-all shrink-0 cursor-pointer ${
                             isSelected
                               ? 'bg-emerald-500 text-slate-950'
                               : 'bg-white/10 hover:bg-amber-500 hover:text-slate-950 text-white'
@@ -1506,7 +1547,7 @@ export function ProductCalculatorStep() {
                           {isSelected ? 'Applied ✓' : 'Apply'}
                         </button>
                       ) : (
-                        <span className="text-[10px] text-slate-500 shrink-0 font-medium">
+                        <span className="text-xs text-slate-500 shrink-0 font-medium">
                           Locked
                         </span>
                       )}

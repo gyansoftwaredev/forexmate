@@ -20,33 +20,9 @@ export default function RemittancePage() {
 
       <Navbar />
 
-      {/* Hero Header Section */}
-      <section className="relative z-10 text-white pt-10 pb-6 px-6">
-        <div className="max-w-6xl mx-auto text-center space-y-2">
-          <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-white drop-shadow-md">
-            Send Money Abroad <span className="text-amber-400 font-extrabold">Paperless Wire</span>
-          </h1>
-          <p className="text-slate-200 max-w-2xl mx-auto text-sm md:text-base font-medium drop-shadow-xs">
-            Transfer funds internationally for university tuition, medical expenses, or family support at live interbank rates.
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-3 text-xs font-bold text-slate-100 pt-2">
-            <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
-              <Send className="w-3.5 h-3.5 text-blue-400" /> Same-Day SWIFT Wire MT103
-            </div>
-            <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
-              <Zap className="w-3.5 h-3.5 text-amber-400" /> Lowest Transfer Charges
-            </div>
-            <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 flex items-center gap-1.5 shadow-md">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> 100% RBI LRS Compliant
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Embedded Full Remittance Order Engine */}
-      <main className="flex-grow px-2 sm:px-4 md:px-6 relative pb-16">
-        <div className="max-w-7xl mx-auto text-left overflow-visible">
+      {/* Embedded Full Remittance Order Engine (Full Width Dashboard) */}
+      <main className="flex-grow px-2 sm:px-4 lg:px-8 relative pb-16 pt-2">
+        <div className="max-w-[1700px] mx-auto text-left overflow-visible w-full">
           <Suspense fallback={<div className="p-10 text-center font-bold text-slate-400">Loading Remittance Engine...</div>}>
             <OrderWizard />
           </Suspense>
