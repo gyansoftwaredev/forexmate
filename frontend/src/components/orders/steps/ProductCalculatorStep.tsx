@@ -1662,14 +1662,37 @@ export function ProductCalculatorStep() {
                       <div className="flex flex-wrap gap-2.5 items-center">
                         {destination && (
                           <div className="flex items-center bg-blue-50 border border-blue-200 px-3 py-1 rounded-full text-[13px] font-bold text-blue-900 shadow-2xs">
-                            {destination} 
-                            <button onClick={() => updateDraft({ destination: '' })} className="ml-2 text-gray-400 hover:text-red-600 font-bold text-xs">✕</button>
+                            <span>{destination}</span>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                if (extraCountries.length > 0) {
+                                  const nextPrimary = extraCountries[0];
+                                  const remaining = extraCountries.slice(1);
+                                  updateDraft({ destination: nextPrimary });
+                                  setExtraCountries(remaining);
+                                } else {
+                                  updateDraft({ destination: '' });
+                                }
+                              }} 
+                              className="ml-2 text-gray-400 hover:text-red-600 font-bold text-xs cursor-pointer"
+                              title="Remove destination"
+                            >
+                              ✕
+                            </button>
                           </div>
                         )}
                         {extraCountries.map((c, idx) => (
                           <div key={idx} className="flex items-center bg-gray-100 border border-gray-200 px-3 py-1 rounded-full text-[13px] font-semibold text-gray-800">
-                            {c}
-                            <button onClick={() => setExtraCountries(prev => prev.filter((_, i) => i !== idx))} className="ml-2 text-gray-400 hover:text-red-600 font-bold text-xs">✕</button>
+                            <span>{c}</span>
+                            <button 
+                              type="button"
+                              onClick={() => setExtraCountries(prev => prev.filter((_, i) => i !== idx))} 
+                              className="ml-2 text-gray-400 hover:text-red-600 font-bold text-xs cursor-pointer"
+                              title="Remove destination"
+                            >
+                              ✕
+                            </button>
                           </div>
                         ))}
                         
@@ -2227,7 +2250,11 @@ export function ProductCalculatorStep() {
               <Button 
                 onClick={() => {
                   if (selectedExtraCountry && !extraCountries.includes(selectedExtraCountry)) {
-                    setExtraCountries(prev => [...prev, selectedExtraCountry]);
+                    if (!destination) {
+                      updateDraft({ destination: selectedExtraCountry });
+                    } else if (selectedExtraCountry !== destination) {
+                      setExtraCountries(prev => [...prev, selectedExtraCountry]);
+                    }
                   }
                   setShowAddCountryModal(false);
                 }}
