@@ -1685,12 +1685,14 @@ export function ProductCalculatorStep() {
                           </select>
                         )}
                         
-                        <button 
-                          onClick={() => setShowAddCountryModal(true)}
-                          className="border border-gray-300 rounded-lg px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 uppercase tracking-wide transition-colors"
-                        >
-                          + Add Country
-                        </button>
+                        {destination && (
+                          <button 
+                            onClick={() => setShowAddCountryModal(true)}
+                            className="border border-gray-300 rounded-lg px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:bg-blue-50 uppercase tracking-wide transition-colors"
+                          >
+                            + Add Country
+                          </button>
+                        )}
                       </div>
                     </div>
 
