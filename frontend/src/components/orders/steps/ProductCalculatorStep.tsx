@@ -698,48 +698,7 @@ export function ProductCalculatorStep() {
   return (
     <div className="w-full text-left relative text-white selection:bg-cyan-500 selection:text-black py-4">
       
-      {/* Top Floating App Bar (Brand on left, Security & Profile on right) */}
-      <div className="flex items-center justify-between gap-4 pb-6 pt-1 px-1">
-        {/* Brand Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 p-0.5 shadow-xl shadow-amber-500/25 flex items-center justify-center">
-            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-              <ShieldCheck className="w-5 h-5 text-amber-400" />
-            </div>
-          </div>
-          <div>
-            <div className="font-black text-lg tracking-tight text-white flex items-center gap-1.5 font-sans">
-              <span>ForexMate</span>
-            </div>
-            <div className="text-[10px] uppercase tracking-[0.25em] font-extrabold text-amber-400/90">
-              Premium Forex Services
-            </div>
-          </div>
-        </div>
 
-        {/* Status Indicators & Profile */}
-        <div className="flex items-center gap-3.5">
-          <div className="bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs px-4 py-2 rounded-full flex items-center gap-2 font-bold shadow-md">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>100% Secure</span>
-          </div>
-
-          <div className="bg-slate-900/80 border border-white/10 text-slate-300 text-xs px-4 py-2 rounded-full flex items-center gap-2 font-medium shadow-md">
-            <span>Zero Hidden Charges</span>
-            <ChevronDown className="w-4 h-4 text-slate-400" />
-          </div>
-
-          <div 
-            onClick={() => {
-              if (!user) setShowAuthModal(true);
-            }}
-            className="w-9 h-9 rounded-full bg-gradient-to-tr from-slate-800 to-slate-700 border border-white/20 text-white font-black text-sm flex items-center justify-center shadow-lg cursor-pointer hover:border-amber-400 hover:scale-105 transition-all"
-            title={user ? `Logged in as ${user.name || user.email}` : "Click to sign in"}
-          >
-            {user ? (user.name ? user.name[0].toUpperCase() : 'U') : 'N'}
-          </div>
-        </div>
-      </div>
 
       {/* Main Wide Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
