@@ -407,12 +407,24 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
               <span className="text-base font-black text-amber-600 font-mono">{currencyCode}</span>
               <input
                 type="number"
+                min="1"
+                max="9999999"
                 value={foreignAmount}
-                onChange={(e) => setForeignAmount(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.length <= 7) {
+                    setForeignAmount(val);
+                  }
+                }}
                 placeholder="1000"
                 className="w-full text-right bg-transparent text-xl font-black text-slate-900 focus:outline-none font-mono"
               />
             </div>
+            {numForeign > 250000 && activeTab !== 'sell' && (
+              <p className="text-[10px] font-bold text-amber-700 mt-1">
+                ⚠️ Exceeds RBI LRS annual limit of USD 250,000 (or equivalent)
+              </p>
+            )}
           </div>
 
           {/* Field 3: Fulfillment Mode for Buy, Sell & Card / Purpose for Remittance (3 cols) */}
@@ -458,50 +470,56 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
         </div>
 
         {/* 3. Live Price & Summary Breakdown Ribbon */}
-        <div className="mt-5 p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4 text-xs font-bold text-slate-700">
-            <div>
+        <div className="mt-5 p-4 rounded-2xl bg-slate-50 border border-slate-200/90 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 overflow-hidden">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs font-bold text-slate-700 min-w-0">
+            <div className="min-w-0">
               <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">
                 {activeTab === 'sell' ? 'You Receive INR:' : activeTab === 'remittance' ? 'Total Transfer INR:' : 'Net Payable INR:'}
               </span>
-              <span className="text-xl font-black text-slate-900 font-mono">₹ {computedInr.toLocaleString()}</span>
+              <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono tracking-tight break-all">
+                ₹ {computedInr.toLocaleString('en-IN')}
+              </span>
             </div>
 
             {activeTab !== 'sell' && (
               <>
-                <div className="h-8 w-px bg-slate-200 hidden md:block" />
+                <div className="h-8 w-px bg-slate-200 hidden sm:block shrink-0" />
 
-                <div>
+                <div className="min-w-0">
                   <span className="text-slate-500 block text-[10px] uppercase font-bold tracking-wider">Bank Rate Comparison:</span>
-                  <span className="line-through text-slate-400 font-mono">₹ {bankTotal.toLocaleString()}</span>
+                  <span className="line-through text-slate-400 font-mono text-sm sm:text-base break-all">
+                    ₹ {bankTotal.toLocaleString('en-IN')}
+                  </span>
                 </div>
               </>
             )}
           </div>
 
-          {/* Dynamic Benefit Badge */}
-          {activeTab === 'sell' ? (
-            <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center gap-1.5 shadow-2xs">
-              <RefreshCw className="w-4 h-4 text-emerald-600" />
-              <span>Instant Bank Account NEFT Payout</span>
-            </div>
-          ) : activeTab === 'remittance' ? (
-            <div className="px-3.5 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-black flex items-center gap-1.5 shadow-2xs">
-              <Send className="w-4 h-4 text-blue-600" />
-              <span>Same-Day SWIFT Wire MT103 Guarantee</span>
-            </div>
-          ) : totalSavings > 0 ? (
-            <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center gap-1.5 shadow-2xs">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              <span>You Save ₹ {totalSavings.toLocaleString()} vs Banks!</span>
-            </div>
-          ) : null}
+          {/* Right Actions: Benefit Badge + Action Button */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+            {/* Dynamic Benefit Badge */}
+            {activeTab === 'sell' ? (
+              <div className="px-3.5 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center justify-center gap-1.5 shadow-2xs whitespace-nowrap">
+                <RefreshCw className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Instant NEFT Payout</span>
+              </div>
+            ) : activeTab === 'remittance' ? (
+              <div className="px-3.5 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs font-black flex items-center justify-center gap-1.5 shadow-2xs whitespace-nowrap">
+                <Send className="w-4 h-4 text-blue-600 shrink-0" />
+                <span>Same-Day SWIFT Wire MT103</span>
+              </div>
+            ) : totalSavings > 0 ? (
+              <div className="px-3.5 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black flex items-center justify-center gap-1.5 shadow-2xs whitespace-nowrap">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>You Save ₹ {totalSavings.toLocaleString('en-IN')} vs Banks!</span>
+              </div>
+            ) : null}
 
-          {/* Dynamic Action Button */}
-          <button
-            onClick={handleActionSubmit}
-            className="w-full md:w-auto btn-gold px-7 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
-          >
+            {/* Dynamic Action Button */}
+            <button
+              onClick={handleActionSubmit}
+              className="btn-gold px-7 py-3 rounded-xl font-black text-sm text-slate-950 flex items-center justify-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all shrink-0 whitespace-nowrap"
+            >
             {activeTab === 'buy' && (
               <>
                 <Lock className="w-4 h-4 text-slate-950" />
@@ -533,8 +551,9 @@ export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }
             <ArrowRight className="w-4 h-4 text-slate-950" />
           </button>
         </div>
-
       </div>
+
+    </div>
 
       {/* City Selector Modal */}
       {isCityModalOpen && (

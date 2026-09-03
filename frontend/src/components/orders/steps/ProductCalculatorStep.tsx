@@ -912,8 +912,14 @@ export function ProductCalculatorStep() {
                   <input
                     type="number"
                     min="1"
+                    max="9999999"
                     value={amount}
-                    onChange={(e) => updateDraft({ amount: e.target.value })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val.length <= 7) {
+                        updateDraft({ amount: val });
+                      }
+                    }}
                     placeholder="1000.00"
                     className="w-full bg-slate-900/70 border border-white/15 rounded-xl px-4 py-3.5 pr-16 text-base font-black text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono shadow-inner"
                   />
@@ -1556,8 +1562,13 @@ export function ProductCalculatorStep() {
                 <label className="block text-xs font-bold text-slate-300 mb-1">Required Amount</label>
                 <input 
                   type="number"
+                  min="1"
+                  max="9999999"
                   value={newCurrencyAmount}
-                  onChange={(e) => setNewCurrencyAmount(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.length <= 7) setNewCurrencyAmount(val);
+                  }}
                   className="w-full bg-slate-950 border border-white/15 rounded-xl p-3 text-sm font-bold text-white focus:border-cyan-500 outline-none"
                   placeholder="500.00"
                 />

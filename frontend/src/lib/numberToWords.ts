@@ -4,6 +4,7 @@
  */
 export function numberToWordsINR(num: number): string {
   if (!num || isNaN(num) || num <= 0) return '';
+  if (num > 999999999) return 'Amount exceeds limit';
   
   const ones = [
     '', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ',
