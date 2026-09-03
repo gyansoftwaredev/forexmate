@@ -252,6 +252,10 @@ async function main() {
     { key: 'TCS_THRESHOLD_INR', value: '700000' },
     { key: 'TCS_UNDER_THRESHOLD_PCT', value: '0.00' },
     { key: 'TCS_ABOVE_THRESHOLD_PCT', value: '0.05' },
+    { key: 'SERVICE_CHARGE_BUY', value: '0', category: 'PRICING' },
+    { key: 'SERVICE_CHARGE_SELL', value: '0', category: 'PRICING' },
+    { key: 'SERVICE_CHARGE_REMITTANCE', value: '0', category: 'PRICING' },
+    { key: 'SERVICE_CHARGE_CARD', value: '0', category: 'PRICING' },
   ];
   for (const s of settings) {
     await prisma.systemSetting.upsert({

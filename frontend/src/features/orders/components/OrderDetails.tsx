@@ -120,6 +120,14 @@ export function OrderDetails({ id }: { id: string }) {
   const tcsAmount = remittanceDetail?.tcsAmount ? parseFloat(remittanceDetail.tcsAmount) : 0;
   const feeAmount = remittanceDetail?.feeAmount ? parseFloat(remittanceDetail.feeAmount) : 0;
   const baseInr = parseFloat(inrSubtotal) || (parseFloat(foreignAmount) * (parseFloat(lockedRate) || 83.5));
+  
+  // Sum all item subtotals (multi-currency orders may have multiple items)
+  const allItemsSubtotal = (order.items && order.items.length > 0)
+    ? order.items.reduce((sum: number, item: any) => sum + (parseFloat(item.inrSubtotal) || 0), 0)
+    : baseInr;
+  const totalInr = parseFloat(order.totalAmountInr) || 0;
+  // Derive GST & other charges as whatever is in totalAmountInr beyond base + fee + tcs
+  const gstAndOtherCharges = Math.max(0, Math.round(totalInr - allItemsSubtotal - feeAmount - tcsAmount));
 
   // Customer / Remitter info
   const remitterName = order.session?.travellerName || order.profile?.user?.fullName || 'Valued Client';
@@ -334,8 +342,17 @@ export function OrderDetails({ id }: { id: string }) {
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>GST on Processing Charges (18%)</span>
-                  <span className="font-bold text-slate-900">₹0.00</span>
+                  <span className="flex items-center gap-1.5">
+                    <span>GST & Statutory Charges</span>
+                    {gstAndOtherCharges === 0 && (
+                      <span className="text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-300 uppercase">
+                        Waived
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-bold text-slate-900">
+                    {gstAndOtherCharges > 0 ? formatCurrencyINR(gstAndOtherCharges) : '₹0.00'}
+                  </span>
                 </div>
 
                 {/* Total Grand Value */}

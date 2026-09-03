@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTransactionStore } from '@/stores/transactionStore';
 import { calculateForexGst } from '@/lib/gstCalculator';
 import { 
   CheckCircle2, Edit3, User, Phone, Mail, CreditCard, Globe, Calendar, 
   ShieldCheck, ArrowRight, Building2, Download, Sparkles, ChevronDown, 
-  Info, Landmark 
+  Info, Landmark, Plus, ArrowLeft, Check 
 } from 'lucide-react';
 import API_URL, { authFetch, apiJson } from '@/lib/api';
-import { getActiveBranches } from '@/lib/api-public';
+import { getActiveBranches, getServiceCharges } from '@/lib/api-public';
 import { ALL_CURRENCIES_MAP, getCurrencyFlag, getCurrencyName } from '@/lib/currencyMetadata';
 import { useRates } from '@/hooks/useRates';
 import { useAuth } from '@/context/AuthContext';
@@ -81,7 +82,25 @@ const ALL_COUNTRIES_LIST = [
   'South Africa', 'Georgia', 'Azerbaijan', 'Nepal'
 ];
 
-export function MultiCountrySelect({ 
+export const getBeneficiaryCountryFlag = (countryName?: string) => {
+  if (!countryName) return '🌐';
+  const c = countryName.toLowerCase();
+  if (c.includes('singapore')) return '🇸🇬';
+  if (c.includes('united states') || c.includes('usa') || c.includes('america')) return '🇺🇸';
+  if (c.includes('united kingdom') || c.includes('uk') || c.includes('britain') || c.includes('england')) return '🇬🇧';
+  if (c.includes('canada')) return '🇨🇦';
+  if (c.includes('australia')) return '🇦🇺';
+  if (c.includes('germany')) return '🇩🇪';
+  if (c.includes('emirates') || c.includes('uae') || c.includes('dubai')) return '🇦🇪';
+  if (c.includes('france')) return '🇫🇷';
+  if (c.includes('ireland')) return '🇮🇪';
+  if (c.includes('new zealand')) return '🇳🇿';
+  if (c.includes('japan')) return '🇯🇵';
+  if (c.includes('switzerland')) return '🇨🇭';
+  return '🌐';
+};
+
+function MultiCountrySelect({ 
   selectedCountries, 
   onChange 
 }: { 
@@ -90,10 +109,32 @@ export function MultiCountrySelect({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [openUpwards, setOpenUpwards] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const filtered = ALL_COUNTRIES_LIST.filter(c => 
     c.toLowerCase().includes(search.toLowerCase()) && !selectedCountries.includes(c)
   );
+
+  const checkPosition = () => {
+    if (containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      setOpenUpwards(spaceBelow < 250 && rect.top > 250);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      checkPosition();
+      window.addEventListener('resize', checkPosition);
+      window.addEventListener('scroll', checkPosition, true);
+      return () => {
+        window.removeEventListener('resize', checkPosition);
+        window.removeEventListener('scroll', checkPosition, true);
+      };
+    }
+  }, [isOpen]);
 
   const addCountry = (country: string) => {
     onChange([...selectedCountries, country]);
@@ -106,9 +147,12 @@ export function MultiCountrySelect({
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={containerRef}>
       <div 
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          checkPosition();
+          setIsOpen(true);
+        }}
         className="w-full min-h-[42px] px-3 py-1.5 border border-slate-300 rounded-xl bg-white flex flex-wrap items-center gap-1.5 cursor-pointer shadow-2xs focus-within:border-amber-500"
       >
         {selectedCountries.map((c) => (
@@ -122,7 +166,7 @@ export function MultiCountrySelect({
                 e.stopPropagation();
                 removeCountry(c);
               }}
-              className="text-red-500 hover:text-red-700 font-bold text-xs"
+              className="text-red-500 hover:text-red-700 font-bold text-xs cursor-pointer"
               title="Remove country"
             >
               ✕
@@ -137,9 +181,13 @@ export function MultiCountrySelect({
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
+            checkPosition();
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            checkPosition();
+            setIsOpen(true);
+          }}
           className="flex-1 min-w-[120px] outline-none text-xs font-bold text-slate-900 bg-transparent py-1"
         />
 
@@ -150,7 +198,7 @@ export function MultiCountrySelect({
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto scrollbar-thin p-1 space-y-0.5 animate-in fade-in duration-150">
+          <div className={`absolute left-0 right-0 ${openUpwards ? 'bottom-full mb-1.5' : 'top-full mt-1.5'} bg-white border border-slate-200 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto scrollbar-thin p-1 space-y-0.5 animate-in fade-in duration-150`}>
             {filtered.length > 0 ? (
               filtered.map((country) => (
                 <div
@@ -211,11 +259,33 @@ export function BookMyForexCheckoutEngine() {
   const isCard = product === 'CARD';
   const isCash = product === 'CASH';
 
+  // Check if draftState belongs to a different user
+  const isDraftFromDifferentUser = Boolean(
+    user?.email && draftState.email && draftState.email.toLowerCase() !== user.email.toLowerCase()
+  );
+
+  const initialTravellerName = isDraftFromDifferentUser 
+    ? (user?.fullName || '') 
+    : (draftState.travellerName || user?.fullName || '');
+
+  const userMobile = (user as any)?.mobile || (user as any)?.phone || '';
+  const initialPhone = isDraftFromDifferentUser 
+    ? userMobile 
+    : (draftState.phone || userMobile || '');
+
+  const initialEmail = isDraftFromDifferentUser 
+    ? (user?.email || '') 
+    : (draftState.email || user?.email || '');
+
+  const initialPan = isDraftFromDifferentUser 
+    ? '' 
+    : (draftState.pan || '');
+
   // Customer Details State - Only prefill if user is logged in or already entered in draftState
-  const [travellerName, setTravellerName] = useState(draftState.travellerName || user?.fullName || '');
-  const [phone, setPhone] = useState(draftState.phone || user?.phone || '');
-  const [email, setEmail] = useState(draftState.email || user?.email || '');
-  const [pan, setPan] = useState(draftState.pan || '');
+  const [travellerName, setTravellerName] = useState(initialTravellerName);
+  const [phone, setPhone] = useState(initialPhone);
+  const [email, setEmail] = useState(initialEmail);
+  const [pan, setPan] = useState(initialPan);
   const [panTouched, setPanTouched] = useState(false);
   const [panValidation, setPanValidation] = useState<{ isValid: boolean; message: string }>({ isValid: false, message: '' });
   
@@ -247,6 +317,16 @@ export function BookMyForexCheckoutEngine() {
   const [sourceOfForex, setSourceOfForex] = useState(draftState.sourceOfForex || 'Returned from Overseas Travel');
 
   // Remittance Specific State (Overseas Beneficiary & Remitter Status)
+  const searchParams = useSearchParams();
+  const urlBeneficiaryId = searchParams?.get('beneficiaryId') || '';
+
+  const [savedBeneficiaries, setSavedBeneficiaries] = useState<any[]>([]);
+  const [loadingBeneficiaries, setLoadingBeneficiaries] = useState(false);
+  const [selectedBeneficiaryId, setSelectedBeneficiaryId] = useState<string>(
+    draftState.beneficiaryId || urlBeneficiaryId || ''
+  );
+  const [isAddingNewBeneficiary, setIsAddingNewBeneficiary] = useState(false);
+
   const [remitterResidentStatus, setRemitterResidentStatus] = useState(draftState.remitterResidentStatus || 'RESIDENT_INDIAN');
   const [benName, setBenName] = useState(draftState.beneficiaryName || '');
   const [benCountry, setBenCountry] = useState(draftState.beneficiaryCountry || '');
@@ -257,16 +337,94 @@ export function BookMyForexCheckoutEngine() {
   const [benRelationship, setBenRelationship] = useState(draftState.beneficiaryRelationship || 'University / College');
   const [remittanceLrsConfirmed, setRemittanceLrsConfirmed] = useState(false);
 
-  // Sync user profile if user loads after mount
+  const selectBeneficiary = (ben: any) => {
+    setSelectedBeneficiaryId(ben.id);
+    setIsAddingNewBeneficiary(false);
+    setBenName(ben.name || '');
+    setBenCountry(ben.country || 'Singapore');
+    setBenBank(ben.bankName || '');
+    setBenAccount(ben.ibanOrAccountNumber || '');
+    setBenSwift(ben.swiftCode || '');
+    setBenAddress(ben.address || '');
+    updateDraft({
+      beneficiaryId: ben.id,
+      beneficiaryName: ben.name,
+      beneficiaryCountry: ben.country,
+      beneficiaryBank: ben.bankName,
+      beneficiaryAccount: ben.ibanOrAccountNumber,
+      beneficiarySwift: ben.swiftCode,
+      beneficiaryAddress: ben.address || '',
+    });
+  };
+
+  useEffect(() => {
+    if (isRemittance) {
+      setLoadingBeneficiaries(true);
+      authFetch(`${API_URL}/remittances/beneficiaries`)
+        .then(async (res) => {
+          if (res.ok) {
+            const json = await res.json().catch(() => null);
+            const list = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+            setSavedBeneficiaries(list);
+            
+            const targetId = urlBeneficiaryId || draftState.beneficiaryId;
+            let matchedBen = targetId ? list.find((b: any) => b.id === targetId) : null;
+            
+            if (matchedBen) {
+              selectBeneficiary(matchedBen);
+              setIsAddingNewBeneficiary(false);
+            } else if (list.length > 0) {
+              selectBeneficiary(list[0]);
+              setIsAddingNewBeneficiary(false);
+            } else if (list.length === 0) {
+              setIsAddingNewBeneficiary(true);
+            }
+          }
+        })
+        .catch((err) => console.error('Failed to load beneficiaries:', err))
+        .finally(() => setLoadingBeneficiaries(false));
+    }
+  }, [isRemittance, urlBeneficiaryId]);
+
+  // Sync beneficiary state from draft if loaded or updated
+  useEffect(() => {
+    if (draftState.beneficiaryName && !benName) setBenName(draftState.beneficiaryName);
+    if (draftState.beneficiaryCountry && !benCountry) setBenCountry(draftState.beneficiaryCountry);
+    if (draftState.beneficiaryBank && !benBank) setBenBank(draftState.beneficiaryBank);
+    if (draftState.beneficiaryAccount && !benAccount) setBenAccount(draftState.beneficiaryAccount);
+    if (draftState.beneficiarySwift && !benSwift) setBenSwift(draftState.beneficiarySwift);
+    if (draftState.beneficiaryAddress && !benAddress) setBenAddress(draftState.beneficiaryAddress);
+  }, [draftState.beneficiaryName, draftState.beneficiaryCountry, draftState.beneficiaryBank, draftState.beneficiaryAccount, draftState.beneficiarySwift, draftState.beneficiaryAddress]);
+
+  // Sync user profile if user loads after mount or changes
   useEffect(() => {
     if (user) {
-      if (!travellerName && user.fullName) setTravellerName(user.fullName);
-      if (!phone && user.phone) setPhone(user.phone);
-      if (!email && user.email) setEmail(user.email);
+      const isMismatch = Boolean(
+        draftState.email && draftState.email.toLowerCase() !== user.email.toLowerCase()
+      );
+      const currMobile = (user as any).mobile || (user as any).phone || '';
+
+      if (isMismatch) {
+        setTravellerName(user.fullName || '');
+        setEmail(user.email || '');
+        setPhone(currMobile);
+        setPan('');
+        updateDraft({
+          travellerName: user.fullName || '',
+          email: user.email || '',
+          phone: currMobile,
+          pan: '',
+        });
+      } else {
+        if (!travellerName && user.fullName) setTravellerName(user.fullName);
+        if (!phone && currMobile) setPhone(currMobile);
+        if (!email && user.email) setEmail(user.email);
+      }
+
       if (!payoutAccountHolder && user.fullName) setPayoutAccountHolder(user.fullName);
-      if (!coordPhone && user.phone) setCoordPhone(user.phone);
+      if (!coordPhone && currMobile) setCoordPhone(currMobile);
     }
-  }, [user]);
+  }, [user, draftState.email]);
 
   // Document Uploads State for Step 3
   const IDENTITY_DOC_IDS = ['pan_card', 'passport_front', 'passport_back'];
@@ -320,6 +478,29 @@ export function BookMyForexCheckoutEngine() {
   const [isOrderConfirmed, setIsOrderConfirmed] = useState<boolean>(false);
   const [bookingRef, setBookingRef] = useState<string>(draftState.bookingRef || '');
 
+  // Dynamic Product Service Charges (Fetched live from Admin settings, default 0)
+  const [systemServiceCharges, setSystemServiceCharges] = useState<{ BUY: number; SELL: number; REMITTANCE: number; CARD: number }>({
+    BUY: 0,
+    SELL: 0,
+    REMITTANCE: 0,
+    CARD: 0,
+  });
+
+  useEffect(() => {
+    getServiceCharges()
+      .then((charges) => {
+        if (charges && typeof charges === 'object') {
+          setSystemServiceCharges({
+            BUY: Number(charges.BUY) || 0,
+            SELL: Number(charges.SELL) || 0,
+            REMITTANCE: Number(charges.REMITTANCE) || 0,
+            CARD: Number(charges.CARD) || 0,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Rate Timer countdown
   useEffect(() => {
     if (currentStep === 5 && !isOrderConfirmed && rateTimerSeconds > 0) {
@@ -352,16 +533,19 @@ export function BookMyForexCheckoutEngine() {
   // Load user profile & saved KYC docs
   useEffect(() => {
     try {
-      const storedUser = localStorage.getItem('user');
+      const storedUser = localStorage.getItem('user') || localStorage.getItem('forexmate_user');
       if (storedUser) {
         const u = JSON.parse(storedUser);
-        if (u.name && !draftState.travellerName) {
-          setTravellerName(u.name);
-          setPayoutAccountHolder(u.name);
+        // Only load stored user if it matches the current logged in user (prevent cross-user leak)
+        if (!user || (u.email && u.email.toLowerCase() === user.email.toLowerCase())) {
+          if (u.name && !draftState.travellerName) {
+            setTravellerName(u.name);
+            setPayoutAccountHolder(u.name);
+          }
+          if (u.phone && !draftState.phone) setPhone(u.phone);
+          if (u.email && !draftState.email) setEmail(u.email);
+          if (u.pan && !draftState.pan) setPan(u.pan);
         }
-        if (u.phone && !draftState.phone) setPhone(u.phone);
-        if (u.email && !draftState.email) setEmail(u.email);
-        if (u.pan && !draftState.pan) setPan(u.pan);
       }
 
       const savedKycStr = localStorage.getItem('user_saved_kyc');
@@ -450,7 +634,15 @@ export function BookMyForexCheckoutEngine() {
   const totalCurrencyInr = primaryInr + extraCurrenciesCalculated.reduce((acc, c) => acc + c.inrValue, 0);
   
   // Fee & Tax rules per product
-  const serviceCharge = isSell ? 0 : isRemittance ? 0 : 150;
+  const serviceCharge = draftState.serviceCharge !== undefined
+    ? draftState.serviceCharge
+    : isSell
+      ? (systemServiceCharges.SELL ?? 0)
+      : isRemittance
+        ? (systemServiceCharges.REMITTANCE ?? 0)
+        : isCard
+          ? (systemServiceCharges.CARD ?? 0)
+          : (systemServiceCharges.BUY ?? 0);
   const deliveryCharge = (!isBranchPickup && !isRemittance && !isSell) ? 150 : 0;
   const gst = isSell ? 0 : calculateForexGst(totalCurrencyInr);
   const discountVal = draftState.appliedOffer?.discountAmount || appliedDiscount || 0;
@@ -482,6 +674,7 @@ export function BookMyForexCheckoutEngine() {
       payoutIfsc,
       payoutAccountType,
       sourceOfForex,
+      beneficiaryId: selectedBeneficiaryId || draftState.beneficiaryId,
       beneficiaryName: benName,
       beneficiaryCountry: benCountry,
       beneficiaryBank: benBank,
@@ -653,9 +846,9 @@ export function BookMyForexCheckoutEngine() {
         body: JSON.stringify({
           orderNumber: generatedRef,
           travellerName: travellerName || user?.fullName || 'Customer',
-          phone: phone || user?.phone || '9876543210',
+          phone: phone || (user as any)?.mobile || (user as any)?.phone || '9876543210',
           email: email || user?.email || 'customer@forexmate.in',
-          pan: pan || user?.pan || '',
+          pan: pan || (user as any)?.pan || '',
           product: product,
           deliveryMethod: isRemittance ? 'WIRE_TRANSFER' : isBranchPickup ? 'BRANCH_PICKUP' : 'HOME_DELIVERY',
           branchId: draftState.branchId || undefined,
@@ -801,9 +994,9 @@ export function BookMyForexCheckoutEngine() {
       </div>
 
       {/* --- SECTION 2: CUSTOMER / SELLER / REMITTER DETAILS --- */}
-      <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden ${currentStep === 2 ? 'border-amber-400 ring-2 ring-amber-400/20' : currentStep > 2 ? 'border-emerald-200' : 'border-slate-200 opacity-60'}`}>
+      <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm ${currentStep === 2 ? 'border-amber-400 ring-2 ring-amber-400/20' : currentStep > 2 ? 'border-emerald-200' : 'border-slate-200 opacity-60'}`}>
         
-        <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-5 bg-slate-50/80 rounded-t-2xl border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${currentStep > 2 ? 'bg-emerald-100 text-emerald-700' : currentStep === 2 ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-200 text-slate-500'}`}>
               {currentStep > 2 ? '✓' : '2'}
@@ -1048,9 +1241,9 @@ export function BookMyForexCheckoutEngine() {
       </div>
 
       {/* --- SECTION 3: PRODUCT-SPECIFIC STEP (BANK PAYOUT / BENEFICIARY / KYC) --- */}
-      <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden ${currentStep === 3 ? 'border-amber-400 ring-2 ring-amber-400/20' : currentStep > 3 ? 'border-emerald-200' : 'border-slate-200 opacity-60'}`}>
+      <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm ${currentStep === 3 ? 'border-amber-400 ring-2 ring-amber-400/20' : currentStep > 3 ? 'border-emerald-200' : 'border-slate-200 opacity-60'}`}>
         
-        <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-5 bg-slate-50/80 rounded-t-2xl border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${currentStep > 3 ? 'bg-emerald-100 text-emerald-700' : currentStep === 3 ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-200 text-slate-500'}`}>
               {currentStep > 3 ? '✓' : '3'}
@@ -1216,113 +1409,293 @@ export function BookMyForexCheckoutEngine() {
                   </p>
                 </div>
 
-                <div className="border border-slate-300 rounded-2xl p-5 space-y-4 bg-white shadow-2xs">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    
-                    {/* Beneficiary Name */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider">
-                          RECIPIENT NAME <span className="text-red-500">*</span>
-                        </label>
-                        <span className="text-[10px] font-semibold text-slate-400">
-                          {benName.length}/15 chars
-                        </span>
+                {/* 1. EXISTING SAVED BENEFICIARIES LIST (Always first if customer has saved beneficiaries) */}
+                {savedBeneficiaries.length > 0 && (
+                  <div className="border border-slate-300 rounded-2xl p-5 space-y-4 bg-white shadow-2xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200">
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                          <span>Saved Overseas Beneficiaries</span>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black">
+                            {savedBeneficiaries.length} Account{savedBeneficiaries.length > 1 ? 's' : ''}
+                          </span>
+                        </h4>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Choose an existing foreign account to route wire funds immediately
+                        </p>
                       </div>
-                      <input
-                        type="text"
-                        required
-                        maxLength={15}
-                        value={benName}
-                        onChange={(e) => setBenName(e.target.value)}
-                        placeholder="e.g. John Doe"
-                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs"
-                      />
+                      
+                      {!isAddingNewBeneficiary && selectedBeneficiaryId && (
+                        <div className="text-xs text-emerald-800 font-bold flex items-center gap-1.5 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-xl">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" />
+                          <span>Beneficiary Selected</span>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Beneficiary Country */}
-                    <div>
-                      <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
-                        DESTINATION COUNTRY <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={benCountry}
-                        onChange={(e) => setBenCountry(e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs cursor-pointer"
-                      >
-                        {ALL_COUNTRIES_LIST.map((c) => (
-                          <option key={c} value={c}>{c}</option>
-                        ))}
-                      </select>
+                    {/* Beneficiaries Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {savedBeneficiaries.map((ben) => {
+                        const isSelected = !isAddingNewBeneficiary && selectedBeneficiaryId === ben.id;
+                        return (
+                          <div
+                            key={ben.id}
+                            onClick={() => {
+                              setIsAddingNewBeneficiary(false);
+                              selectBeneficiary(ben);
+                            }}
+                            className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative flex flex-col justify-between ${
+                              isSelected
+                                ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-500/20 shadow-md'
+                                : 'border-slate-200 bg-white hover:border-amber-300 hover:bg-slate-50/50 shadow-2xs'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-900 border border-amber-300 flex items-center justify-center font-black text-sm shrink-0">
+                                    {ben.name?.charAt(0)?.toUpperCase() || 'B'}
+                                  </div>
+                                  <div>
+                                    <h4 className="text-sm font-extrabold text-slate-900 leading-tight">
+                                      {ben.name}
+                                    </h4>
+                                    <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1 mt-0.5">
+                                      <span className="text-base">{getBeneficiaryCountryFlag(ben.country)}</span>
+                                      <span>{ben.country || 'International'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {isSelected ? (
+                                  <span className="px-2.5 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] uppercase tracking-wider flex items-center gap-1 shrink-0 shadow-2xs">
+                                    <Check className="w-3 h-3 text-slate-950 stroke-[3]" />
+                                    <span>Selected</span>
+                                  </span>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] shrink-0 hover:bg-amber-100 hover:text-amber-900 transition-colors">
+                                    Select
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="space-y-1.5 text-xs text-slate-700 bg-white/90 p-3 rounded-xl border border-slate-200/80 mt-2 font-mono">
+                                <div className="flex justify-between items-center text-[11px]">
+                                  <span className="text-slate-400 font-sans uppercase font-bold text-[10px]">Overseas Bank</span>
+                                  <span className="font-extrabold text-slate-900 truncate max-w-[170px] font-sans">
+                                    {ben.bankName}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-[11px]">
+                                  <span className="text-slate-400 font-sans uppercase font-bold text-[10px]">Account / IBAN</span>
+                                  <span className="font-bold text-slate-900 tracking-wider">
+                                    {ben.ibanOrAccountNumber}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center text-[11px]">
+                                  <span className="text-slate-400 font-sans uppercase font-bold text-[10px]">SWIFT / BIC</span>
+                                  <span className="font-black text-amber-800 bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-300">
+                                    {ben.swiftCode}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                              <span className="flex items-center gap-1 text-emerald-700 font-bold">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>SWIFT Verified</span>
+                              </span>
+                              <span className="text-slate-400 text-[10px] font-medium">
+                                {isSelected ? 'Active for wire order' : 'Click to use'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
 
-                    {/* Beneficiary Bank Name */}
-                    <div>
-                      <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
-                        OVERSEAS BANK NAME <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={benBank}
-                        onChange={(e) => setBenBank(e.target.value)}
-                        placeholder="e.g. Bank of America, Barclays, UBS"
-                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs"
-                      />
-                    </div>
-
-                    {/* IBAN / Account Number */}
-                    <div>
-                      <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
-                        IBAN / ACCOUNT NUMBER <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={benAccount}
-                        onChange={(e) => setBenAccount(e.target.value.replace(/[^A-Z0-9]/gi, ''))}
-                        placeholder="e.g. GB29NWBK60161331926819 or 004589214785"
-                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs font-mono"
-                      />
-                    </div>
-
-                    {/* SWIFT / BIC Code */}
-                    <div>
-                      <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
-                        SWIFT / BIC CODE (8 OR 11 CHARS) <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        maxLength={11}
-                        value={benSwift}
-                        onChange={(e) => setBenSwift(e.target.value.toUpperCase())}
-                        placeholder="e.g. BOFAUS3N"
-                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-extrabold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs font-mono uppercase"
-                      />
-                    </div>
-
-                    {/* Relationship with Remitter */}
-                    <div>
-                      <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
-                        RELATIONSHIP WITH SENDER <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={benRelationship}
-                        onChange={(e) => setBenRelationship(e.target.value)}
-                        className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs cursor-pointer"
-                      >
-                        <option value="University / College">University / College (Tuition Fee)</option>
-                        <option value="Self (Own Overseas Account)">Self (Own Overseas Account)</option>
-                        <option value="Child / Dependent">Child / Dependent Student</option>
-                        <option value="Parent / Relative">Parent / Close Relative</option>
-                        <option value="Hospital / Medical Institution">Hospital / Medical Clinic</option>
-                        <option value="Other Vendor">Vendor / Service Provider</option>
-                      </select>
-                    </div>
-
+                    {/* Relationship Selection for the Selected Existing Beneficiary */}
+                    {!isAddingNewBeneficiary && (
+                      <div className="pt-3 border-t border-slate-100">
+                        <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1.5">
+                          RELATIONSHIP WITH SENDER <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={benRelationship}
+                          onChange={(e) => setBenRelationship(e.target.value)}
+                          className="w-full sm:w-80 px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs cursor-pointer"
+                        >
+                          <option value="University / College">University / College (Tuition Fee)</option>
+                          <option value="Self (Own Overseas Account)">Self (Own Overseas Account)</option>
+                          <option value="Child / Dependent">Child / Dependent Student</option>
+                          <option value="Parent / Relative">Parent / Close Relative</option>
+                          <option value="Hospital / Medical Institution">Hospital / Medical Clinic</option>
+                          <option value="Other Vendor">Vendor / Service Provider</option>
+                        </select>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
+
+                {/* 2. ADD NEW BENEFICIARY OPTION (Directly below existing beneficiaries) */}
+                {!isAddingNewBeneficiary && savedBeneficiaries.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingNewBeneficiary(true);
+                      setSelectedBeneficiaryId('');
+                      setBenName('');
+                      setBenBank('');
+                      setBenAccount('');
+                      setBenSwift('');
+                      setBenAddress('');
+                    }}
+                    className="w-full py-4 px-5 rounded-2xl border-2 border-dashed border-slate-300 hover:border-amber-500 bg-white hover:bg-amber-50/30 text-slate-800 hover:text-amber-950 font-extrabold text-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-2xs group"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-sm shadow-xs group-hover:scale-110 transition-transform">
+                      <Plus className="w-4 h-4 stroke-[3]" />
+                    </div>
+                    <span>+ Add New Beneficiary</span>
+                  </button>
+                ) : (
+                  /* 3. ADD NEW BENEFICIARY DETAILS FORM (Appears when clicked or if no beneficiaries saved) */
+                  <div className="border-2 border-amber-400/80 rounded-2xl p-5 space-y-4 bg-white shadow-md">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200">
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                          <span>Add New Overseas Beneficiary</span>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-black">
+                            New Account
+                          </span>
+                        </h4>
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          Enter international banking routing credentials for outward remittance
+                        </p>
+                      </div>
+
+                      {savedBeneficiaries.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsAddingNewBeneficiary(false);
+                            const targetId = urlBeneficiaryId || draftState.beneficiaryId || savedBeneficiaries[0].id;
+                            const found = savedBeneficiaries.find((b) => b.id === targetId) || savedBeneficiaries[0];
+                            selectBeneficiary(found);
+                          }}
+                          className="px-3.5 py-2 rounded-xl border border-slate-300 hover:border-slate-400 bg-slate-50 hover:bg-slate-100 text-slate-700 hover:text-slate-900 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5" />
+                          <span>Cancel & Use Existing Beneficiary</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Beneficiary Name */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider">
+                            RECIPIENT NAME <span className="text-red-500">*</span>
+                          </label>
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            {benName.length}/15 chars
+                          </span>
+                        </div>
+                        <input
+                          type="text"
+                          required
+                          maxLength={15}
+                          value={benName}
+                          onChange={(e) => setBenName(e.target.value)}
+                          placeholder="e.g. John Doe"
+                          className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs"
+                        />
+                      </div>
+
+                      {/* Beneficiary Country */}
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
+                          DESTINATION COUNTRY <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={benCountry}
+                          onChange={(e) => setBenCountry(e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs cursor-pointer"
+                        >
+                          {ALL_COUNTRIES_LIST.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Beneficiary Bank Name */}
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
+                          OVERSEAS BANK NAME <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={benBank}
+                          onChange={(e) => setBenBank(e.target.value)}
+                          placeholder="e.g. Bank of America, Barclays, UBS"
+                          className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs"
+                        />
+                      </div>
+
+                      {/* IBAN / Account Number */}
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
+                          IBAN / ACCOUNT NUMBER <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={benAccount}
+                          onChange={(e) => setBenAccount(e.target.value.replace(/[^A-Z0-9]/gi, ''))}
+                          placeholder="e.g. GB29NWBK60161331926819 or 004589214785"
+                          className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs font-mono"
+                        />
+                      </div>
+
+                      {/* SWIFT / BIC Code */}
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
+                          SWIFT / BIC CODE (8 OR 11 CHARS) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          maxLength={11}
+                          value={benSwift}
+                          onChange={(e) => setBenSwift(e.target.value.toUpperCase())}
+                          placeholder="e.g. BOFAUS3N"
+                          className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-extrabold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs font-mono uppercase"
+                        />
+                      </div>
+
+                      {/* Relationship with Remitter */}
+                      <div>
+                        <label className="block text-[11px] font-extrabold text-slate-800 uppercase tracking-wider mb-1">
+                          RELATIONSHIP WITH SENDER <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          value={benRelationship}
+                          onChange={(e) => setBenRelationship(e.target.value)}
+                          className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-amber-500 outline-none bg-white shadow-2xs cursor-pointer"
+                        >
+                          <option value="University / College">University / College (Tuition Fee)</option>
+                          <option value="Self (Own Overseas Account)">Self (Own Overseas Account)</option>
+                          <option value="Child / Dependent">Child / Dependent Student</option>
+                          <option value="Parent / Relative">Parent / Close Relative</option>
+                          <option value="Hospital / Medical Institution">Hospital / Medical Clinic</option>
+                          <option value="Other Vendor">Vendor / Service Provider</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               /* BUY CASH & FOREX CARD: STATUTORY ELIGIBILITY & KYC */
@@ -1442,9 +1815,9 @@ export function BookMyForexCheckoutEngine() {
       </div>
 
       {/* --- SECTION 4: HANDOVER / DELIVERY / SETTLEMENT LOGISTICS --- */}
-      <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden ${currentStep === 4 ? 'border-amber-400 ring-2 ring-amber-400/20' : currentStep > 4 ? 'border-emerald-200' : 'border-slate-200 opacity-60'}`}>
+      <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm ${currentStep === 4 ? 'border-amber-400 ring-2 ring-amber-400/20' : currentStep > 4 ? 'border-emerald-200' : 'border-slate-200 opacity-60'}`}>
         
-        <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-5 bg-slate-50/80 rounded-t-2xl border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${currentStep > 4 ? 'bg-emerald-100 text-emerald-700' : currentStep === 4 ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-200 text-slate-500'}`}>
               {currentStep > 4 ? '✓' : '4'}
@@ -1678,9 +2051,9 @@ export function BookMyForexCheckoutEngine() {
       </div>
 
       {/* --- SECTION 5: REVIEW, SETTLEMENT & INSTANT CONFIRMATION RECEIPT --- */}
-      <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm overflow-hidden ${currentStep === 5 ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-200 opacity-60'}`}>
+      <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm ${currentStep === 5 ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-slate-200 opacity-60'}`}>
         
-        <div className="p-4 sm:p-5 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-5 bg-slate-50/80 rounded-t-2xl border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${isOrderConfirmed ? 'bg-emerald-100 text-emerald-700 font-black' : currentStep === 5 ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-200 text-slate-500'}`}>
               {isOrderConfirmed ? '✓' : '5'}

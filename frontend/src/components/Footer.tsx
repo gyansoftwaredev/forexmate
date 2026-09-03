@@ -74,12 +74,12 @@ export default function Footer() {
               <span>Wire Remittances</span>
             </div>
             <ul className="space-y-2.5">
-              <li><Link href="/transfer-money" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to USA</Link></li>
-              <li><Link href="/transfer-money" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to UK</Link></li>
-              <li><Link href="/transfer-money" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to Canada</Link></li>
-              <li><Link href="/transfer-money" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to Australia</Link></li>
-              <li><Link href="/transfer-money" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to Germany</Link></li>
-              <li><Link href="/transfer-money" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to Singapore</Link></li>
+              <li><Link href="/remittance?country=US" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to USA</Link></li>
+              <li><Link href="/remittance?country=GB" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to UK</Link></li>
+              <li><Link href="/remittance?country=CA" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to Canada</Link></li>
+              <li><Link href="/remittance?country=AU" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to Australia</Link></li>
+              <li><Link href="/remittance?country=DE" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to Germany</Link></li>
+              <li><Link href="/remittance?country=SG" className="text-slate-400 hover:text-white hover:translate-x-1 transition-all text-xs font-medium block">Send Money to Singapore</Link></li>
             </ul>
           </div>
 

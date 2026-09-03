@@ -13,6 +13,15 @@ const backendBase = formatBackendUrl(process.env.BACKEND_URL || process.env.NEXT
 
 const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: true },
+  async redirects() {
+    return [
+      {
+        source: '/transfer-money',
+        destination: '/remittance',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

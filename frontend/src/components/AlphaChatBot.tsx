@@ -120,7 +120,7 @@ export default function AlphaChatBot() {
     if (query.includes('transfer') || query.includes('wire') || query.includes('lrs') || query.includes('limit') || query.includes('abroad')) {
       return {
         text: "🏦 **RBI LRS Outward Wire Transfers**:\n\n• Under RBI's Liberalised Remittance Scheme (LRS), resident Indians can send up to **$250,000 USD per financial year**.\n• Ideal for overseas university tuition, living expenses, medical treatment, or gift remittances.\n• 100% statutory compliant with instant SWIFT MT103 confirmation.",
-        quickAction: { label: "Send Wire Transfer", href: "/transfer-money" }
+        quickAction: { label: "Send Wire Transfer", href: "/remittance" }
       };
     }
 

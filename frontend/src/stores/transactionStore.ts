@@ -35,6 +35,20 @@ export const useTransactionStore = create<TransactionState>()(
       isSaving: false,
 
       initSession: async () => {
+        // Cross-check draft user with current logged-in user to prevent cross-account data leakage
+        try {
+          if (typeof window !== 'undefined') {
+            const authUserStr = localStorage.getItem('forexmate_user') || localStorage.getItem('user');
+            if (authUserStr) {
+              const authUser = JSON.parse(authUserStr);
+              const currentDraft = get().draftState;
+              if (currentDraft?.email && authUser?.email && currentDraft.email.toLowerCase() !== authUser.email.toLowerCase()) {
+                get().clearSession();
+              }
+            }
+          }
+        } catch (_) {}
+
         const { sessionId } = get();
         if (sessionId) {
           try {
@@ -86,18 +100,35 @@ export const useTransactionStore = create<TransactionState>()(
 
         saveTimeout = setTimeout(async () => {
           try {
-            await authFetch(`${API_URL}/transaction-engine/session/${sessionId}/draft`, {
+            const res = await authFetch(`${API_URL}/transaction-engine/session/${sessionId}/draft`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(draftState),
             });
+            if (!res.ok) {
+              const errJson = await res.json().catch(() => ({}));
+              const msg = errJson?.error?.message || errJson?.message || '';
+              if (res.status === 404 || msg.includes('Session not found') || msg.includes('already converted')) {
+                const currentDraft = get().draftState;
+                get().clearSession();
+                await get().initSession();
+                if (Object.keys(currentDraft).length > 0) {
+                  get().updateDraft(currentDraft);
+                }
+                return;
+              }
+            }
             // After saving draft, fetch new workflow steps
             await get().fetchWorkflow();
           } catch (err: any) {
-            console.error('Failed to save draft:', err);
-            if (err.message?.includes('already converted to an order')) {
+            console.warn('Failed to save draft:', err);
+            if (err.message?.includes('already converted to an order') || err.message?.includes('Session not found') || err.message?.includes('not found')) {
+              const currentDraft = get().draftState;
               get().clearSession();
-              get().initSession();
+              await get().initSession();
+              if (Object.keys(currentDraft).length > 0) {
+                get().updateDraft(currentDraft);
+              }
             }
           } finally {
             set({ isSaving: false });
@@ -111,14 +142,35 @@ export const useTransactionStore = create<TransactionState>()(
 
         try {
           const res = await authFetch(`${API_URL}/transaction-engine/session/${sessionId}/workflow`);
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            const msg = errJson?.error?.message || errJson?.message || '';
+            if (res.status === 404 || msg.includes('Session not found')) {
+              console.warn('Stale session detected in workflow fetch. Reinitializing...');
+              const currentDraft = get().draftState;
+              get().clearSession();
+              await get().initSession();
+              if (Object.keys(currentDraft).length > 0) {
+                get().updateDraft(currentDraft);
+              }
+              return;
+            }
+          }
           const workflow = await apiJson<{ currentState: string; allowedActions: string[] }>(res);
           set({
             status: workflow.currentState,
             allowedActions: workflow.allowedActions || [],
           });
-        } catch (err) {
+        } catch (err: any) {
           console.warn('Failed to fetch workflow:', err);
-          throw err;
+          if (err.message?.includes('Session not found') || err.message?.includes('not found')) {
+            const currentDraft = get().draftState;
+            get().clearSession();
+            await get().initSession();
+            if (Object.keys(currentDraft).length > 0) {
+              get().updateDraft(currentDraft);
+            }
+          }
         }
       },
 
@@ -130,6 +182,11 @@ export const useTransactionStore = create<TransactionState>()(
           allowedActions: ['PRODUCT_SELECTION'],
           isSaving: false,
         });
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('forexmate-transaction-storage');
+          } catch (_) {}
+        }
       },
     }),
     {

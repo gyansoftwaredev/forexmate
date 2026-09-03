@@ -37,7 +37,7 @@ export const RemittanceList: React.FC<RemittanceListProps> = ({ remittances }) =
           You haven't initiated any international outward remittances or university fee transfers yet.
         </p>
         <Link 
-          href="/buy-forex?tab=remittance" 
+          href="/remittance" 
           className="px-6 py-3.5 bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-black text-xs uppercase tracking-wider rounded-xl shadow-xs hover:scale-102 transition-all flex items-center gap-2 cursor-pointer"
         >
           <span>Send Money Abroad (Wire)</span>

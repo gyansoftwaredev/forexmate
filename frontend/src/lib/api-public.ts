@@ -34,3 +34,13 @@ export const getTestimonials = async () => {
   return res.data?.data || res.data;
 };
 
+export const getServiceCharges = async (): Promise<{ BUY: number; SELL: number; REMITTANCE: number; CARD: number }> => {
+  try {
+    const res = await publicApi.get('/service-charges');
+    return res.data?.data || res.data || { BUY: 0, SELL: 0, REMITTANCE: 0, CARD: 0 };
+  } catch (err) {
+    console.error('Failed to fetch service charges:', err);
+    return { BUY: 0, SELL: 0, REMITTANCE: 0, CARD: 0 };
+  }
+};
+

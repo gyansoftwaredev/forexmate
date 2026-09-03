@@ -57,7 +57,7 @@ export default function RemittancesPage() {
           </div>
 
           <button
-            onClick={() => router.push('/buy-forex?tab=remittance')}
+            onClick={() => router.push('/remittance')}
             className="px-5 py-3.5 bg-[#C59B27] hover:bg-[#b58c20] text-slate-950 font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-md hover:scale-[1.01] active:scale-98 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
             <Send className="w-4 h-4 text-slate-950" />

@@ -286,7 +286,7 @@ export default function BeneficiariesPage() {
     params.set('beneficiaryId', ben.id);
     if (info.code) params.set('country', info.code);
     if (info.currency) params.set('currency', info.currency);
-    window.location.href = `/transfer-money?${params.toString()}`;
+    window.location.href = `/remittance?${params.toString()}`;
   };
 
   return (

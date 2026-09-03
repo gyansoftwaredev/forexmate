@@ -8,6 +8,7 @@ interface User {
   fullName: string;
   role: string;
   mobile?: string | null;
+  phone?: string | null;
 }
 
 
@@ -26,6 +27,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const login = (accessToken: string, userData: User) => {
+    // If switching users, wipe any lingering transaction draft from another user
+    const previousUserStr = localStorage.getItem('forexmate_user');
+    if (previousUserStr) {
+      try {
+        const prev = JSON.parse(previousUserStr);
+        if (prev.id && prev.id !== userData.id) {
+          localStorage.removeItem('forexmate-transaction-storage');
+          localStorage.removeItem('user_saved_kyc');
+          localStorage.removeItem('user');
+        }
+      } catch (_) {}
+    }
     setMemoryToken(accessToken);
     setUser(userData);
     localStorage.setItem('forexmate_user', JSON.stringify(userData));
@@ -42,6 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
       localStorage.removeItem('forexmate_user');
       localStorage.removeItem('forexmate_token');
+      localStorage.removeItem('forexmate-transaction-storage');
+      localStorage.removeItem('user_saved_kyc');
+      localStorage.removeItem('user');
       window.location.href = '/login';
     }
   };

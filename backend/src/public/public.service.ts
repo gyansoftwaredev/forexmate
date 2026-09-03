@@ -138,4 +138,39 @@ export class PublicService {
       orderBy: { code: 'asc' }
     });
   }
+
+  // 8. Get Product Service Charges (Configured by Admin, Default 0)
+  async getServiceCharges() {
+    const settings = await this.prisma.systemSetting.findMany({
+      where: {
+        key: {
+          in: [
+            'SERVICE_CHARGE_BUY',
+            'SERVICE_CHARGE_SELL',
+            'SERVICE_CHARGE_REMITTANCE',
+            'SERVICE_CHARGE_CARD',
+          ],
+        },
+      },
+    });
+
+    const charges: Record<string, number> = {
+      BUY: 0,
+      SELL: 0,
+      REMITTANCE: 0,
+      CARD: 0,
+    };
+
+    for (const s of settings) {
+      const val = parseFloat(s.value);
+      if (!isNaN(val)) {
+        if (s.key === 'SERVICE_CHARGE_BUY') charges.BUY = val;
+        if (s.key === 'SERVICE_CHARGE_SELL') charges.SELL = val;
+        if (s.key === 'SERVICE_CHARGE_REMITTANCE') charges.REMITTANCE = val;
+        if (s.key === 'SERVICE_CHARGE_CARD') charges.CARD = val;
+      }
+    }
+
+    return charges;
+  }
 }

@@ -17,7 +17,7 @@ import {
 import { CitySelectorModal } from '../CitySelectorModal';
 import { SameDayDeliveryModal } from '../SameDayDeliveryModal';
 import { calculateForexGst } from '@/lib/gstCalculator';
-import { getActiveBranches } from '@/lib/api-public';
+import { getActiveBranches, getServiceCharges } from '@/lib/api-public';
 import API_URL, { authFetch, apiJson } from '@/lib/api';
 import { ALL_CURRENCIES_LIST, ALL_CURRENCIES_MAP } from '@/lib/currencyMetadata';
 import { useAuth } from '@/context/AuthContext';
@@ -57,6 +57,58 @@ const DESTINATION_COUNTRIES = [
   { name: 'Azerbaijan', code: 'Azerbaijan', flag: '🇦🇿' },
   { name: 'Nepal', code: 'Nepal', flag: '🇳🇵' }
 ];
+
+export const resolveDestinationCountryName = (input?: string, currencyCode?: string): string => {
+  if (input) {
+    const clean = input.trim().toLowerCase();
+    if (clean === 'ca' || clean.includes('canada')) return 'Canada';
+    if (clean === 'sg' || clean.includes('singapore')) return 'Singapore';
+    if (clean === 'us' || clean === 'usa' || clean.includes('united states') || clean.includes('america')) return 'United States';
+    if (clean === 'uk' || clean === 'gb' || clean.includes('united kingdom') || clean.includes('britain') || clean.includes('england')) return 'United Kingdom';
+    if (clean === 'ae' || clean === 'uae' || clean.includes('emirates') || clean.includes('dubai')) return 'United Arab Emirates';
+    if (clean === 'au' || clean.includes('australia')) return 'Australia';
+    if (clean === 'de' || clean.includes('germany') || clean.includes('schengen') || clean.includes('europe')) return 'Europe (Schengen Area)';
+    if (clean === 'ch' || clean.includes('switzerland')) return 'Switzerland';
+    if (clean === 'nz' || clean.includes('new zealand')) return 'New Zealand';
+    if (clean === 'jp' || clean.includes('japan')) return 'Japan';
+    if (clean === 'th' || clean.includes('thailand')) return 'Thailand';
+    if (clean === 'sa' || clean.includes('saudi')) return 'Saudi Arabia';
+    if (clean === 'qa' || clean.includes('qatar')) return 'Qatar';
+    if (clean === 'hk' || clean.includes('hong kong')) return 'Hong Kong';
+    if (clean === 'my' || clean.includes('malaysia')) return 'Malaysia';
+    if (clean === 'vn' || clean.includes('vietnam')) return 'Vietnam';
+    if (clean === 'id' || clean.includes('indonesia')) return 'Indonesia (Bali)';
+    if (clean === 'kr' || clean.includes('korea')) return 'South Korea';
+    if (clean === 'za' || clean.includes('south africa')) return 'South Africa';
+
+    const matched = DESTINATION_COUNTRIES.find(
+      (c) => c.name.toLowerCase() === clean || c.code.toLowerCase() === clean
+    );
+    if (matched) return matched.name;
+  }
+
+  if (currencyCode) {
+    const curr = currencyCode.trim().toUpperCase();
+    if (curr === 'CAD') return 'Canada';
+    if (curr === 'SGD') return 'Singapore';
+    if (curr === 'USD') return 'United States';
+    if (curr === 'GBP') return 'United Kingdom';
+    if (curr === 'EUR') return 'Europe (Schengen Area)';
+    if (curr === 'AUD') return 'Australia';
+    if (curr === 'AED') return 'United Arab Emirates';
+    if (curr === 'JPY') return 'Japan';
+    if (curr === 'CHF') return 'Switzerland';
+    if (curr === 'NZD') return 'New Zealand';
+    if (curr === 'THB') return 'Thailand';
+    if (curr === 'SAR') return 'Saudi Arabia';
+    if (curr === 'QAR') return 'Qatar';
+    if (curr === 'HKD') return 'Hong Kong';
+    if (curr === 'MYR') return 'Malaysia';
+    if (curr === 'ZAR') return 'South Africa';
+  }
+
+  return input || '';
+};
 
 // Remittance Types
 interface TransferPurpose {
@@ -162,12 +214,41 @@ export function ProductCalculatorStep() {
   const [deliveryDay, setDeliveryDay] = useState<'Today' | 'Tomorrow'>('Today');
   const [cutoffTimer, setCutoffTimer] = useState<string>('00h : 00m');
 
+  // Dynamic Product Service Charges (Fetched live from Admin settings, default 0)
+  const [systemServiceCharges, setSystemServiceCharges] = useState<{ BUY: number; SELL: number; REMITTANCE: number; CARD: number }>({
+    BUY: 0,
+    SELL: 0,
+    REMITTANCE: 0,
+    CARD: 0,
+  });
+
+  useEffect(() => {
+    getServiceCharges()
+      .then((charges) => {
+        if (charges && typeof charges === 'object') {
+          setSystemServiceCharges({
+            BUY: Number(charges.BUY) || 0,
+            SELL: Number(charges.SELL) || 0,
+            REMITTANCE: Number(charges.REMITTANCE) || 0,
+            CARD: Number(charges.CARD) || 0,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Rate Lock Timer (5 minute countdown)
   const [timeLeft, setTimeLeft] = useState(299);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(prev => (prev > 0 ? prev - 1 : 299));
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -245,8 +326,17 @@ export function ProductCalculatorStep() {
       }
 
       const paramCountry = searchParams.get('country') || searchParams.get('countryCode');
-      if (paramCountry && paramCountry.toUpperCase() !== draftState.countryCode) {
+      if (paramCountry) {
         updates.countryCode = paramCountry.toUpperCase();
+        const resolvedCountry = resolveDestinationCountryName(paramCountry, paramCurrency || undefined);
+        if (resolvedCountry) {
+          updates.destination = resolvedCountry;
+        }
+      } else if (paramCurrency) {
+        const resolvedCountry = resolveDestinationCountryName(undefined, paramCurrency);
+        if (resolvedCountry && !draftState.destination) {
+          updates.destination = resolvedCountry;
+        }
       }
       
       const paramCity = searchParams.get('city');
@@ -282,10 +372,23 @@ export function ProductCalculatorStep() {
 
   // Ensure default fulfillment is set
   useEffect(() => {
-    if (!draftState.deliveryMethod) {
+    if (draftState.product === 'REMITTANCE') {
+      if (draftState.deliveryMethod !== 'WIRE_TRANSFER') {
+        updateDraft({ deliveryMethod: 'WIRE_TRANSFER' });
+      }
+      if (!draftState.destination) {
+        const paramCountry = searchParams.get('country') || searchParams.get('countryCode');
+        const paramCurr = searchParams.get('currency') || draftState.currency;
+        const resolved = resolveDestinationCountryName(paramCountry || draftState.beneficiaryCountry, paramCurr);
+        updateDraft({ destination: resolved || 'United States' });
+      }
+      if (!draftState.purpose) {
+        updateDraft({ purpose: 'EDUCATION' });
+      }
+    } else if (!draftState.deliveryMethod || draftState.deliveryMethod === 'WIRE_TRANSFER') {
       updateDraft({ deliveryMethod: 'HOME_DELIVERY' });
     }
-  }, [draftState.deliveryMethod]);
+  }, [draftState.deliveryMethod, draftState.product, draftState.destination, draftState.beneficiaryCountry]);
 
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [isDeliveryPolicyOpen, setIsDeliveryPolicyOpen] = useState(false);
@@ -391,8 +494,19 @@ export function ProductCalculatorStep() {
     if (!b) return '';
     if (typeof b.city === 'string') return b.city;
     if (b.city && typeof b.city === 'object' && typeof b.city.name === 'string') return b.city.name;
+    if (b.branchCity && typeof b.branchCity === 'string') return b.branchCity;
     if (b.cityName && typeof b.cityName === 'string') return b.cityName;
     return '';
+  };
+
+  const getBranchName = (b: any): string => {
+    if (!b) return 'Vault Branch';
+    return b.branchName || b.name || b.title || 'Vault Branch';
+  };
+
+  const getBranchAddress = (b: any): string => {
+    if (!b) return '';
+    return b.branchAddress || b.address || b.location || '';
   };
 
   const availableCityBranches = useMemo(() => {
@@ -422,12 +536,12 @@ export function ProductCalculatorStep() {
 
   const product = draftState.product || 'CASH';
   const currency = draftState.currency || 'USD';
-  const amount = draftState.amount || '1000';
-  const deliveryMethod = draftState.deliveryMethod || 'HOME_DELIVERY';
+  const amount = draftState.amount !== undefined && draftState.amount !== null ? String(draftState.amount) : '1000';
+  const isRemittance = product === 'REMITTANCE';
+  const deliveryMethod = isRemittance ? 'WIRE_TRANSFER' : (draftState.deliveryMethod || 'HOME_DELIVERY');
   const branchId = draftState.branchId || '';
 
   const isSell = product === 'CASH_SELL';
-  const isRemittance = product === 'REMITTANCE';
   const isCard = product === 'CARD';
 
   const productName = 
@@ -456,14 +570,26 @@ export function ProductCalculatorStep() {
   // Load Beneficiaries
   const fetchBeneficiaries = async () => {
     try {
-      const res = await authFetch(`${API_URL}/api/remittance/beneficiaries`);
+      const res = await authFetch(`${API_URL}/remittances/beneficiaries`);
       if (res.ok) {
-        const data = await res.json();
-        setBeneficiaries(data);
-        if (data.length > 0 && !draftState.beneficiaryId) {
+        const json = await res.json().catch(() => null);
+        const list = Array.isArray(json) ? json : (Array.isArray(json?.data) ? json.data : []);
+        setBeneficiaries(list);
+        if (list.length > 0) {
+          const targetId = searchParams.get('beneficiaryId') || draftState.beneficiaryId;
+          const selectedBen = targetId 
+            ? list.find((b: any) => b.id === targetId) || list[0]
+            : list[0];
+          const resolvedCountry = resolveDestinationCountryName(selectedBen.country, draftState.currency);
           updateDraft({ 
-            beneficiaryId: data[0].id,
-            beneficiaryName: data[0].name
+            beneficiaryId: selectedBen.id,
+            beneficiaryName: selectedBen.name,
+            beneficiaryCountry: selectedBen.country,
+            destination: resolvedCountry || selectedBen.country || draftState.destination || 'United States',
+            beneficiaryBank: selectedBen.bankName,
+            beneficiaryAccount: selectedBen.ibanOrAccountNumber,
+            beneficiarySwift: selectedBen.swiftCode,
+            beneficiaryAddress: selectedBen.address || ''
           });
         }
       }
@@ -544,11 +670,13 @@ export function ProductCalculatorStep() {
       const cityBranches = branches.filter((b) => getBranchCityName(b).trim().toLowerCase() === target);
       if (cityBranches.length > 0) {
         if (!branchId || !cityBranches.some((b) => b.id === branchId)) {
-          updateDraft({ branchId: cityBranches[0].id });
+          const firstBr = cityBranches[0];
+          const bLabel = `${getBranchName(firstBr)} (${getBranchCityName(firstBr) || selectedCity})${getBranchAddress(firstBr) ? ` - ${getBranchAddress(firstBr)}` : ''}`;
+          updateDraft({ branchId: firstBr.id, deliveryBranch: bLabel });
         }
       } else {
         if (deliveryMethod === 'PICKUP') {
-          updateDraft({ deliveryMethod: 'HOME_DELIVERY', branchId: '' });
+          updateDraft({ deliveryMethod: 'HOME_DELIVERY', branchId: '', deliveryBranch: '' });
         }
       }
     }
@@ -595,11 +723,21 @@ export function ProductCalculatorStep() {
   const parsedAmount = parseFloat(amount) || 0;
   const hasAnyCurrency = parsedAmount > 0 || extraCurrenciesCalculated.some(c => parseFloat(c.amount) > 0);
 
-  const serviceCharge = hasAnyCurrency ? 150 : 0;
+  const getProductServiceCharge = () => {
+    if (!hasAnyCurrency) return 0;
+    if (product === 'CASH_SELL') return systemServiceCharges.SELL ?? 0;
+    if (product === 'CARD') return systemServiceCharges.CARD ?? 0;
+    if (product === 'REMITTANCE') return systemServiceCharges.REMITTANCE ?? 0;
+    return systemServiceCharges.BUY ?? 0;
+  };
+
+  const serviceCharge = getProductServiceCharge();
   const deliveryCharge = (!isRemittance && deliveryMethod === 'HOME_DELIVERY' && hasAnyCurrency) ? 150 : 0;
   const gst = totalCurrencyInrValue > 0 ? calculateForexGst(totalCurrencyInrValue) : 0;
 
-  const appliedDiscount = appliedOffer ? appliedOffer.discountAmount : 0;
+  const appliedDiscount = appliedOffer
+    ? (appliedOffer.code === 'ZEROFEE' ? Math.min(serviceCharge, appliedOffer.discountAmount) : appliedOffer.discountAmount)
+    : 0;
 
   const basePayableAmount = product === 'CASH_SELL'
     ? (totalCurrencyInrValue > 0 ? (totalCurrencyInrValue - serviceCharge - deliveryCharge - gst) : 0)
@@ -633,6 +771,13 @@ export function ProductCalculatorStep() {
       return;
     }
     handleSelectOffer(found);
+  };
+
+  const handleRemoveOffer = () => {
+    setAppliedOffer(null);
+    setCouponInput('');
+    setCouponError(null);
+    updateDraft({ appliedOffer: undefined, appliedDiscount: 0 });
   };
 
   const handleQuote = async () => {
@@ -684,15 +829,18 @@ export function ProductCalculatorStep() {
 
   const getEligibilityMessage = () => {
     if (product === 'CARD') {
-      return <span>Pre-payment required for <strong className="text-slate-300">Card Issuance</strong></span>;
+      return <span>Prepayment Required for <strong className="text-white font-semibold">Instant Card Issuance</strong></span>;
     }
     if (product === 'REMITTANCE') {
-      return <span>100% RBI LRS Compliant <strong className="text-slate-300">International Wire Transfer</strong></span>;
+      return <span>Prepayment Required for <strong className="text-white font-semibold">RBI Wire Remittance</strong></span>;
+    }
+    if (product === 'CASH_SELL') {
+      return <span>Payout Processed Upon <strong className="text-white font-semibold">Currency Verification</strong></span>;
     }
     if (draftState.deliveryMethod === 'HOME_DELIVERY') {
-      return <span>You are eligible for <strong className="text-slate-300">Pay On Delivery</strong></span>;
+      return <span>Prepayment Required for <strong className="text-white font-semibold">Insured Doorstep Delivery</strong></span>;
     }
-    return <span>You are eligible for <strong className="text-slate-300">Pay At Branch</strong></span>;
+    return <span>Prepayment Required for <strong className="text-white font-semibold">Guaranteed Vault Pickup</strong></span>;
   };
 
   return (
@@ -701,11 +849,11 @@ export function ProductCalculatorStep() {
 
 
       {/* Main Wide Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_320px] gap-3 xl:gap-4 items-start">
         
-        {/* LEFT COLUMN: Floating Glass Navigation Sidebar (Popped from left edge with bigger texts & generous spacing) */}
-        <div className="lg:col-span-2 xl:col-span-2 space-y-4">
-          <div className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-5 lg:p-6 shadow-2xl flex flex-col justify-between min-h-[620px]">
+        {/* LEFT COLUMN: Floating Glass Navigation Sidebar — sticky, independent scroll */}
+        <div className="sticky top-[8.5rem] self-start">
+          <div className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-3 shadow-lg flex flex-col justify-between max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
             <div className="space-y-4 lg:space-y-5">
               <button
                 type="button"
@@ -740,6 +888,34 @@ export function ProductCalculatorStep() {
               >
                 <ArrowLeftRight className="w-5 h-5 shrink-0" />
                 <span>Sell Forex</span>
+              </button>
+
+              {/* Forex Card */}
+              <button
+                type="button"
+                onClick={() => router.push('/forex-cards')}
+                className={`w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold transition-all flex items-center gap-3.5 cursor-pointer text-left ${
+                  pathname?.includes('forex-cards')
+                    ? 'bg-amber-500/10 border border-amber-500/50 text-amber-400 shadow-sm shadow-amber-500/15'
+                    : 'text-slate-300 hover:text-white hover:bg-white/[0.07]'
+                }`}
+              >
+                <CreditCard className="w-5 h-5 shrink-0" />
+                <span>Forex Card</span>
+              </button>
+
+              {/* Remittance */}
+              <button
+                type="button"
+                onClick={() => router.push('/remittance')}
+                className={`w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold transition-all flex items-center gap-3.5 cursor-pointer text-left ${
+                  pathname?.includes('remittance')
+                    ? 'bg-amber-500/10 border border-amber-500/50 text-amber-400 shadow-sm shadow-amber-500/15'
+                    : 'text-slate-300 hover:text-white hover:bg-white/[0.07]'
+                }`}
+              >
+                <Send className="w-5 h-5 shrink-0" />
+                <span>Remittance</span>
               </button>
 
               <button
@@ -802,10 +978,10 @@ export function ProductCalculatorStep() {
         </div>
 
         {/* CENTER COLUMN: Main Wide Funnel Cards */}
-        <div className="lg:col-span-6 xl:col-span-6 space-y-6">
+        <div className="space-y-5 ml-8 mr-1">
           
           {/* Card 1: Amount & Currency (Enlarged & Spacious) */}
-          <div className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-6 sm:p-7 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] relative overflow-hidden space-y-6">
+          <div className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 sm:p-7 shadow-lg relative space-y-6">
             {/* Header / Stepper Number */}
             <div className="flex items-center gap-3.5">
               <div className="w-8 h-8 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-400 font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
@@ -824,7 +1000,7 @@ export function ProductCalculatorStep() {
             {/* Dual Hero Panels: You Pay & Live Interbank Rate */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               {/* You Pay Display Box */}
-              <div className="bg-[#121926]/45 border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-1.5 flex flex-col justify-between shadow-inner">
+              <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-1.5 flex flex-col justify-between">
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   {isSell ? 'You Handover (INR Value)' : 'You Pay'}
                 </div>
@@ -838,7 +1014,7 @@ export function ProductCalculatorStep() {
               </div>
 
               {/* Live Rate Display Box */}
-              <div className="bg-[#121926]/45 border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-2 flex flex-col justify-between shadow-inner">
+              <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-2 flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Live Interbank Rate
@@ -875,6 +1051,7 @@ export function ProductCalculatorStep() {
                   rateType={isSell ? 'sell' : isRemittance ? 'remittance' : 'buy'}
                   label="Select Currency"
                   darkMode={true}
+                  hideRateBadge={true}
                 />
               </div>
 
@@ -895,7 +1072,7 @@ export function ProductCalculatorStep() {
                       }
                     }}
                     placeholder="1000.00"
-                    className="w-full bg-[#101724]/70 border border-white/[0.09] rounded-xl px-4 py-3.5 pr-16 text-base font-black text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all font-mono shadow-inner"
+                    className="w-full bg-white/[0.05] border border-white/[0.09] rounded-xl px-4 py-3.5 pr-20 text-base font-black text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                     <span className="text-xs font-black text-slate-300 bg-white/[0.08] px-2.5 py-1 rounded-md border border-white/[0.08]">
@@ -924,18 +1101,12 @@ export function ProductCalculatorStep() {
                     </button>
                   </div>
                 </div>
-                <div className="flex justify-between items-center text-xs text-slate-400 mt-1.5 px-0.5">
-                  <span>Rate: 1 {currency} = ₹{adjustedRate?.toFixed(2)}</span>
-                  <span className="text-amber-400 font-bold font-mono">
-                    Forex Value: ₹{inrEquivalent ? inrEquivalent.toLocaleString('en-IN') : '0.00'}
-                  </span>
-                </div>
               </div>
             </div>
 
             {/* Additional Currencies Rows */}
             {extraCurrenciesCalculated.map((c, idx) => (
-              <div key={idx} className="bg-[#121926]/45 border border-white/[0.07] rounded-2xl p-4 flex items-center justify-between text-xs sm:text-sm">
+              <div key={idx} className="bg-white/[0.05] border border-white/[0.07] rounded-2xl p-4 flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-bold text-white">{getCurrencyName(c.currency)}</span>
                   <span className="text-slate-300 bg-[#0c121d]/80 px-3 py-1 rounded-lg border border-white/[0.08] font-mono">
@@ -968,79 +1139,130 @@ export function ProductCalculatorStep() {
           </div>
 
           {/* Card 2: Fulfillment Method & Travel Details (Enlarged & Spacious) */}
-          <div className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-6 sm:p-7 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] space-y-6">
+          <div className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-6 sm:p-7 shadow-lg space-y-6">
             
-            {/* Stepper Tabs Bar */}
-            <div className="flex flex-wrap items-center gap-2.5 border-b border-white/[0.08] pb-5">
-              <button
-                type="button"
-                className="px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold bg-sky-500/20 text-sky-300 border border-sky-400/35 flex items-center gap-2 shadow-xs cursor-pointer"
+            {/* Fulfillment Method Header */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-white/[0.08] pb-4">
+              <div
+                className="px-4 py-2 rounded-full text-xs sm:text-sm font-bold bg-sky-500/20 text-sky-300 border border-sky-400/35 flex items-center gap-2 shadow-xs"
               >
-                <Package className="w-4 h-4" />
-                <span>1 Fulfillment Method</span>
-              </button>
-
-              <button
-                type="button"
-                className="px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-slate-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <Plane className="w-4 h-4" />
-                <span>2 Travel Details</span>
-              </button>
-
-              <button
-                type="button"
-                className="px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-slate-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
-              >
-                <Receipt className="w-4 h-4" />
-                <span>3 Review & Pay</span>
-              </button>
+                {isRemittance ? <Send className="w-4 h-4" /> : <Package className="w-4 h-4" />}
+                <span>{isRemittance ? 'Wire Transfer Fulfillment Method' : 'Fulfillment Method'}</span>
+              </div>
+              {isRemittance && (
+                <span className="text-[11px] font-black text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-xs">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>RBI AD-II Statutory Channel</span>
+                </span>
+              )}
             </div>
 
-            {/* Top Doorstep Delivery Ribbon */}
-            <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-medium text-slate-300 bg-[#121926]/40 p-4 rounded-2xl border border-white/[0.06]">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="flex h-2.5 w-2.5 relative shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-                <span>Guaranteed delivery by</span>
-                <span className="font-bold text-white bg-white/[0.06] px-3 py-1 rounded-lg border border-white/[0.08] text-xs font-mono">
-                  {deliveryDay}, 9:00 PM
-                </span>
-                <span>to</span>
+            {/* Top Fulfillment Status Ribbon */}
+            {isRemittance ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-medium text-slate-300 bg-sky-950/30 p-4 rounded-2xl border border-sky-500/30">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className="flex h-2.5 w-2.5 relative shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-white font-bold">Same-Day SWIFT Wire Processing</span>
+                  <span className="text-slate-500">•</span>
+                  <span className="text-slate-300">
+                    Dispatched within <strong className="text-amber-300 font-bold">24–48 Business Hours</strong> with official <strong className="text-white font-mono font-bold">MT103 Swift Advice</strong>
+                  </span>
+                </div>
+                <div className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1 rounded-lg">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>100% LRS Statutory Compliant</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-medium text-slate-300 bg-white/[0.04] p-4 rounded-2xl border border-white/[0.06]">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="flex h-2.5 w-2.5 relative shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span>Guaranteed delivery by</span>
+                  <span className="font-bold text-white bg-white/[0.06] px-3 py-1 rounded-lg border border-white/[0.08] text-xs font-mono">
+                    {deliveryDay}, 9:00 PM
+                  </span>
+                  <span>to</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsCityModalOpen(true)}
+                    className="font-bold text-sky-300 hover:text-sky-200 bg-[#0c121d]/80 hover:bg-[#0c121d] px-3 py-1 rounded-lg border border-sky-500/30 transition-all flex items-center gap-1.5 cursor-pointer text-xs"
+                  >
+                    <MapPin className="w-3.5 h-3.5 text-sky-400" />
+                    <span>{selectedCity}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-sky-400" />
+                  </button>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setIsCityModalOpen(true)}
-                  className="font-bold text-sky-300 hover:text-sky-200 bg-[#0c121d]/80 hover:bg-[#0c121d] px-3 py-1 rounded-lg border border-sky-500/30 transition-all flex items-center gap-1.5 cursor-pointer text-xs"
+                  onClick={() => setIsDeliveryPolicyOpen(true)}
+                  className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-sky-400" />
-                  <span>{selectedCity}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-sky-400" />
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Same-Day Policy</span>
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsDeliveryPolicyOpen(true)}
-                className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 cursor-pointer"
-              >
-                <Zap className="w-3.5 h-3.5" />
-                <span>Same-Day Policy</span>
-              </button>
-            </div>
+            )}
 
-            {/* Fulfillment Options (Only shown when not Remittance) */}
-            {!isRemittance && (
+            {/* Fulfillment Options */}
+            {isRemittance ? (
+              <div className="border-2 border-sky-500/70 bg-sky-950/25 ring-1 ring-sky-500/30 p-5 rounded-2xl flex items-start justify-between shadow-[0_0_20px_rgba(14,165,233,0.12)]">
+                <div className="flex items-start gap-3.5">
+                  <div className="p-2.5 rounded-xl bg-sky-500/20 border border-sky-400/40 text-sky-400 shrink-0">
+                    <Send className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm sm:text-base text-white">Direct Overseas Bank Credit (SWIFT Wire)</span>
+                      <span className="text-[10px] font-black text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                        Selected Mode
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-300 mt-1 leading-relaxed">
+                      Statutory outward remittance wired through RBI Authorized Dealer Category-II banking pipeline directly to the overseas beneficiary bank account. Includes official MT103 confirmation receipt.
+                    </div>
+                    <div className="flex flex-wrap items-center gap-4 mt-3 text-xs text-sky-300 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        Direct University / Overseas Bank Credit
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        Official MT103 Swift Advice Proof
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                        Zero Intermediary Deductions
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="w-5 h-5 rounded-full bg-sky-400 text-slate-950 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
+                  ✓
+                </div>
+              </div>
+            ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                   {/* Branch Pickup */}
                   {hasBranchesInCity ? (
                     <div
-                      onClick={() => updateDraft({ deliveryMethod: 'PICKUP', branchId: availableCityBranches[0]?.id })}
+                      onClick={() => {
+                        const firstBr = availableCityBranches[0];
+                        const bLabel = firstBr 
+                          ? `${getBranchName(firstBr)} (${getBranchCityName(firstBr) || selectedCity})${getBranchAddress(firstBr) ? ` - ${getBranchAddress(firstBr)}` : ''}`
+                          : '';
+                        updateDraft({ deliveryMethod: 'PICKUP', branchId: firstBr?.id, deliveryBranch: bLabel });
+                      }}
                       className={`border-2 p-5 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
                         deliveryMethod === 'PICKUP'
                           ? 'border-sky-500/70 bg-sky-950/25 ring-1 ring-sky-500/30 shadow-[0_0_20px_rgba(14,165,233,0.12)]'
-                          : 'border-white/[0.08] bg-[#121926]/40 hover:border-white/[0.16] hover:bg-[#121926]/60'
+                          : 'border-white/[0.08] bg-white/[0.04] hover:border-white/[0.16] hover:bg-white/[0.07]'
                       }`}
                     >
                       <div className="flex items-start gap-3.5">
@@ -1086,7 +1308,7 @@ export function ProductCalculatorStep() {
                     className={`border-2 p-5 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
                       deliveryMethod === 'HOME_DELIVERY'
                         ? 'border-sky-500/70 bg-sky-950/25 ring-1 ring-sky-500/30 shadow-[0_0_20px_rgba(14,165,233,0.12)]'
-                        : 'border-white/[0.08] bg-[#121926]/40 hover:border-white/[0.16] hover:bg-[#121926]/60'
+                        : 'border-white/[0.08] bg-white/[0.04] hover:border-white/[0.16] hover:bg-white/[0.07]'
                     }`}
                   >
                     <div className="flex items-start gap-3.5">
@@ -1113,23 +1335,50 @@ export function ProductCalculatorStep() {
                   </div>
                 </div>
 
+                {/* Minimum Order Notice for Home Delivery */}
+                {!isRemittance && deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
+                  <div className="bg-amber-950/40 border border-amber-500/30 rounded-2xl p-4 text-xs sm:text-sm text-amber-300 flex items-start gap-2.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <TriangleAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-amber-400 block mb-0.5">Minimum Order Notice</span>
+                      <span>
+                        {hasBranchesInCity
+                          ? 'Doorstep delivery requires minimum ₹25,000 order value. Switch to Branch Pickup or add more currency to proceed.'
+                          : 'Doorstep delivery requires minimum ₹25,000 order value. Please increase your currency amount to proceed with home delivery.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Branch Dropdown selector if Pickup */}
                 {deliveryMethod === 'PICKUP' && hasBranchesInCity && (
-                  <div className="bg-[#121926]/45 border border-white/[0.07] rounded-2xl p-4 sm:p-5 space-y-2">
+                  <div className="bg-white/[0.05] border border-white/[0.07] rounded-2xl p-4 sm:p-5 space-y-2">
                     <label className="block text-xs font-bold text-slate-300">
                       Select Pickup Branch in {selectedCity}
                     </label>
                     <div className="relative">
                       <select
                         value={branchId}
-                        onChange={(e) => updateDraft({ branchId: e.target.value })}
-                        className="w-full bg-[#101724]/85 border border-white/[0.09] rounded-xl p-3.5 pr-10 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500 appearance-none cursor-pointer"
+                        onChange={(e) => {
+                          const chosenId = e.target.value;
+                          const chosenObj = availableCityBranches.find((b) => b.id === chosenId);
+                          const bLabel = chosenObj 
+                            ? `${getBranchName(chosenObj)} (${getBranchCityName(chosenObj) || selectedCity})${getBranchAddress(chosenObj) ? ` - ${getBranchAddress(chosenObj)}` : ''}`
+                            : '';
+                          updateDraft({ branchId: chosenId, deliveryBranch: bLabel });
+                        }}
+                        className="w-full bg-white/[0.05] border border-white/[0.09] rounded-xl p-3.5 pr-10 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500 appearance-none cursor-pointer"
                       >
-                        {availableCityBranches.map((b) => (
-                          <option key={b.id} value={b.id} className="bg-[#0d131f] text-white">
-                            {b.name} ({getBranchCityName(b) || selectedCity}) - {b.address}
-                          </option>
-                        ))}
+                        {availableCityBranches.map((b) => {
+                          const bName = getBranchName(b);
+                          const bCity = getBranchCityName(b) || selectedCity;
+                          const bAddr = getBranchAddress(b);
+                          return (
+                            <option key={b.id} value={b.id} className="bg-[#0d131f] text-white">
+                              {bName} ({bCity}){bAddr ? ` - ${bAddr}` : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                       <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
@@ -1138,8 +1387,64 @@ export function ProductCalculatorStep() {
               </div>
             )}
 
-                {/* Travel Details Form */}
-            {!isSell && (
+            {/* Remittance Transfer Details vs Travel Details Form */}
+            {isRemittance ? (
+              <div className="space-y-4 pt-4 border-t border-white/[0.08]">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Remittance Transfer Details</span>
+                  </div>
+                  <span className="text-[10px] text-amber-400 font-semibold bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded">
+                    RBI LRS Mandate
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                  {/* Destination Country */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                      Destination Country (Beneficiary's Country) *
+                    </label>
+                    <select
+                      value={
+                        destination || 
+                        resolveDestinationCountryName(searchParams.get('country') || searchParams.get('countryCode') || draftState.beneficiaryCountry, currency) || 
+                        'United States'
+                      }
+                      onChange={(e) => updateDraft({ destination: e.target.value })}
+                      className="w-full bg-white/[0.05] border border-white/[0.09] rounded-xl p-3.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                    >
+                      {DESTINATION_COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.name} className="bg-[#0d131f] text-white">
+                          {c.flag} {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Purpose of Remittance */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                      Purpose of Remittance (RBI LRS Mandate) *
+                    </label>
+                    <select
+                      value={purpose || 'EDUCATION'}
+                      onChange={(e) => updateDraft({ purpose: e.target.value })}
+                      className="w-full bg-white/[0.05] border border-white/[0.09] rounded-xl p-3.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                    >
+                      <option value="EDUCATION" className="bg-[#0d131f] text-white">Higher Studies Overseas (University Fees)</option>
+                      <option value="FAMILY_MAINTENANCE" className="bg-[#0d131f] text-white">Maintenance of Close Relatives Abroad</option>
+                      <option value="MEDICAL" className="bg-[#0d131f] text-white">Medical Treatment Abroad</option>
+                      <option value="GIFT" className="bg-[#0d131f] text-white">Gift / Financial Assistance</option>
+                      <option value="EMIGRATION" className="bg-[#0d131f] text-white">Emigration / Visa Processing</option>
+                      <option value="TRAVEL" className="bg-[#0d131f] text-white">Travel & Living Expenses for Studies</option>
+                      <option value="OTHER" className="bg-[#0d131f] text-white">Other Permissible LRS Current Account Transfer</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            ) : !isSell && (
               <div className="space-y-4 pt-4 border-t border-white/[0.08]">
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
                   Travel Details
@@ -1175,7 +1480,7 @@ export function ProductCalculatorStep() {
                     )}
 
                     {extraCountries.map((c, idx) => (
-                      <div key={idx} className="flex items-center bg-[#121926]/60 border border-white/[0.08] px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300">
+                      <div key={idx} className="flex items-center bg-white/[0.05] border border-white/[0.08] px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300">
                         <span>{c}</span>
                         <button
                           type="button"
@@ -1192,7 +1497,7 @@ export function ProductCalculatorStep() {
                       <select
                         value={destination}
                         onChange={(e) => updateDraft({ destination: e.target.value })}
-                        className="bg-[#101724]/85 border border-white/[0.09] rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold text-white focus:border-sky-500 outline-none max-w-xs cursor-pointer"
+                        className="bg-white/[0.05] border border-white/[0.09] rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold text-white focus:border-sky-500 outline-none max-w-xs cursor-pointer"
                       >
                         <option value="" className="bg-[#0d131f] text-white">Select Country</option>
                         {DESTINATION_COUNTRIES.map((c) => (
@@ -1225,7 +1530,7 @@ export function ProductCalculatorStep() {
                       max={maxTravelDateStr}
                       value={departureDate}
                       onChange={(e) => handleDepartureDateChange(e.target.value)}
-                      className="w-full bg-[#101724]/85 border border-white/[0.09] rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500"
+                      className="w-full bg-white/[0.05] border border-white/[0.09] rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500"
                     />
                   </div>
 
@@ -1237,7 +1542,7 @@ export function ProductCalculatorStep() {
                         min={departureDate || todayStr}
                         value={returnDate}
                         onChange={(e) => updateDraft({ returnDate: e.target.value })}
-                        className="w-full bg-[#101724]/85 border border-white/[0.09] rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500"
+                        className="w-full bg-white/[0.05] border border-white/[0.09] rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500"
                       />
                     </div>
                   )}
@@ -1249,7 +1554,7 @@ export function ProductCalculatorStep() {
                   <select
                     value={purpose}
                     onChange={(e) => updateDraft({ purpose: e.target.value })}
-                    className="w-full bg-[#101724]/85 border border-white/[0.09] rounded-xl p-3.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500 cursor-pointer"
+                    className="w-full bg-white/[0.05] border border-white/[0.09] rounded-xl p-3.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
                     <option value="" className="bg-[#0d131f] text-white">Select Purpose</option>
                     <option value="HOLIDAY" className="bg-[#0d131f] text-white">Holiday / Leisure Travel</option>
@@ -1264,17 +1569,26 @@ export function ProductCalculatorStep() {
             )}
           </div>
 
-          {/* Sticky Bottom Action Capsule (Wide & Prominent) */}
-          <div className="bg-[#0a0e17]/85 backdrop-blur-2xl border border-white/[0.09] rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-wrap items-center justify-between gap-4 sticky bottom-4 z-40">
+          {/* Bottom Action Capsule (Wide & Prominent) */}
+          <div className="bg-white/[0.04] backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-4 sm:p-5 shadow-lg flex flex-wrap items-center justify-between gap-4">
             {/* Live Rate Lock Countdown Clock */}
-            <div className="flex items-center gap-3.5 bg-[#060910]/75 border border-white/[0.08] px-5 py-3 rounded-2xl shadow-inner">
+            <div className="flex items-center gap-3.5 bg-white/[0.04] border border-white/[0.08] px-5 py-3 rounded-2xl">
               <Lock className="w-4 h-4 text-amber-400" />
-              <div className="text-xs sm:text-sm font-bold text-slate-300">
+              <div className="text-xs sm:text-sm font-bold text-slate-300 flex items-center">
                 <span>Rate Locked For: </span>
-                <span className="font-mono text-white font-black ml-1.5 tracking-wider text-base text-amber-400">
-                  {formatMinutes} : {formatSeconds}
+                <span className="font-mono text-amber-400 font-black ml-1.5 text-base">
+                  {formatMinutes}
                 </span>
-                <span className="text-[10px] text-slate-500 ml-1.5 uppercase font-semibold">Min Sec</span>
+                <span className="text-[10px] text-slate-400 ml-1 mr-1.5 uppercase font-semibold">
+                  Min
+                </span>
+                <span className="text-slate-500 font-bold">:</span>
+                <span className="font-mono text-amber-400 font-black ml-1.5 text-base">
+                  {formatSeconds}
+                </span>
+                <span className="text-[10px] text-slate-400 ml-1 uppercase font-semibold">
+                  Sec
+                </span>
               </div>
             </div>
 
@@ -1285,9 +1599,11 @@ export function ProductCalculatorStep() {
               disabled={
                 isLocking ||
                 !amount ||
-                (!isSell && (!destination || !departureDate || !purpose)) ||
-                (deliveryMethod === 'PICKUP' && !branchId) ||
-                (deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue < 25000)
+                Number(amount) <= 0 ||
+                (!isSell && !isRemittance && (!destination || !departureDate || !purpose)) ||
+                (isRemittance && (!destination || !purpose)) ||
+                (!isRemittance && deliveryMethod === 'PICKUP' && !branchId) ||
+                (!isRemittance && deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue < 25000)
               }
               className="flex-1 sm:flex-none px-10 py-4 rounded-2xl font-black text-sm sm:text-base bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-xl shadow-amber-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
             >
@@ -1297,33 +1613,25 @@ export function ProductCalculatorStep() {
             </button>
           </div>
 
-          {/* Validation Warning Notice */}
-          {!isRemittance && deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue > 0 && totalCurrencyInrValue < 25000 && (
-            <div className="bg-amber-950/40 border border-amber-500/30 rounded-2xl p-4 text-xs sm:text-sm text-amber-300 flex items-center gap-2.5">
-              <TriangleAlert className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>Doorstep delivery requires minimum ₹25,000 order value. Switch to Branch Pickup or add more currency to proceed.</span>
-            </div>
-          )}
-
         </div>
 
-        {/* RIGHT COLUMN: Order Summary & Voucher Vault (Wide & Spacious) */}
-        <div className="lg:col-span-4 xl:col-span-4 space-y-6">
+        {/* RIGHT COLUMN: Order Summary & Voucher Vault — independent scroll */}
+        <div className="sticky top-[8.5rem] self-start space-y-4 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-0.5">
           
           {/* Card 1: Order Summary */}
-          <div className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
-              <div className="flex items-center gap-2.5">
-                <Receipt className="w-5 h-5 text-amber-400" />
-                <h3 className="font-black text-base text-white">Order Summary</h3>
+          <div className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-amber-400" />
+                <h3 className="font-black text-sm text-white">Order Summary</h3>
               </div>
-              <span className="text-xs font-bold text-slate-400 font-mono">INR</span>
+              <span className="text-[11px] font-bold text-slate-400 font-mono">INR</span>
             </div>
 
-            <div className="space-y-3.5 text-xs sm:text-sm">
+            <div className="space-y-2.5 text-xs">
               <div className="flex justify-between items-center text-slate-300">
                 <span>Total Currency Value</span>
-                <span className="font-bold text-white font-mono text-sm sm:text-base">₹ {Math.round(totalCurrencyInrValue).toLocaleString('en-IN')}.00</span>
+                <span className="font-bold text-white font-mono text-xs">₹ {Math.round(totalCurrencyInrValue).toLocaleString('en-IN')}.00</span>
               </div>
 
               <div className="flex justify-between items-center text-xs text-slate-400 pl-2">
@@ -1358,9 +1666,11 @@ export function ProductCalculatorStep() {
               </div>
 
               {appliedDiscount > 0 && (
-                <div className="flex justify-between items-center text-emerald-400 font-bold bg-emerald-950/40 p-3 rounded-xl border border-emerald-500/30 text-xs sm:text-sm">
-                  <span>Promo Discount ({appliedOffer?.code})</span>
-                  <span className="font-mono">- ₹ {appliedDiscount}.00</span>
+                <div className="flex justify-between items-center text-emerald-400 font-bold bg-emerald-950/40 px-3 py-2 rounded-xl border border-emerald-500/30 text-xs">
+                  <span className="truncate text-xs mr-2">Promo ({appliedOffer?.code})</span>
+                  <span className="font-mono font-black whitespace-nowrap shrink-0 text-xs">
+                    - ₹ {appliedDiscount}.00
+                  </span>
                 </div>
               )}
 
@@ -1375,57 +1685,75 @@ export function ProductCalculatorStep() {
                       Incl. GST & Zero Margin
                     </span>
                   </div>
-                  <span className="font-black text-amber-400 text-2xl sm:text-3xl font-mono tracking-tight drop-shadow-md">
+                  <span className="font-black text-amber-400 text-base sm:text-lg font-mono tracking-tight drop-shadow-md whitespace-nowrap">
                     ₹ {payableAmount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}.00
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#121926]/45 p-3.5 rounded-2xl text-center border border-white/[0.06]">
-              <span className="text-xs sm:text-sm text-emerald-400 font-bold flex items-center justify-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div className="bg-amber-500/[0.06] p-3 rounded-xl text-center border border-amber-500/20">
+              <span className="text-[11.5px] text-amber-300 font-medium flex items-center justify-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 {getEligibilityMessage()}
               </span>
             </div>
           </div>
 
           {/* Card 2: Offers & Coupons Vault */}
-          <div id="offers-card" className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
-              <div className="flex items-center gap-2.5">
-                <Ticket className="w-5 h-5 text-amber-400" />
-                <h3 className="font-black text-base text-white">Offers & Coupons</h3>
+          <div id="offers-card" className="bg-white/[0.03] backdrop-blur-xl border border-white/[0.06] rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2">
+                <Ticket className="w-4 h-4 text-amber-400" />
+                <h3 className="font-black text-sm text-white">Offers & Coupons</h3>
               </div>
-              <span className="text-xs font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-3 py-1 rounded-full">
+              <span className="text-[11px] font-bold text-amber-400 bg-amber-950/60 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
                 {DUMMY_OFFERS.length} Available
               </span>
             </div>
 
             {/* Coupon input */}
-            <div className="flex items-center gap-2 bg-[#090e18]/80 border border-white/[0.08] rounded-2xl p-2 focus-within:border-amber-500/60 transition-all">
-              <input
-                type="text"
-                value={couponInput}
-                onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
-                placeholder="ENTER PROMO CODE"
-                className="bg-transparent flex-1 min-w-0 px-3 text-xs sm:text-sm font-mono font-bold focus:outline-none uppercase placeholder:normal-case placeholder:text-slate-500 text-white"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (appliedOffer?.code !== couponInput) {
-                    handleApplyInputCoupon();
-                  }
-                }}
-                className={`font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all cursor-pointer ${
-                  appliedOffer?.code === couponInput
-                    ? 'bg-emerald-500 text-slate-950'
-                    : 'bg-white/10 hover:bg-amber-500 hover:text-slate-950 text-white'
-                }`}
-              >
-                {appliedOffer?.code === couponInput ? 'Applied ✓' : 'Apply'}
-              </button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.07] rounded-2xl p-2 focus-within:border-amber-500/60 transition-all">
+                <input
+                  type="text"
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  placeholder="ENTER PROMO CODE"
+                  className="bg-transparent flex-1 min-w-0 px-3 text-xs sm:text-sm font-mono font-bold focus:outline-none uppercase placeholder:normal-case placeholder:text-slate-500 text-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (appliedOffer?.code !== couponInput) {
+                      handleApplyInputCoupon();
+                    }
+                  }}
+                  className={`font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition-all cursor-pointer shrink-0 ${
+                    appliedOffer?.code === couponInput
+                      ? 'bg-emerald-500 text-slate-950'
+                      : 'bg-white/10 hover:bg-amber-500 hover:text-slate-950 text-white'
+                  }`}
+                >
+                  {appliedOffer?.code === couponInput ? 'Applied ✓' : 'Apply'}
+                </button>
+              </div>
+
+              {appliedOffer && (
+                <div className="flex items-center justify-between px-1.5 pt-0.5">
+                  <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Coupon &apos;{appliedOffer.code}&apos; applied
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRemoveOffer}
+                    className="text-xs text-rose-400 hover:text-rose-300 font-bold transition-colors cursor-pointer flex items-center gap-1 hover:underline underline-offset-2"
+                  >
+                    <span>Remove coupon code</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {couponError && (
@@ -1449,7 +1777,7 @@ export function ProductCalculatorStep() {
                       isSelected
                         ? 'bg-amber-500/10 border-amber-400/60 ring-1 ring-amber-400/20'
                         : isEligible
-                          ? 'bg-[#121926]/45 border-white/[0.07] hover:border-white/[0.14]'
+                          ? 'bg-white/[0.08] border-amber-500/40 hover:border-amber-500/60'
                           : 'bg-[#0c121d]/30 border-white/[0.04] opacity-50'
                     }`}
                   >
@@ -1472,19 +1800,21 @@ export function ProductCalculatorStep() {
                       </div>
 
                       {isEligible ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!isSelected) handleSelectOffer(offer);
-                          }}
-                          className={`text-xs font-bold px-4 py-2 rounded-xl transition-all shrink-0 cursor-pointer ${
-                            isSelected
-                              ? 'bg-emerald-500 text-slate-950'
-                              : 'bg-white/10 hover:bg-amber-500 hover:text-slate-950 text-white'
-                          }`}
-                        >
-                          {isSelected ? 'Applied ✓' : 'Apply'}
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isSelected ? (
+                            <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-500 text-slate-950 shadow-xs">
+                              Applied ✓
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleSelectOffer(offer)}
+                              className="text-xs font-bold px-4 py-2 rounded-xl bg-white/10 hover:bg-amber-500 hover:text-slate-950 text-white transition-all cursor-pointer"
+                            >
+                              Apply
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-xs text-slate-500 shrink-0 font-medium">
                           Locked
@@ -1543,7 +1873,7 @@ export function ProductCalculatorStep() {
                     const val = e.target.value;
                     if (val.length <= 7) setNewCurrencyAmount(val);
                   }}
-                  className="w-full bg-[#080c14] border border-white/[0.09] rounded-xl p-3 text-sm font-bold text-white focus:border-amber-500/70 outline-none font-mono"
+                  className="w-full bg-[#080c14] border border-white/[0.09] rounded-xl p-3 text-sm font-bold text-white focus:border-amber-500/70 outline-none font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   placeholder="500.00"
                 />
               </div>
@@ -1560,9 +1890,13 @@ export function ProductCalculatorStep() {
               >
                 Add Currency
               </Button>
-              <Button variant="outline" onClick={() => setShowAddCurrencyModal(false)} className="rounded-xl border-white/[0.08] text-white hover:bg-white/[0.08]">
+              <button 
+                type="button"
+                onClick={() => setShowAddCurrencyModal(false)} 
+                className="px-5 py-2.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-sm active:scale-95"
+              >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -1606,9 +1940,13 @@ export function ProductCalculatorStep() {
               >
                 Add Destination
               </Button>
-              <Button variant="outline" onClick={() => setShowAddCountryModal(false)} className="rounded-xl border-white/[0.08] text-white hover:bg-white/[0.08]">
+              <button 
+                type="button"
+                onClick={() => setShowAddCountryModal(false)} 
+                className="px-5 py-2.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-sm active:scale-95"
+              >
                 Cancel
-              </Button>
+              </button>
             </div>
           </div>
         </div>

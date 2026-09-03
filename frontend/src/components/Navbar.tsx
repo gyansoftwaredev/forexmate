@@ -123,7 +123,7 @@ export default function Navbar() {
               <div>
                 <div className="section-label mb-3 text-[9px] text-amber-600">Wire & Remittance</div>
                 <div className="space-y-1.5">
-                  <Link href="/transfer-money" className="flex items-center p-2 rounded-xl hover:bg-slate-100 transition-colors group/item">
+                  <Link href="/remittance" className="flex items-center p-2 rounded-xl hover:bg-slate-100 transition-colors group/item">
                     <Send className="w-4 h-4 mr-2.5 text-blue-600 group-hover/item:scale-110 transition-transform" />
                     <div>
                       <div className="text-xs font-black text-slate-900">Outward Remittance</div>

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import API_URL, { authFetch, apiJson } from '@/lib/api';
-import { Settings, Shield, Clock, Lock, Save, CheckCircle } from 'lucide-react';
+import { Settings, Shield, Clock, Lock, Save, CheckCircle, Banknote, CreditCard, ArrowLeftRight, Send, Coins } from 'lucide-react';
 
 export default function SystemSettingsPage() {
   const [settings, setSettings] = useState<{ [key: string]: string }>({
@@ -11,6 +11,10 @@ export default function SystemSettingsPage() {
     MAX_AML_SCORE: '80',
     MAX_LRS_USD: '250000',
     DELIVERY_RADIUS_KM: '25',
+    SERVICE_CHARGE_BUY: '0',
+    SERVICE_CHARGE_SELL: '0',
+    SERVICE_CHARGE_REMITTANCE: '0',
+    SERVICE_CHARGE_CARD: '0',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,6 +59,40 @@ export default function SystemSettingsPage() {
     }
   };
 
+  const handleSaveAllServiceCharges = async () => {
+    setSaving(true);
+    setMsg('');
+    try {
+      await Promise.all([
+        authFetch(`${API_URL}/admin/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'SERVICE_CHARGE_BUY', value: settings.SERVICE_CHARGE_BUY || '0', category: 'PRICING' }),
+        }),
+        authFetch(`${API_URL}/admin/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'SERVICE_CHARGE_SELL', value: settings.SERVICE_CHARGE_SELL || '0', category: 'PRICING' }),
+        }),
+        authFetch(`${API_URL}/admin/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'SERVICE_CHARGE_CARD', value: settings.SERVICE_CHARGE_CARD || '0', category: 'PRICING' }),
+        }),
+        authFetch(`${API_URL}/admin/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: 'SERVICE_CHARGE_REMITTANCE', value: settings.SERVICE_CHARGE_REMITTANCE || '0', category: 'PRICING' }),
+        }),
+      ]);
+      setMsg('All product service charges updated successfully! Customer storefronts will reflect this immediately.');
+    } catch (err: any) {
+      setMsg(err.message || 'Failed to save service charges');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6 font-sans">
       {/* Header */}
@@ -66,9 +104,9 @@ export default function SystemSettingsPage() {
             </span>
             <span className="text-slate-400 text-xs font-semibold">⚙️ System Configuration</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 mt-1">System Configuration & Security RBAC</h1>
+          <h1 className="text-2xl font-black text-slate-900 mt-1">System Configuration & Pricing Control</h1>
           <p className="text-xs text-slate-500 font-medium">
-            Configure global operational parameters, compliance limits, OTP expiries, and Role-Based Access Control matrix.
+            Configure global product service charges, operational parameters, compliance limits, and Role-Based Access Control matrix.
           </p>
         </div>
       </div>
@@ -78,6 +116,185 @@ export default function SystemSettingsPage() {
           <CheckCircle size={16} /> {msg}
         </div>
       )}
+
+      {/* Product Service Charges (Pricing Control) */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h3 className="font-extrabold text-slate-900 text-base flex items-center gap-2">
+              <Coins size={18} className="text-amber-500" /> Product Service Charges (Customer Pricing Control)
+            </h3>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Set the exact service charge (in ₹) for each forex product. Changes reflect live on customer calculators and checkout summaries.
+            </p>
+          </div>
+          <button
+            onClick={handleSaveAllServiceCharges}
+            disabled={saving}
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+          >
+            <Save size={14} /> Save All Service Charges
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Buy Forex */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
+                <Banknote size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-900 block">Buy Forex (Cash)</span>
+                <span className="text-[10px] text-slate-500 font-medium">Currency Notes</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] text-slate-600 uppercase font-bold block mb-1">Service Fee (₹)</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={settings.SERVICE_CHARGE_BUY}
+                    onChange={(e) => setSettings({ ...settings, SERVICE_CHARGE_BUY: e.target.value })}
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-7 pr-3 py-2 font-bold text-xs outline-amber-500"
+                    placeholder="0"
+                  />
+                </div>
+                <button
+                  onClick={() => handleSaveSetting('SERVICE_CHARGE_BUY', settings.SERVICE_CHARGE_BUY || '0', 'PRICING')}
+                  className="px-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Save size={13} />
+                </button>
+              </div>
+            </div>
+            <div className="text-[10px] text-slate-500 font-semibold bg-white p-2 rounded-lg border border-slate-200">
+              Customer pays: <strong className="text-slate-900 font-bold">₹{settings.SERVICE_CHARGE_BUY || '0'}</strong>
+            </div>
+          </div>
+
+          {/* 2. Sell Forex */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">
+                <ArrowLeftRight size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-900 block">Sell Forex</span>
+                <span className="text-[10px] text-slate-500 font-medium">Convert to INR</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] text-slate-600 uppercase font-bold block mb-1">Service Fee (₹)</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={settings.SERVICE_CHARGE_SELL}
+                    onChange={(e) => setSettings({ ...settings, SERVICE_CHARGE_SELL: e.target.value })}
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-7 pr-3 py-2 font-bold text-xs outline-emerald-500"
+                    placeholder="0"
+                  />
+                </div>
+                <button
+                  onClick={() => handleSaveSetting('SERVICE_CHARGE_SELL', settings.SERVICE_CHARGE_SELL || '0', 'PRICING')}
+                  className="px-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Save size={13} />
+                </button>
+              </div>
+            </div>
+            <div className="text-[10px] text-slate-500 font-semibold bg-white p-2 rounded-lg border border-slate-200">
+              Customer pays: <strong className="text-slate-900 font-bold">₹{settings.SERVICE_CHARGE_SELL || '0'}</strong>
+            </div>
+          </div>
+
+          {/* 3. Forex Card */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-black">
+                <CreditCard size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-900 block">Forex Card</span>
+                <span className="text-[10px] text-slate-500 font-medium">Multi-Currency Card</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] text-slate-600 uppercase font-bold block mb-1">Service Fee (₹)</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={settings.SERVICE_CHARGE_CARD}
+                    onChange={(e) => setSettings({ ...settings, SERVICE_CHARGE_CARD: e.target.value })}
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-7 pr-3 py-2 font-bold text-xs outline-sky-500"
+                    placeholder="0"
+                  />
+                </div>
+                <button
+                  onClick={() => handleSaveSetting('SERVICE_CHARGE_CARD', settings.SERVICE_CHARGE_CARD || '0', 'PRICING')}
+                  className="px-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Save size={13} />
+                </button>
+              </div>
+            </div>
+            <div className="text-[10px] text-slate-500 font-semibold bg-white p-2 rounded-lg border border-slate-200">
+              Customer pays: <strong className="text-slate-900 font-bold">₹{settings.SERVICE_CHARGE_CARD || '0'}</strong>
+            </div>
+          </div>
+
+          {/* 4. Remittance */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">
+                <Send size={16} />
+              </div>
+              <div>
+                <span className="text-xs font-black text-slate-900 block">Remittance</span>
+                <span className="text-[10px] text-slate-500 font-medium">International Wire</span>
+              </div>
+            </div>
+            <div>
+              <label className="text-[11px] text-slate-600 uppercase font-bold block mb-1">Service Fee (₹)</label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={settings.SERVICE_CHARGE_REMITTANCE}
+                    onChange={(e) => setSettings({ ...settings, SERVICE_CHARGE_REMITTANCE: e.target.value })}
+                    className="w-full bg-white border border-slate-300 rounded-xl pl-7 pr-3 py-2 font-bold text-xs outline-purple-500"
+                    placeholder="0"
+                  />
+                </div>
+                <button
+                  onClick={() => handleSaveSetting('SERVICE_CHARGE_REMITTANCE', settings.SERVICE_CHARGE_REMITTANCE || '0', 'PRICING')}
+                  className="px-3 bg-slate-900 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Save size={13} />
+                </button>
+              </div>
+            </div>
+            <div className="text-[10px] text-slate-500 font-semibold bg-white p-2 rounded-lg border border-slate-200">
+              Customer pays: <strong className="text-slate-900 font-bold">₹{settings.SERVICE_CHARGE_REMITTANCE || '0'}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* System Configurations Section */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">

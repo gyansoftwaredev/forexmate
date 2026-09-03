@@ -64,4 +64,11 @@ export class PublicController {
   getProducts() {
     return this.publicService.getProducts();
   }
+
+  @Get('service-charges')
+  @ApiOperation({ summary: 'Get current product service charges configured by Admin' })
+  @ApiResponse({ status: 200, description: 'Service charges returned' })
+  getServiceCharges() {
+    return this.publicService.getServiceCharges();
+  }
 }

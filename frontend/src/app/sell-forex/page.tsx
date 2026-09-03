@@ -8,7 +8,7 @@ import { RefreshCw, Truck, ShieldCheck } from 'lucide-react';
 
 export default function SellForexPage() {
   return (
-    <div className="min-h-screen font-sans text-slate-100 flex flex-col relative bg-[#070a10] overflow-x-hidden">
+    <div className="min-h-screen font-sans text-slate-100 flex flex-col relative bg-[#070a10]">
       
       {/* Background Travel Image with Neutral Smoked Twilight Overlay */}
       <div 

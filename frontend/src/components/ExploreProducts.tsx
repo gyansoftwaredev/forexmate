@@ -196,7 +196,7 @@ export default function ExploreProducts() {
 
           <div className="p-6 pt-0">
             <Link 
-              href="/transfer-money" 
+              href="/remittance" 
               className="w-full bg-slate-900 hover:bg-amber-600 text-white font-extrabold text-xs py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
             >
               <span>Send Money Abroad</span>
