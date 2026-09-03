@@ -938,11 +938,12 @@ export function ProductCalculatorStep() {
 
               <button
                 type="button"
-                onClick={() => {
-                  const el = document.getElementById('offers-card');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold text-slate-300 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-3.5 cursor-pointer text-left"
+                onClick={() => router.push('/offers')}
+                className={`w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold transition-all flex items-center gap-3.5 cursor-pointer text-left ${
+                  pathname === '/offers'
+                    ? 'bg-amber-500/10 border border-amber-500/50 text-amber-400 shadow-sm shadow-amber-500/15'
+                    : 'text-slate-300 hover:text-white hover:bg-white/[0.07]'
+                }`}
               >
                 <Tag className="w-5 h-5 text-slate-400 shrink-0" />
                 <span>Offers</span>
