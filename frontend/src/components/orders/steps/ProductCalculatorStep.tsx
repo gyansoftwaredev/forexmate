@@ -703,90 +703,60 @@ export function ProductCalculatorStep() {
       {/* Main Wide Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start">
         
-        {/* LEFT COLUMN: Floating Glass Navigation Sidebar (Popped from left edge) */}
+        {/* LEFT COLUMN: Floating Glass Navigation Sidebar (Popped from left edge with bigger texts & generous spacing) */}
         <div className="lg:col-span-2 xl:col-span-2 space-y-4">
-          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-3.5 shadow-2xl space-y-1.5">
-            <div className="px-3.5 py-2 text-[10px] font-extrabold uppercase tracking-widest text-slate-400">
-              Menu
-            </div>
+          <div className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-5 lg:p-6 shadow-2xl flex flex-col justify-between min-h-[620px]">
+            <div className="space-y-4 lg:space-y-5">
+              <button
+                type="button"
+                onClick={() => router.push('/dashboard')}
+                className="w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold text-slate-300 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-3.5 cursor-pointer text-left"
+              >
+                <LayoutDashboard className="w-5 h-5 text-slate-400 shrink-0" />
+                <span>Dashboard</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => router.push('/dashboard')}
-              className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
-            >
-              <LayoutDashboard className="w-4 h-4 text-slate-400 shrink-0" />
-              <span>Dashboard</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => handleTabSwitch('CASH')}
+                className={`w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold transition-all flex items-center gap-3.5 cursor-pointer text-left ${
+                  product === 'CASH'
+                    ? 'bg-amber-500/10 border border-amber-500/50 text-amber-400 shadow-sm shadow-amber-500/15'
+                    : 'text-slate-300 hover:text-white hover:bg-white/[0.07]'
+                }`}
+              >
+                <Banknote className="w-5 h-5 shrink-0" />
+                <span>Buy Forex</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => handleTabSwitch('CASH')}
-              className={`w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                product === 'CASH'
-                  ? 'bg-gradient-to-r from-amber-500/25 to-amber-500/5 border border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/10'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <Banknote className="w-4 h-4 shrink-0" />
-              <span>Buy Forex</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => handleTabSwitch('CASH_SELL')}
+                className={`w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold transition-all flex items-center gap-3.5 cursor-pointer text-left ${
+                  product === 'CASH_SELL'
+                    ? 'bg-amber-500/10 border border-amber-500/50 text-amber-400 shadow-sm shadow-amber-500/15'
+                    : 'text-slate-300 hover:text-white hover:bg-white/[0.07]'
+                }`}
+              >
+                <ArrowLeftRight className="w-5 h-5 shrink-0" />
+                <span>Sell Forex</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => handleTabSwitch('CARD')}
-              className={`w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                product === 'CARD'
-                  ? 'bg-gradient-to-r from-amber-500/25 to-amber-500/5 border border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/10'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <CreditCard className="w-4 h-4 shrink-0" />
-              <span>Forex Card</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSwitch('REMITTANCE')}
-              className={`w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                product === 'REMITTANCE'
-                  ? 'bg-gradient-to-r from-amber-500/25 to-amber-500/5 border border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/10'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <Send className="w-4 h-4 shrink-0" />
-              <span>Send Remittance</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleTabSwitch('CASH_SELL')}
-              className={`w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all flex items-center gap-3 cursor-pointer text-left ${
-                product === 'CASH_SELL'
-                  ? 'bg-gradient-to-r from-amber-500/25 to-amber-500/5 border border-amber-500/40 text-amber-400 shadow-sm shadow-amber-500/10'
-                  : 'text-slate-300 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              <ArrowLeftRight className="w-4 h-4 shrink-0" />
-              <span>Sell Forex</span>
-            </button>
-
-            <div className="pt-3 pb-1 border-t border-white/10 mt-2 space-y-1">
               <button
                 type="button"
                 onClick={() => router.push('/dashboard/orders')}
-                className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+                className="w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold text-slate-300 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-3.5 cursor-pointer text-left"
               >
-                <ClipboardList className="w-4 h-4 text-slate-400 shrink-0" />
+                <ClipboardList className="w-5 h-5 text-slate-400 shrink-0" />
                 <span>Orders</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => router.push('/dashboard/beneficiaries')}
-                className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+                className="w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold text-slate-300 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-3.5 cursor-pointer text-left"
               >
-                <Users className="w-4 h-4 text-slate-400 shrink-0" />
+                <Users className="w-5 h-5 text-slate-400 shrink-0" />
                 <span>Beneficiaries</span>
               </button>
 
@@ -796,34 +766,38 @@ export function ProductCalculatorStep() {
                   const el = document.getElementById('offers-card');
                   el?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+                className="w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold text-slate-300 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-3.5 cursor-pointer text-left"
               >
-                <Tag className="w-4 h-4 text-slate-400 shrink-0" />
+                <Tag className="w-5 h-5 text-slate-400 shrink-0" />
                 <span>Offers</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => router.push('/support')}
-                className="w-full px-3.5 py-3 rounded-2xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-white/10 transition-all flex items-center gap-3 cursor-pointer text-left"
+                className="w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold text-slate-300 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-3.5 cursor-pointer text-left"
               >
-                <Headphones className="w-4 h-4 text-slate-400 shrink-0" />
+                <Headphones className="w-5 h-5 text-slate-400 shrink-0" />
                 <span>Support</span>
               </button>
             </div>
 
-            {user && (
-              <div className="pt-2 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => logout()}
-                  className="w-full px-3.5 py-2.5 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-950/40 transition-all flex items-center gap-3 cursor-pointer text-left"
-                >
-                  <LogOut className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            )}
+            <div className="pt-4 border-t border-white/[0.08] mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (user) {
+                    logout();
+                  } else {
+                    setShowAuthModal(true);
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 transition-all flex items-center gap-3.5 cursor-pointer text-left"
+              >
+                <LogOut className="w-5 h-5 text-slate-400 shrink-0" />
+                <span>{user ? 'Logout' : 'Sign In'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -831,10 +805,10 @@ export function ProductCalculatorStep() {
         <div className="lg:col-span-6 xl:col-span-6 space-y-6">
           
           {/* Card 1: Amount & Currency (Enlarged & Spacious) */}
-          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl relative overflow-hidden space-y-6">
+          <div className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-6 sm:p-7 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] relative overflow-hidden space-y-6">
             {/* Header / Stepper Number */}
             <div className="flex items-center gap-3.5">
-              <div className="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-400 font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
+              <div className="w-8 h-8 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-400 font-black text-sm flex items-center justify-center shrink-0 shadow-sm">
                 1
               </div>
               <div>
@@ -850,7 +824,7 @@ export function ProductCalculatorStep() {
             {/* Dual Hero Panels: You Pay & Live Interbank Rate */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
               {/* You Pay Display Box */}
-              <div className="bg-slate-800/40 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-1.5 flex flex-col justify-between shadow-inner">
+              <div className="bg-[#121926]/45 border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-1.5 flex flex-col justify-between shadow-inner">
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                   {isSell ? 'You Handover (INR Value)' : 'You Pay'}
                 </div>
@@ -864,13 +838,13 @@ export function ProductCalculatorStep() {
               </div>
 
               {/* Live Rate Display Box */}
-              <div className="bg-slate-800/40 border border-white/10 rounded-2xl p-5 sm:p-6 space-y-2 flex flex-col justify-between shadow-inner">
+              <div className="bg-[#121926]/45 border border-white/[0.07] rounded-2xl p-5 sm:p-6 space-y-2 flex flex-col justify-between shadow-inner">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Live Interbank Rate
                   </span>
-                  <span className="bg-cyan-950/60 border border-cyan-500/30 text-cyan-400 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                  <span className="bg-sky-950/60 border border-sky-500/30 text-sky-300 text-[10px] font-black px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span>
                     <span>LIVE</span>
                   </span>
                 </div>
@@ -879,7 +853,7 @@ export function ProductCalculatorStep() {
                   <span className="text-xl sm:text-2xl font-black text-white font-mono">
                     1 {currency} = ₹{adjustedRate?.toFixed(2) || '0.00'}
                   </span>
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                  <span className="text-xs font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/20 px-2 py-0.5 rounded-md font-mono">
                     +0.12 (0.14%)
                   </span>
                 </div>
@@ -921,10 +895,10 @@ export function ProductCalculatorStep() {
                       }
                     }}
                     placeholder="1000.00"
-                    className="w-full bg-slate-900/70 border border-white/15 rounded-xl px-4 py-3.5 pr-16 text-base font-black text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-mono shadow-inner"
+                    className="w-full bg-[#101724]/70 border border-white/[0.09] rounded-xl px-4 py-3.5 pr-16 text-base font-black text-white placeholder:text-slate-500 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all font-mono shadow-inner"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                    <span className="text-xs font-black text-slate-300 bg-slate-800 px-2.5 py-1 rounded-md border border-white/10">
+                    <span className="text-xs font-black text-slate-300 bg-white/[0.08] px-2.5 py-1 rounded-md border border-white/[0.08]">
                       {currency}
                     </span>
                     <button
@@ -952,7 +926,7 @@ export function ProductCalculatorStep() {
                 </div>
                 <div className="flex justify-between items-center text-xs text-slate-400 mt-1.5 px-0.5">
                   <span>Rate: 1 {currency} = ₹{adjustedRate?.toFixed(2)}</span>
-                  <span className="text-cyan-400 font-bold font-mono">
+                  <span className="text-amber-400 font-bold font-mono">
                     Forex Value: ₹{inrEquivalent ? inrEquivalent.toLocaleString('en-IN') : '0.00'}
                   </span>
                 </div>
@@ -961,11 +935,11 @@ export function ProductCalculatorStep() {
 
             {/* Additional Currencies Rows */}
             {extraCurrenciesCalculated.map((c, idx) => (
-              <div key={idx} className="bg-slate-800/50 border border-white/10 rounded-2xl p-4 flex items-center justify-between text-xs sm:text-sm">
+              <div key={idx} className="bg-[#121926]/45 border border-white/[0.07] rounded-2xl p-4 flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-3 flex-wrap">
                   <span className="font-bold text-white">{getCurrencyName(c.currency)}</span>
-                  <span className="text-slate-300 bg-slate-900/80 px-3 py-1 rounded-lg border border-white/10 font-mono">
-                    {c.amount} {c.currency} = <strong className="text-cyan-400">₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}</strong>
+                  <span className="text-slate-300 bg-[#0c121d]/80 px-3 py-1 rounded-lg border border-white/[0.08] font-mono">
+                    {c.amount} {c.currency} = <strong className="text-amber-400">₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}</strong>
                   </span>
                   <span className="text-slate-400 font-mono text-xs">@ ₹{c.rate.toFixed(2)}</span>
                 </div>
@@ -985,7 +959,7 @@ export function ProductCalculatorStep() {
                 <button
                   type="button"
                   onClick={() => setShowAddCurrencyModal(true)}
-                  className="text-cyan-400 hover:text-cyan-300 text-xs sm:text-sm font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                  className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm font-bold flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <span>+ Add Another Currency</span>
                 </button>
@@ -994,13 +968,13 @@ export function ProductCalculatorStep() {
           </div>
 
           {/* Card 2: Fulfillment Method & Travel Details (Enlarged & Spacious) */}
-          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-6">
+          <div className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-6 sm:p-7 shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] space-y-6">
             
             {/* Stepper Tabs Bar */}
-            <div className="flex flex-wrap items-center gap-2.5 border-b border-white/10 pb-5">
+            <div className="flex flex-wrap items-center gap-2.5 border-b border-white/[0.08] pb-5">
               <button
                 type="button"
-                className="px-5 py-2 rounded-full text-xs sm:text-sm font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-400/30 flex items-center gap-2 shadow-xs cursor-pointer"
+                className="px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold bg-sky-500/20 text-sky-300 border border-sky-400/35 flex items-center gap-2 shadow-xs cursor-pointer"
               >
                 <Package className="w-4 h-4" />
                 <span>1 Fulfillment Method</span>
@@ -1008,7 +982,7 @@ export function ProductCalculatorStep() {
 
               <button
                 type="button"
-                className="px-5 py-2 rounded-full text-xs sm:text-sm font-semibold text-slate-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
+                className="px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-slate-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
               >
                 <Plane className="w-4 h-4" />
                 <span>2 Travel Details</span>
@@ -1016,7 +990,7 @@ export function ProductCalculatorStep() {
 
               <button
                 type="button"
-                className="px-5 py-2 rounded-full text-xs sm:text-sm font-semibold text-slate-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
+                className="px-5 py-2.5 rounded-full text-xs sm:text-sm font-semibold text-slate-400 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
               >
                 <Receipt className="w-4 h-4" />
                 <span>3 Review & Pay</span>
@@ -1024,25 +998,25 @@ export function ProductCalculatorStep() {
             </div>
 
             {/* Top Doorstep Delivery Ribbon */}
-            <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-medium text-slate-300 bg-slate-800/40 p-4 rounded-2xl border border-white/5">
+            <div className="flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-medium text-slate-300 bg-[#121926]/40 p-4 rounded-2xl border border-white/[0.06]">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="flex h-2.5 w-2.5 relative shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                 </span>
                 <span>Guaranteed delivery by</span>
-                <span className="font-bold text-white bg-slate-800 px-3 py-1 rounded-lg border border-white/10 text-xs font-mono">
+                <span className="font-bold text-white bg-white/[0.06] px-3 py-1 rounded-lg border border-white/[0.08] text-xs font-mono">
                   {deliveryDay}, 9:00 PM
                 </span>
                 <span>to</span>
                 <button
                   type="button"
                   onClick={() => setIsCityModalOpen(true)}
-                  className="font-bold text-cyan-400 hover:text-cyan-300 bg-slate-900/80 hover:bg-slate-900 px-3 py-1 rounded-lg border border-cyan-500/30 transition-all flex items-center gap-1.5 cursor-pointer text-xs"
+                  className="font-bold text-sky-300 hover:text-sky-200 bg-[#0c121d]/80 hover:bg-[#0c121d] px-3 py-1 rounded-lg border border-sky-500/30 transition-all flex items-center gap-1.5 cursor-pointer text-xs"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                  <MapPin className="w-3.5 h-3.5 text-sky-400" />
                   <span>{selectedCity}</span>
-                  <ChevronDown className="w-3.5 h-3.5 text-cyan-400" />
+                  <ChevronDown className="w-3.5 h-3.5 text-sky-400" />
                 </button>
               </div>
               <button
@@ -1063,15 +1037,15 @@ export function ProductCalculatorStep() {
                   {hasBranchesInCity ? (
                     <div
                       onClick={() => updateDraft({ deliveryMethod: 'PICKUP', branchId: availableCityBranches[0]?.id })}
-                      className={`border p-5 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
+                      className={`border-2 p-5 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
                         deliveryMethod === 'PICKUP'
-                          ? 'border-cyan-400 bg-cyan-950/30 ring-1 ring-cyan-500/40 shadow-lg shadow-cyan-500/10'
-                          : 'border-white/10 bg-slate-800/30 hover:border-white/20 hover:bg-slate-800/50'
+                          ? 'border-sky-500/70 bg-sky-950/25 ring-1 ring-sky-500/30 shadow-[0_0_20px_rgba(14,165,233,0.12)]'
+                          : 'border-white/[0.08] bg-[#121926]/40 hover:border-white/[0.16] hover:bg-[#121926]/60'
                       }`}
                     >
                       <div className="flex items-start gap-3.5">
                         <div className={`p-2.5 rounded-xl border ${
-                          deliveryMethod === 'PICKUP' ? 'bg-cyan-500/20 border-cyan-400/40 text-cyan-400' : 'bg-slate-800 border-white/10 text-slate-400'
+                          deliveryMethod === 'PICKUP' ? 'bg-sky-500/20 border-sky-400/40 text-sky-400' : 'bg-white/[0.06] border-white/[0.08] text-slate-400'
                         }`}>
                           <Building2 className="w-5 h-5" />
                         </div>
@@ -1086,17 +1060,17 @@ export function ProductCalculatorStep() {
                       </div>
 
                       {deliveryMethod === 'PICKUP' && (
-                        <div className="w-5 h-5 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
+                        <div className="w-5 h-5 rounded-full bg-sky-400 text-slate-950 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
                           ✓
                         </div>
                       )}
                     </div>
                   ) : (
                     <div
-                      className="border border-dashed border-white/10 bg-slate-900/30 p-5 rounded-2xl cursor-not-allowed opacity-50 select-none flex items-start gap-3.5"
+                      className="border border-dashed border-white/[0.08] bg-[#0c121d]/30 p-5 rounded-2xl cursor-not-allowed opacity-50 select-none flex items-start gap-3.5"
                       title={`No branches in ${selectedCity}`}
                     >
-                      <div className="p-2.5 rounded-xl bg-slate-800 border border-white/10 text-slate-500">
+                      <div className="p-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-slate-500">
                         <Building2 className="w-5 h-5" />
                       </div>
                       <div>
@@ -1109,15 +1083,15 @@ export function ProductCalculatorStep() {
                   {/* Home Delivery */}
                   <div
                     onClick={() => updateDraft({ deliveryMethod: 'HOME_DELIVERY' })}
-                    className={`border p-5 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
+                    className={`border-2 p-5 rounded-2xl cursor-pointer transition-all flex items-start justify-between relative ${
                       deliveryMethod === 'HOME_DELIVERY'
-                        ? 'border-cyan-400 bg-cyan-950/30 ring-1 ring-cyan-500/40 shadow-lg shadow-cyan-500/10'
-                        : 'border-white/10 bg-slate-800/30 hover:border-white/20 hover:bg-slate-800/50'
+                        ? 'border-sky-500/70 bg-sky-950/25 ring-1 ring-sky-500/30 shadow-[0_0_20px_rgba(14,165,233,0.12)]'
+                        : 'border-white/[0.08] bg-[#121926]/40 hover:border-white/[0.16] hover:bg-[#121926]/60'
                     }`}
                   >
                     <div className="flex items-start gap-3.5">
                       <div className={`p-2.5 rounded-xl border ${
-                        deliveryMethod === 'HOME_DELIVERY' ? 'bg-cyan-500/20 border-cyan-400/40 text-cyan-400' : 'bg-slate-800 border-white/10 text-slate-400'
+                        deliveryMethod === 'HOME_DELIVERY' ? 'bg-sky-500/20 border-sky-400/40 text-sky-400' : 'bg-white/[0.06] border-white/[0.08] text-slate-400'
                       }`}>
                         <Truck className="w-5 h-5" />
                       </div>
@@ -1132,7 +1106,7 @@ export function ProductCalculatorStep() {
                     </div>
 
                     {deliveryMethod === 'HOME_DELIVERY' && (
-                      <div className="w-5 h-5 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
+                      <div className="w-5 h-5 rounded-full bg-sky-400 text-slate-950 flex items-center justify-center font-bold text-xs shrink-0 ml-2">
                         ✓
                       </div>
                     )}
@@ -1141,7 +1115,7 @@ export function ProductCalculatorStep() {
 
                 {/* Branch Dropdown selector if Pickup */}
                 {deliveryMethod === 'PICKUP' && hasBranchesInCity && (
-                  <div className="bg-slate-800/40 border border-white/10 rounded-2xl p-4 sm:p-5 space-y-2">
+                  <div className="bg-[#121926]/45 border border-white/[0.07] rounded-2xl p-4 sm:p-5 space-y-2">
                     <label className="block text-xs font-bold text-slate-300">
                       Select Pickup Branch in {selectedCity}
                     </label>
@@ -1149,10 +1123,10 @@ export function ProductCalculatorStep() {
                       <select
                         value={branchId}
                         onChange={(e) => updateDraft({ branchId: e.target.value })}
-                        className="w-full bg-slate-900 border border-white/10 rounded-xl p-3.5 pr-10 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-cyan-500 appearance-none cursor-pointer"
+                        className="w-full bg-[#101724]/85 border border-white/[0.09] rounded-xl p-3.5 pr-10 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500 appearance-none cursor-pointer"
                       >
                         {availableCityBranches.map((b) => (
-                          <option key={b.id} value={b.id} className="bg-slate-900 text-white">
+                          <option key={b.id} value={b.id} className="bg-[#0d131f] text-white">
                             {b.name} ({getBranchCityName(b) || selectedCity}) - {b.address}
                           </option>
                         ))}
@@ -1164,9 +1138,9 @@ export function ProductCalculatorStep() {
               </div>
             )}
 
-            {/* Travel Details Form */}
+                {/* Travel Details Form */}
             {!isSell && (
-              <div className="space-y-4 pt-4 border-t border-white/10">
+              <div className="space-y-4 pt-4 border-t border-white/[0.08]">
                 <div className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
                   Travel Details
                 </div>
@@ -1178,7 +1152,7 @@ export function ProductCalculatorStep() {
                   </label>
                   <div className="flex flex-wrap gap-2.5 items-center">
                     {destination && (
-                      <div className="flex items-center bg-cyan-950/60 border border-cyan-500/40 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-cyan-300 shadow-sm">
+                      <div className="flex items-center bg-sky-950/40 border border-sky-500/30 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-sky-300 shadow-sm">
                         <span>{destination}</span>
                         <button
                           type="button"
@@ -1201,7 +1175,7 @@ export function ProductCalculatorStep() {
                     )}
 
                     {extraCountries.map((c, idx) => (
-                      <div key={idx} className="flex items-center bg-slate-800 border border-white/10 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300">
+                      <div key={idx} className="flex items-center bg-[#121926]/60 border border-white/[0.08] px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300">
                         <span>{c}</span>
                         <button
                           type="button"
@@ -1218,11 +1192,11 @@ export function ProductCalculatorStep() {
                       <select
                         value={destination}
                         onChange={(e) => updateDraft({ destination: e.target.value })}
-                        className="bg-slate-900 border border-white/10 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold text-white focus:border-cyan-500 outline-none max-w-xs cursor-pointer"
+                        className="bg-[#101724]/85 border border-white/[0.09] rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold text-white focus:border-sky-500 outline-none max-w-xs cursor-pointer"
                       >
-                        <option value="" className="bg-slate-900 text-white">Select Country</option>
+                        <option value="" className="bg-[#0d131f] text-white">Select Country</option>
                         {DESTINATION_COUNTRIES.map((c) => (
-                          <option key={c.code} value={c.name} className="bg-slate-900 text-white">
+                          <option key={c.code} value={c.name} className="bg-[#0d131f] text-white">
                             {c.name}
                           </option>
                         ))}
@@ -1233,7 +1207,7 @@ export function ProductCalculatorStep() {
                       <button
                         type="button"
                         onClick={() => setShowAddCountryModal(true)}
-                        className="border border-white/10 hover:border-cyan-500 rounded-xl px-4 py-2 text-xs font-bold text-cyan-400 hover:bg-cyan-950/30 uppercase tracking-wider transition-all cursor-pointer"
+                        className="border border-white/[0.12] hover:border-amber-400/60 rounded-xl px-4 py-2 text-xs font-bold text-amber-400 hover:bg-amber-500/10 uppercase tracking-wider transition-all cursor-pointer"
                       >
                         + Add Country
                       </button>
@@ -1251,7 +1225,7 @@ export function ProductCalculatorStep() {
                       max={maxTravelDateStr}
                       value={departureDate}
                       onChange={(e) => handleDepartureDateChange(e.target.value)}
-                      className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-cyan-500"
+                      className="w-full bg-[#101724]/85 border border-white/[0.09] rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500"
                     />
                   </div>
 
@@ -1263,7 +1237,7 @@ export function ProductCalculatorStep() {
                         min={departureDate || todayStr}
                         value={returnDate}
                         onChange={(e) => updateDraft({ returnDate: e.target.value })}
-                        className="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-cyan-500"
+                        className="w-full bg-[#101724]/85 border border-white/[0.09] rounded-xl p-3 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500"
                       />
                     </div>
                   )}
@@ -1275,15 +1249,15 @@ export function ProductCalculatorStep() {
                   <select
                     value={purpose}
                     onChange={(e) => updateDraft({ purpose: e.target.value })}
-                    className="w-full bg-slate-900 border border-white/10 rounded-xl p-3.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                    className="w-full bg-[#101724]/85 border border-white/[0.09] rounded-xl p-3.5 text-xs sm:text-sm font-bold text-white focus:outline-none focus:border-sky-500 cursor-pointer"
                   >
-                    <option value="" className="bg-slate-900 text-white">Select Purpose</option>
-                    <option value="HOLIDAY" className="bg-slate-900 text-white">Holiday / Leisure Travel</option>
-                    <option value="BUSINESS" className="bg-slate-900 text-white">Business Travel</option>
-                    <option value="EDUCATION" className="bg-slate-900 text-white">Higher Studies Overseas</option>
-                    <option value="MEDICAL" className="bg-slate-900 text-white">Medical Treatment</option>
-                    <option value="EMPLOYMENT" className="bg-slate-900 text-white">Employment Abroad</option>
-                    <option value="EMIGRATION" className="bg-slate-900 text-white">Emigration</option>
+                    <option value="" className="bg-[#0d131f] text-white">Select Purpose</option>
+                    <option value="HOLIDAY" className="bg-[#0d131f] text-white">Holiday / Leisure Travel</option>
+                    <option value="BUSINESS" className="bg-[#0d131f] text-white">Business Travel</option>
+                    <option value="EDUCATION" className="bg-[#0d131f] text-white">Higher Studies Overseas</option>
+                    <option value="MEDICAL" className="bg-[#0d131f] text-white">Medical Treatment</option>
+                    <option value="EMPLOYMENT" className="bg-[#0d131f] text-white">Employment Abroad</option>
+                    <option value="EMIGRATION" className="bg-[#0d131f] text-white">Emigration</option>
                   </select>
                 </div>
               </div>
@@ -1291,9 +1265,9 @@ export function ProductCalculatorStep() {
           </div>
 
           {/* Sticky Bottom Action Capsule (Wide & Prominent) */}
-          <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-wrap items-center justify-between gap-4 sticky bottom-4 z-40">
+          <div className="bg-[#0a0e17]/85 backdrop-blur-2xl border border-white/[0.09] rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-wrap items-center justify-between gap-4 sticky bottom-4 z-40">
             {/* Live Rate Lock Countdown Clock */}
-            <div className="flex items-center gap-3.5 bg-slate-950/70 border border-white/10 px-5 py-3 rounded-2xl shadow-inner">
+            <div className="flex items-center gap-3.5 bg-[#060910]/75 border border-white/[0.08] px-5 py-3 rounded-2xl shadow-inner">
               <Lock className="w-4 h-4 text-amber-400" />
               <div className="text-xs sm:text-sm font-bold text-slate-300">
                 <span>Rate Locked For: </span>
@@ -1315,7 +1289,7 @@ export function ProductCalculatorStep() {
                 (deliveryMethod === 'PICKUP' && !branchId) ||
                 (deliveryMethod === 'HOME_DELIVERY' && totalCurrencyInrValue < 25000)
               }
-              className="flex-1 sm:flex-none px-10 py-4 rounded-2xl font-black text-sm sm:text-base bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-xl shadow-amber-500/30 transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
+              className="flex-1 sm:flex-none px-10 py-4 rounded-2xl font-black text-sm sm:text-base bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-xl shadow-amber-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
             >
               <Lock className="w-4 h-4" />
               <span>{isLocking ? 'LOCKING RATE...' : 'LOCK RATE & CONTINUE'}</span>
@@ -1337,8 +1311,8 @@ export function ProductCalculatorStep() {
         <div className="lg:col-span-4 xl:col-span-4 space-y-6">
           
           {/* Card 1: Order Summary */}
-          <div className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
               <div className="flex items-center gap-2.5">
                 <Receipt className="w-5 h-5 text-amber-400" />
                 <h3 className="font-black text-base text-white">Order Summary</h3>
@@ -1358,7 +1332,7 @@ export function ProductCalculatorStep() {
               </div>
 
               {extraCurrenciesCalculated.map((c, idx) => (
-                <div key={idx} className="flex justify-between items-center text-xs text-cyan-400 pl-2">
+                <div key={idx} className="flex justify-between items-center text-xs text-amber-400/90 pl-2">
                   <span>{c.amount} {c.currency} @ ₹{c.rate.toFixed(2)}</span>
                   <span className="font-mono">₹ {Math.round(c.inrEquivalent).toLocaleString('en-IN')}.00</span>
                 </div>
@@ -1391,7 +1365,7 @@ export function ProductCalculatorStep() {
               )}
 
               {/* Glowing Golden Total Payable */}
-              <div className="pt-4 border-t border-white/10 space-y-1.5">
+              <div className="pt-4 border-t border-white/[0.08] space-y-1.5">
                 <div className="flex justify-between items-baseline">
                   <div>
                     <span className="text-white font-black block text-sm">
@@ -1408,7 +1382,7 @@ export function ProductCalculatorStep() {
               </div>
             </div>
 
-            <div className="bg-slate-800/50 p-3.5 rounded-2xl text-center border border-white/5">
+            <div className="bg-[#121926]/45 p-3.5 rounded-2xl text-center border border-white/[0.06]">
               <span className="text-xs sm:text-sm text-emerald-400 font-bold flex items-center justify-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
                 {getEligibilityMessage()}
@@ -1417,8 +1391,8 @@ export function ProductCalculatorStep() {
           </div>
 
           {/* Card 2: Offers & Coupons Vault */}
-          <div id="offers-card" className="bg-slate-900/60 backdrop-blur-2xl border border-white/10 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div id="offers-card" className="bg-[#0c121d]/55 backdrop-blur-2xl border border-white/[0.08] rounded-3xl p-6 sm:p-7 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
               <div className="flex items-center gap-2.5">
                 <Ticket className="w-5 h-5 text-amber-400" />
                 <h3 className="font-black text-base text-white">Offers & Coupons</h3>
@@ -1429,7 +1403,7 @@ export function ProductCalculatorStep() {
             </div>
 
             {/* Coupon input */}
-            <div className="flex items-center gap-2 bg-slate-950/70 border border-white/10 rounded-2xl p-2 focus-within:border-cyan-500 transition-all">
+            <div className="flex items-center gap-2 bg-[#090e18]/80 border border-white/[0.08] rounded-2xl p-2 focus-within:border-amber-500/60 transition-all">
               <input
                 type="text"
                 value={couponInput}
@@ -1475,14 +1449,14 @@ export function ProductCalculatorStep() {
                       isSelected
                         ? 'bg-amber-500/10 border-amber-400/60 ring-1 ring-amber-400/20'
                         : isEligible
-                          ? 'bg-slate-800/40 border-white/10 hover:border-white/20'
-                          : 'bg-slate-900/30 border-white/5 opacity-50'
+                          ? 'bg-[#121926]/45 border-white/[0.07] hover:border-white/[0.14]'
+                          : 'bg-[#0c121d]/30 border-white/[0.04] opacity-50'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono font-bold text-xs bg-slate-800 text-amber-300 px-2.5 py-0.5 rounded border border-amber-400/30">
+                          <span className="font-mono font-bold text-xs bg-white/[0.08] text-amber-300 px-2.5 py-0.5 rounded border border-amber-400/30">
                             {offer.code}
                           </span>
                           <span className="text-[10px] font-bold text-emerald-400 uppercase">
@@ -1541,9 +1515,9 @@ export function ProductCalculatorStep() {
 
       {/* Add Currency Modal */}
       {showAddCurrencyModal && (
-        <div className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 text-white">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+        <div className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[#0d131f] border border-white/[0.12] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 text-white">
+            <div className="flex justify-between items-center border-b border-white/[0.08] pb-3">
               <h3 className="font-bold text-base text-white">+ Add Secondary Currency</h3>
               <button onClick={() => setShowAddCurrencyModal(false)} className="text-slate-400 hover:text-white font-bold cursor-pointer">✕</button>
             </div>
@@ -1569,7 +1543,7 @@ export function ProductCalculatorStep() {
                     const val = e.target.value;
                     if (val.length <= 7) setNewCurrencyAmount(val);
                   }}
-                  className="w-full bg-slate-950 border border-white/15 rounded-xl p-3 text-sm font-bold text-white focus:border-cyan-500 outline-none"
+                  className="w-full bg-[#080c14] border border-white/[0.09] rounded-xl p-3 text-sm font-bold text-white focus:border-amber-500/70 outline-none font-mono"
                   placeholder="500.00"
                 />
               </div>
@@ -1586,7 +1560,7 @@ export function ProductCalculatorStep() {
               >
                 Add Currency
               </Button>
-              <Button variant="outline" onClick={() => setShowAddCurrencyModal(false)} className="rounded-xl border-white/10 text-white hover:bg-white/10">
+              <Button variant="outline" onClick={() => setShowAddCurrencyModal(false)} className="rounded-xl border-white/[0.08] text-white hover:bg-white/[0.08]">
                 Cancel
               </Button>
             </div>
@@ -1596,9 +1570,9 @@ export function ProductCalculatorStep() {
 
       {/* Add Country Modal */}
       {showAddCountryModal && (
-        <div className="fixed inset-0 z-[99999] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-white/15 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 text-white">
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+        <div className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[#0d131f] border border-white/[0.12] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 text-white">
+            <div className="flex justify-between items-center border-b border-white/[0.08] pb-3">
               <h3 className="font-bold text-base text-white">+ Add Destination Country</h3>
               <button onClick={() => setShowAddCountryModal(false)} className="text-slate-400 hover:text-white font-bold cursor-pointer">✕</button>
             </div>
@@ -1607,10 +1581,10 @@ export function ProductCalculatorStep() {
               <select 
                 value={selectedExtraCountry}
                 onChange={(e) => setSelectedExtraCountry(e.target.value)}
-                className="w-full bg-slate-950 border border-white/15 rounded-xl p-3 text-sm font-bold text-white focus:border-cyan-500 outline-none cursor-pointer"
+                className="w-full bg-[#080c14] border border-white/[0.09] rounded-xl p-3 text-sm font-bold text-white focus:border-amber-500/70 outline-none cursor-pointer"
               >
                 {DESTINATION_COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.name} className="bg-slate-900 text-white">
+                  <option key={c.code} value={c.name} className="bg-[#0d131f] text-white">
                     {c.name}
                   </option>
                 ))}
@@ -1632,7 +1606,7 @@ export function ProductCalculatorStep() {
               >
                 Add Destination
               </Button>
-              <Button variant="outline" onClick={() => setShowAddCountryModal(false)} className="rounded-xl border-white/10 text-white hover:bg-white/10">
+              <Button variant="outline" onClick={() => setShowAddCountryModal(false)} className="rounded-xl border-white/[0.08] text-white hover:bg-white/[0.08]">
                 Cancel
               </Button>
             </div>

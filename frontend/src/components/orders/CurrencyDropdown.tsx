@@ -112,8 +112,8 @@ export function CurrencyDropdown({
         className={`w-full border rounded-xl p-3 flex items-center justify-between transition-all cursor-pointer shadow-2xs text-left ${
           darkMode
             ? isOpen 
-              ? 'bg-slate-800/90 border-cyan-500 ring-2 ring-cyan-500/20 text-white' 
-              : 'bg-slate-900/60 hover:bg-slate-800/70 border-white/10 hover:border-white/20 text-white'
+              ? 'bg-[#151e2e]/90 border-cyan-500/70 ring-1 ring-cyan-500/30 text-white' 
+              : 'bg-[#101724]/75 hover:bg-[#151e2e]/85 border-white/[0.09] hover:border-white/[0.18] text-white'
             : isOpen
               ? 'bg-white border-amber-500 ring-2 ring-amber-500/20 shadow-md text-gray-900'
               : 'bg-white border-gray-200 hover:border-amber-400 hover:shadow-xs text-gray-900'
@@ -134,7 +134,7 @@ export function CurrencyDropdown({
 
         <div className={`p-1.5 rounded-lg border transition-transform duration-200 shrink-0 ml-2 ${
           darkMode 
-            ? isOpen ? 'rotate-180 text-cyan-400 bg-cyan-950/60 border-cyan-500/40' : 'text-slate-400 bg-slate-800/80 border-white/10'
+            ? isOpen ? 'rotate-180 text-cyan-400 bg-cyan-950/60 border-cyan-500/40' : 'text-slate-400 bg-white/[0.06] border-white/[0.08]'
             : isOpen ? 'rotate-180 text-amber-600 bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200 text-gray-400'
         }`}>
           <ChevronDown className="w-4 h-4" />
@@ -145,7 +145,7 @@ export function CurrencyDropdown({
       {isOpen && (
         <div className={`absolute left-0 right-0 top-full mt-2 rounded-2xl shadow-2xl z-[150] p-3 animate-in fade-in zoom-in-95 duration-150 border ${
           darkMode 
-            ? 'bg-slate-900/95 backdrop-blur-2xl border-white/15 text-white ring-1 ring-white/10' 
+            ? 'bg-[#0d131f]/95 backdrop-blur-2xl border-white/[0.12] text-white ring-1 ring-black/40' 
             : 'bg-white border-gray-200/90 text-gray-900 ring-1 ring-black/10'
         }`}>
           

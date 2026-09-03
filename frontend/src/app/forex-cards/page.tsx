@@ -8,13 +8,13 @@ import { CreditCard, ShieldCheck, Zap } from 'lucide-react';
 
 export default function ForexCardsPage() {
   return (
-    <div className="min-h-screen font-sans text-slate-900 flex flex-col relative bg-[#071426] overflow-x-hidden">
+    <div className="min-h-screen font-sans text-slate-100 flex flex-col relative bg-[#070a10] overflow-x-hidden">
       
-      {/* Background Travel Image Overlay */}
+      {/* Background Travel Image with Neutral Smoked Twilight Overlay */}
       <div 
         className="fixed inset-0 bg-cover bg-center pointer-events-none z-0"
         style={{ 
-          backgroundImage: `linear-gradient(to bottom, rgba(7, 20, 38, 0.85) 0%, rgba(13, 27, 42, 0.70) 50%, rgba(7, 20, 38, 0.95) 100%), url('/full_travel_bg.png')` 
+          backgroundImage: `linear-gradient(to bottom, rgba(7, 10, 16, 0.45) 0%, rgba(9, 13, 22, 0.55) 50%, rgba(7, 10, 16, 0.80) 100%), url('/full_travel_bg.png')` 
         }}
       />
 
