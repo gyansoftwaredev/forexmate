@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  NotFoundException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -298,7 +299,65 @@ export class AuthService {
     };
   }
 
-  // ─── Create Session & Tokens ──────────────────────────────────────────────
+  // ─── Login with Mobile OTP ────────────────────────────────────────────────
+  async loginWithMobileOtp(
+    mobile: string,
+    otpCode: string,
+    ip: string,
+    userAgent: string,
+  ) {
+    const cleanMobile = mobile.replace(/\D/g, '');
+
+    // Find the registered user by mobile number
+    const user = await this.prisma.user.findFirst({
+      where: { mobile: cleanMobile },
+      include: { roleRef: true, profiles: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        'No account found with this mobile number. Please sign up first.',
+      );
+    }
+
+    // Verify the OTP
+    await this.verifyOtp(cleanMobile, 'LOGIN', otpCode);
+
+    // Clear any failed attempts on successful OTP login
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { failedAttempts: 0, lockoutUntil: null },
+    });
+
+    // Create session & tokens
+    const sessionResult = await this.createSession(user.id, undefined, ip, userAgent, 'India', 'Mumbai');
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'USER_LOGIN_OTP',
+        entityName: 'UserSession',
+        entityId: sessionResult.sessionId,
+        ipAddress: ip,
+        userAgent,
+        newData: { method: 'MOBILE_OTP' },
+      },
+    });
+
+    return {
+      access_token: sessionResult.access_token,
+      refresh_token: sessionResult.refresh_token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        mobile: user.mobile,
+        pan: user.profiles?.panNumber || null,
+        role: user.roleRef?.name || 'CUSTOMER',
+      },
+    };
+  }
+
   private async createSession(
     userId: string,
     deviceId: string | undefined,
@@ -490,6 +549,21 @@ export class AuthService {
 
   // ─── OTP Lifecycle (Send & Verify) ─────────────────────────────────────────
   async sendOtp(recipient: string, purpose: string) {
+    // For LOGIN via mobile OTP: block OTP if the number is not registered
+    const isPhoneRecipient = !recipient.includes('@');
+    if (purpose === 'LOGIN' && isPhoneRecipient) {
+      const cleanMobile = recipient.replace(/\D/g, '');
+      const existingUser = await this.prisma.user.findFirst({
+        where: { mobile: cleanMobile },
+        select: { id: true },
+      });
+      if (!existingUser) {
+        throw new NotFoundException(
+          'No account found with this mobile number. Please sign up first.',
+        );
+      }
+    }
+
     // Check rate limit: 3 OTPs per minute per recipient
     const minuteAgo = new Date(Date.now() - 60 * 1000);
     const otpCount = await this.prisma.otpVerification.count({

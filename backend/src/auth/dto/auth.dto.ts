@@ -103,3 +103,15 @@ export class ResetPasswordDto {
   @MinLength(6)
   password: string;
 }
+
+export class MobileOtpLoginDto {
+  @ApiProperty({ example: '9999999999', description: 'Registered mobile number' })
+  @IsString()
+  @IsNotEmpty()
+  mobile: string;
+
+  @ApiProperty({ example: '123456', description: '6-digit OTP code' })
+  @IsString()
+  @IsNotEmpty()
+  code: string;
+}

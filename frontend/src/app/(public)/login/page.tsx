@@ -78,7 +78,12 @@ function CustomerLoginContent() {
 
     setIsLoading(true);
     try {
-      await new Promise(r => setTimeout(r, 600));
+      const res = await fetch(`${API_URL}/auth/otp/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient: cleanMobile, purpose: 'LOGIN' }),
+      });
+      await apiJson<any>(res);
       setOtpSent(true);
       setOtpTimer(30);
     } catch (err: any) {
@@ -145,21 +150,15 @@ function CustomerLoginContent() {
     setIsLoading(true);
     try {
       const cleanMobile = mobileNumber.replace(/\D/g, '');
-      const defaultName = regFullName.trim() || `Customer ${cleanMobile.slice(-4)}`;
-      const defaultEmail = regEmail.trim() || `user_${cleanMobile}@forexmate.in`;
+      const res = await fetch(`${API_URL}/auth/login/mobile-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ mobile: cleanMobile, code: fullOtp }),
+      });
+      const data = await apiJson<any>(res);
 
-      const userData = {
-        id: `user_otp_${Date.now()}`,
-        email: defaultEmail,
-        fullName: defaultName,
-        phone: `+91 ${cleanMobile}`,
-        mobile: cleanMobile,
-        role: 'CUSTOMER',
-      };
-
-      const mockToken = `jwt_otp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      login(mockToken, userData as any);
-
+      login(data.access_token, data.user);
       setSuccessMessage('Verified! Redirecting...');
       setIsSuccess(true);
       setTimeout(() => {

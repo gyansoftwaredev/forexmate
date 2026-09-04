@@ -33,7 +33,8 @@ import {
   SendOtpDto, 
   VerifyOtpDto, 
   RequestResetDto, 
-  ResetPasswordDto 
+  ResetPasswordDto,
+  MobileOtpLoginDto,
 } from './dto/auth.dto';
 
 @ApiTags('Authentication')
@@ -223,6 +224,26 @@ export class AuthController {
   @ApiOperation({ summary: 'Queue a 6-digit verification OTP' })
   async sendOtp(@Body() dto: SendOtpDto) {
     return this.authService.sendOtp(dto.recipient, dto.purpose);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('login/mobile-otp')
+  @ApiOperation({ summary: 'Login with mobile number + OTP (only for registered users)' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 404, description: 'Mobile number not registered' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired OTP' })
+  async loginWithMobileOtp(
+    @Body() dto: MobileOtpLoginDto,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+    @Res({ passthrough: true }) res: any,
+  ) {
+    const result = await this.authService.loginWithMobileOtp(dto.mobile, dto.code, ip, userAgent);
+    this.setRefreshCookie(res, result.refresh_token);
+    return {
+      access_token: result.access_token,
+      user: result.user,
+    };
   }
 
   @HttpCode(HttpStatus.OK)
