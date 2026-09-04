@@ -110,6 +110,28 @@ export const resolveDestinationCountryName = (input?: string, currencyCode?: str
   return input || '';
 };
 
+export const resolveCountryDefaultCurrency = (countryInput?: string): string | undefined => {
+  if (!countryInput) return undefined;
+  const clean = countryInput.trim().toLowerCase();
+  if (clean === 'us' || clean === 'usa' || clean.includes('united states') || clean.includes('america')) return 'USD';
+  if (clean === 'uk' || clean === 'gb' || clean.includes('united kingdom') || clean.includes('britain') || clean.includes('england')) return 'GBP';
+  if (clean === 'ca' || clean.includes('canada')) return 'CAD';
+  if (clean === 'au' || clean.includes('australia')) return 'AUD';
+  if (clean === 'de' || clean === 'eu' || clean.includes('germany') || clean.includes('schengen') || clean.includes('europe') || clean.includes('france') || clean.includes('italy') || clean.includes('spain')) return 'EUR';
+  if (clean === 'sg' || clean.includes('singapore')) return 'SGD';
+  if (clean === 'ae' || clean === 'uae' || clean.includes('emirates') || clean.includes('dubai')) return 'AED';
+  if (clean === 'ch' || clean.includes('switzerland')) return 'CHF';
+  if (clean === 'jp' || clean.includes('japan')) return 'JPY';
+  if (clean === 'th' || clean.includes('thailand')) return 'THB';
+  if (clean === 'nz' || clean.includes('new zealand')) return 'NZD';
+  if (clean === 'sa' || clean.includes('saudi')) return 'SAR';
+  if (clean === 'qa' || clean.includes('qatar')) return 'QAR';
+  if (clean === 'hk' || clean.includes('hong kong')) return 'HKD';
+  if (clean === 'my' || clean.includes('malaysia')) return 'MYR';
+  if (clean === 'za' || clean.includes('south africa')) return 'ZAR';
+  return undefined;
+};
+
 // Remittance Types
 interface TransferPurpose {
   code: string;
@@ -237,21 +259,37 @@ export function ProductCalculatorStep() {
       .catch(() => {});
   }, []);
 
-  // Rate Lock Timer (5 minute countdown)
-  const [timeLeft, setTimeLeft] = useState(299);
+  // Rate Lock Timer (5 minute countdown, shared across Step 1 and Checkout Engine)
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    if (draftState.rateLockExpiresAt) {
+      const diff = Math.floor((draftState.rateLockExpiresAt - Date.now()) / 1000);
+      if (diff > 0) return diff;
+    }
+    return 300;
+  });
+
+  useEffect(() => {
+    if (!draftState.rateLockExpiresAt || draftState.rateLockExpiresAt <= Date.now()) {
+      const newExpiry = Date.now() + 300 * 1000;
+      updateDraft({ rateLockExpiresAt: newExpiry });
+      setTimeLeft(300);
+    } else {
+      const diff = Math.max(0, Math.floor((draftState.rateLockExpiresAt - Date.now()) / 1000));
+      setTimeLeft(diff);
+    }
+  }, [draftState.rateLockExpiresAt]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
+      if (draftState.rateLockExpiresAt) {
+        const diff = Math.max(0, Math.floor((draftState.rateLockExpiresAt - Date.now()) / 1000));
+        setTimeLeft(diff);
+      } else {
+        setTimeLeft(prev => (prev > 0 ? prev - 1 : 0));
+      }
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [draftState.rateLockExpiresAt]);
 
   const formatMinutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
   const formatSeconds = String(timeLeft % 60).padStart(2, '0');
@@ -284,91 +322,108 @@ export function ProductCalculatorStep() {
     return () => clearInterval(interval);
   }, []);
 
+  const lastProcessedSearchRef = React.useRef<string | null>(null);
+
   // Initialize draft state from URL parameters
   useEffect(() => {
-    if (sessionId && searchParams) {
-      const tab = searchParams.get('tab')?.toLowerCase();
-      const type = searchParams.get('type')?.toLowerCase();
-      const intent = searchParams.get('intent')?.toUpperCase();
-      const productParam = searchParams.get('product')?.toUpperCase();
-      const paramCurrency = searchParams.get('currency');
-      const paramAmount = searchParams.get('amount');
-      const paramBeneficiary = searchParams.get('beneficiaryId');
-      
-      const updates: any = {};
-      
-      let targetProduct = draftState.product;
-      if (pathname === '/sell-forex' || tab === 'sell' || intent === 'SELL' || productParam === 'CASH_SELL') {
-        targetProduct = 'CASH_SELL';
-      } else if (pathname === '/remittance' || pathname === '/transfer-money' || pathname === '/trade-remittance' || tab === 'transfer' || tab === 'remittance' || intent === 'REMITTANCE' || productParam === 'REMITTANCE') {
-        targetProduct = 'REMITTANCE';
-      } else if (pathname === '/forex-cards' || pathname === '/cards' || tab === 'card' || type === 'card' || intent === 'CARD' || productParam === 'CARD') {
-        targetProduct = 'CARD';
-      } else if (pathname === '/buy-forex' || tab === 'buy' || type === 'cash' || intent === 'CASH' || productParam === 'CASH') {
-        targetProduct = 'CASH';
-      } else if (!draftState.product) {
-        targetProduct = 'CASH';
-      }
-      
-      if (targetProduct) {
-        updates.product = targetProduct;
-      }
-      if (paramCurrency && paramCurrency.toUpperCase() !== draftState.currency) {
-        updates.currency = paramCurrency.toUpperCase();
-        updates.checkoutStep = 1;
-        updates.status = 'CREATED';
-      }
-      if (paramAmount && paramAmount !== draftState.amount) {
-        updates.amount = paramAmount;
-      }
-      if (paramBeneficiary && paramBeneficiary !== draftState.beneficiaryId) {
-        updates.beneficiaryId = paramBeneficiary;
-      }
+    if (!searchParams) return;
+    const currentQuery = searchParams.toString();
+    if (lastProcessedSearchRef.current === currentQuery) {
+      return;
+    }
+    lastProcessedSearchRef.current = currentQuery;
 
-      const paramCountry = searchParams.get('country') || searchParams.get('countryCode');
-      if (paramCountry) {
-        updates.countryCode = paramCountry.toUpperCase();
-        const resolvedCountry = resolveDestinationCountryName(paramCountry, paramCurrency || undefined);
-        if (resolvedCountry) {
-          updates.destination = resolvedCountry;
-        }
-      } else if (paramCurrency) {
-        const resolvedCountry = resolveDestinationCountryName(undefined, paramCurrency);
-        if (resolvedCountry && !draftState.destination) {
-          updates.destination = resolvedCountry;
-        }
-      }
-      
-      const paramCity = searchParams.get('city');
-      const paramFulfillment = searchParams.get('fulfillment') || searchParams.get('deliveryMethod');
-      const paramPurpose = searchParams.get('purpose');
+    const tab = searchParams.get('tab')?.toLowerCase();
+    const type = searchParams.get('type')?.toLowerCase();
+    const intent = searchParams.get('intent')?.toUpperCase();
+    const productParam = searchParams.get('product')?.toUpperCase();
+    const paramCurrency = searchParams.get('currency');
+    const paramAmount = searchParams.get('amount');
+    const paramBeneficiary = searchParams.get('beneficiaryId');
+    
+    const updates: any = {};
+    
+    let targetProduct = draftState.product;
+    if (pathname === '/sell-forex' || tab === 'sell' || intent === 'SELL' || productParam === 'CASH_SELL') {
+      targetProduct = 'CASH_SELL';
+    } else if (pathname === '/remittance' || pathname === '/transfer-money' || pathname === '/trade-remittance' || tab === 'transfer' || tab === 'remittance' || intent === 'REMITTANCE' || productParam === 'REMITTANCE') {
+      targetProduct = 'REMITTANCE';
+    } else if (pathname === '/forex-cards' || pathname === '/cards' || tab === 'card' || type === 'card' || intent === 'CARD' || productParam === 'CARD') {
+      targetProduct = 'CARD';
+    } else if (pathname === '/buy-forex' || tab === 'buy' || type === 'cash' || intent === 'CASH' || productParam === 'CASH') {
+      targetProduct = 'CASH';
+    } else if (!draftState.product) {
+      targetProduct = 'CASH';
+    }
+    
+    if (targetProduct && targetProduct !== draftState.product) {
+      updates.product = targetProduct;
+    }
 
-      if (paramCity && paramCity !== draftState.city) {
-        updates.city = paramCity;
+    const paramCountry = searchParams.get('country') || searchParams.get('countryCode');
+    let targetCurrency = paramCurrency ? paramCurrency.toUpperCase() : undefined;
+    if (!targetCurrency && paramCountry) {
+      targetCurrency = resolveCountryDefaultCurrency(paramCountry);
+    }
+
+    if (targetCurrency && targetCurrency !== draftState.currency) {
+      updates.currency = targetCurrency;
+      updates.checkoutStep = 1;
+      updates.status = 'CREATED';
+    }
+    if (paramAmount && paramAmount !== draftState.amount) {
+      updates.amount = paramAmount;
+    }
+    if (paramBeneficiary && paramBeneficiary !== draftState.beneficiaryId) {
+      updates.beneficiaryId = paramBeneficiary;
+    }
+
+    if (paramCountry) {
+      updates.countryCode = paramCountry.toUpperCase();
+      const resolvedCountry = resolveDestinationCountryName(paramCountry, targetCurrency || paramCurrency || undefined);
+      if (resolvedCountry && resolvedCountry !== draftState.destination) {
+        updates.destination = resolvedCountry;
       }
-      if (paramFulfillment) {
-        const normalized = (paramFulfillment.toUpperCase() === 'DOORSTEP' || paramFulfillment.toUpperCase() === 'HOME_DELIVERY') 
-          ? 'HOME_DELIVERY' 
-          : 'PICKUP';
-        if (normalized !== draftState.deliveryMethod) {
-          updates.deliveryMethod = normalized;
-        }
-      }
-      if (paramPurpose && paramPurpose !== draftState.purpose) {
-        updates.purpose = paramPurpose;
-      }
-      
-      if (draftState.checkoutStep === 5 || draftState.status === 'CONVERTED') {
-        updates.checkoutStep = 1;
-        updates.status = 'CREATED';
-        updates.bookingRef = undefined;
-      }
-      
-      if (Object.keys(updates).length > 0) {
-        updateDraft(updates);
+    } else if (targetCurrency) {
+      const resolvedCountry = resolveDestinationCountryName(undefined, targetCurrency);
+      if (resolvedCountry && !draftState.destination) {
+        updates.destination = resolvedCountry;
       }
     }
-  }, [searchParams, sessionId, pathname]);
+    
+    const paramCity = searchParams.get('city');
+    const paramFulfillment = searchParams.get('fulfillment') || searchParams.get('deliveryMethod');
+    const paramPurpose = searchParams.get('purpose');
+
+    if (paramCity) {
+      const cleanCity = paramCity.trim();
+      const formattedCity = cleanCity.charAt(0).toUpperCase() + cleanCity.slice(1);
+      if (formattedCity !== draftState.city) {
+        updates.city = formattedCity;
+      }
+    }
+    if (paramFulfillment) {
+      const normalized = (paramFulfillment.toUpperCase() === 'DOORSTEP' || paramFulfillment.toUpperCase() === 'HOME_DELIVERY') 
+        ? 'HOME_DELIVERY' 
+        : 'PICKUP';
+      if (normalized !== draftState.deliveryMethod) {
+        updates.deliveryMethod = normalized;
+      }
+    }
+    if (paramPurpose && paramPurpose !== draftState.purpose) {
+      updates.purpose = paramPurpose;
+    }
+    
+    if (draftState.checkoutStep === 5 || draftState.status === 'CONVERTED') {
+      updates.checkoutStep = 1;
+      updates.status = 'CREATED';
+      updates.bookingRef = undefined;
+    }
+    
+    if (Object.keys(updates).length > 0) {
+      updateDraft(updates);
+    }
+  }, [searchParams, pathname]);
 
   // Ensure default fulfillment is set
   useEffect(() => {
@@ -442,12 +497,18 @@ export function ProductCalculatorStep() {
   const [selectedExtraCountry, setSelectedExtraCountry] = useState('Europe');
 
   // Travel Details
-  const destination = draftState.destination || '';
+  const urlCountry = searchParams?.get('country') || searchParams?.get('countryCode');
+  const destination = draftState.destination !== undefined && draftState.destination !== ''
+    ? draftState.destination 
+    : (urlCountry ? resolveDestinationCountryName(urlCountry, draftState.currency || searchParams?.get('currency')) : (draftState.destination || ''));
   const departureDate = draftState.departureDate || '';
   const returnDate = draftState.returnDate || '';
   const noReturnDate = draftState.noReturnDate || false;
   const purpose = draftState.purpose || '';
-  const selectedCity = draftState.city || 'Delhi';
+  const urlCity = searchParams?.get('city');
+  const selectedCity = draftState.city || (urlCity 
+    ? (urlCity.trim().charAt(0).toUpperCase() + urlCity.trim().slice(1))
+    : 'Delhi');
 
   const todayStr = new Date().toISOString().split('T')[0];
   const maxTravelDate = new Date();
@@ -534,12 +595,49 @@ export function ProductCalculatorStep() {
     currency: 'USD',
   });
 
-  const product = draftState.product || 'CASH';
-  const currency = draftState.currency || 'USD';
+  const urlProduct = (() => {
+    if (!searchParams) return undefined;
+    const tab = searchParams.get('tab')?.toLowerCase();
+    const type = searchParams.get('type')?.toLowerCase();
+    const intent = searchParams.get('intent')?.toUpperCase();
+    const productParam = searchParams.get('product')?.toUpperCase();
+    if (pathname === '/sell-forex' || tab === 'sell' || intent === 'SELL' || productParam === 'CASH_SELL') return 'CASH_SELL';
+    if (pathname === '/remittance' || pathname === '/transfer-money' || pathname === '/trade-remittance' || tab === 'transfer' || tab === 'remittance' || intent === 'REMITTANCE' || productParam === 'REMITTANCE') return 'REMITTANCE';
+    if (pathname === '/forex-cards' || pathname === '/cards' || tab === 'card' || type === 'card' || intent === 'CARD' || productParam === 'CARD') return 'CARD';
+    if (pathname === '/buy-forex' || tab === 'buy' || type === 'cash' || intent === 'CASH' || productParam === 'CASH') return 'CASH';
+    return undefined;
+  })();
+
+  const product = urlProduct || draftState.product || 'CASH';
+  const urlCurrency = searchParams?.get('currency')?.toUpperCase() || (urlCountry ? resolveCountryDefaultCurrency(urlCountry) : undefined);
+  const currency = draftState.currency || urlCurrency || 'USD';
   const amount = draftState.amount !== undefined && draftState.amount !== null ? String(draftState.amount) : '1000';
   const isRemittance = product === 'REMITTANCE';
   const deliveryMethod = isRemittance ? 'WIRE_TRANSFER' : (draftState.deliveryMethod || 'HOME_DELIVERY');
   const branchId = draftState.branchId || '';
+
+  const handleCurrencyChange = (newCurr: string) => {
+    const updates: any = { currency: newCurr };
+    const autoCountry = resolveDestinationCountryName(undefined, newCurr);
+    if (autoCountry && (!draftState.destination || draftState.destination === resolveDestinationCountryName(undefined, currency))) {
+      updates.destination = autoCountry;
+    }
+    updateDraft(updates);
+
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        params.set('currency', newCurr);
+        if (autoCountry && params.has('country')) {
+          params.set('country', autoCountry);
+        }
+        const newSearch = params.toString();
+        lastProcessedSearchRef.current = newSearch;
+        const newUrl = `${pathname || window.location.pathname}?${newSearch}`;
+        window.history.replaceState(null, '', newUrl);
+      } catch (_) {}
+    }
+  };
 
   const isSell = product === 'CASH_SELL';
   const isCard = product === 'CARD';
@@ -810,7 +908,28 @@ export function ProductCalculatorStep() {
   };
 
   const proceedToNextStep = () => {
-    updateDraft({ checkoutStep: 2 });
+    let cachedUser: any = null;
+    if (typeof window !== 'undefined') {
+      try {
+        const c = localStorage.getItem('forexmate_user') || localStorage.getItem('user');
+        if (c) cachedUser = JSON.parse(c);
+      } catch (_) {}
+    }
+    const eff = user || cachedUser;
+    const updates: any = { checkoutStep: 2 };
+    if (eff) {
+      if (!draftState.travellerName && eff.fullName) updates.travellerName = eff.fullName;
+      if (!draftState.email && eff.email) updates.email = eff.email;
+      const rawMob = eff.mobile || eff.phone;
+      if (!draftState.phone && rawMob) {
+        const clean = rawMob.replace(/\D/g, '').slice(-10);
+        if (clean) updates.phone = clean;
+      }
+      const rawPan = ((eff as any).pan || (eff as any).panNumber || '').trim().toUpperCase();
+      if (!draftState.pan && rawPan) updates.pan = rawPan;
+    }
+
+    updateDraft(updates);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -893,9 +1012,9 @@ export function ProductCalculatorStep() {
               {/* Forex Card */}
               <button
                 type="button"
-                onClick={() => router.push('/forex-cards')}
+                onClick={() => handleTabSwitch('CARD')}
                 className={`w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold transition-all flex items-center gap-3.5 cursor-pointer text-left ${
-                  pathname?.includes('forex-cards')
+                  product === 'CARD' || pathname?.includes('forex-cards')
                     ? 'bg-amber-500/10 border border-amber-500/50 text-amber-400 shadow-sm shadow-amber-500/15'
                     : 'text-slate-300 hover:text-white hover:bg-white/[0.07]'
                 }`}
@@ -907,9 +1026,9 @@ export function ProductCalculatorStep() {
               {/* Remittance */}
               <button
                 type="button"
-                onClick={() => router.push('/remittance')}
+                onClick={() => handleTabSwitch('REMITTANCE')}
                 className={`w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold transition-all flex items-center gap-3.5 cursor-pointer text-left ${
-                  pathname?.includes('remittance')
+                  product === 'REMITTANCE' || pathname?.includes('remittance')
                     ? 'bg-amber-500/10 border border-amber-500/50 text-amber-400 shadow-sm shadow-amber-500/15'
                     : 'text-slate-300 hover:text-white hover:bg-white/[0.07]'
                 }`}
@@ -1047,7 +1166,7 @@ export function ProductCalculatorStep() {
               <div className="sm:col-span-6">
                 <CurrencyDropdown
                   value={currency}
-                  onChange={(newCurr) => updateDraft({ currency: newCurr })}
+                  onChange={handleCurrencyChange}
                   ratesData={rates}
                   rateType={isSell ? 'sell' : isRemittance ? 'remittance' : 'buy'}
                   label="Select Currency"
@@ -1836,7 +1955,19 @@ export function ProductCalculatorStep() {
       <CitySelectorModal 
         isOpen={isCityModalOpen} 
         onClose={() => setIsCityModalOpen(false)} 
-        onSelect={(city) => updateDraft({ city })} 
+        onSelect={(city) => {
+          updateDraft({ city });
+          if (typeof window !== 'undefined') {
+            try {
+              const params = new URLSearchParams(window.location.search);
+              params.set('city', city);
+              const newSearch = params.toString();
+              lastProcessedSearchRef.current = newSearch;
+              const newUrl = `${pathname || window.location.pathname}?${newSearch}`;
+              window.history.replaceState(null, '', newUrl);
+            } catch (_) {}
+          }
+        }} 
       />
 
       <SameDayDeliveryModal 

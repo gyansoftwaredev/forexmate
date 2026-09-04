@@ -554,9 +554,15 @@ export function OrderDetails({ id }: { id: string }) {
                     <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">{order.branch.address || order.branch.city}</p>
                     <p className="text-[11px] text-slate-400 font-semibold mt-1">Open Mon–Sat • 9:30 AM to 6:30 PM</p>
                   </div>
-                  <span className="px-3 py-1 bg-amber-50 border border-amber-300 text-amber-900 font-black text-[10px] rounded-full uppercase">
-                    Ready for Collection
-                  </span>
+                  {(order.fulfillmentStatus === 'READY_FOR_PICKUP' || order.status === 'READY_FOR_PICKUP') && Boolean(order.assignedStaffId) ? (
+                    <span className="px-3 py-1 bg-amber-50 border border-amber-300 text-amber-900 font-black text-[10px] rounded-full uppercase">
+                      Ready for Collection
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-slate-100 border border-slate-200 text-slate-700 font-black text-[10px] rounded-full uppercase">
+                      Collection Branch
+                    </span>
+                  )}
                 </div>
               </CardContent>
             </Card>

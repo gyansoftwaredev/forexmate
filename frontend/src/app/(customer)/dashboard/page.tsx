@@ -28,7 +28,10 @@ import {
   Truck,
   PlusCircle,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Package,
+  AlertTriangle,
+  XCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -61,7 +64,20 @@ export default function DashboardOverview() {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && user) {
-          userLocalOrders = parsed.filter((o: any) => {
+          // Sanitize any existing orders that were saved with premature READY_FOR_PICKUP before staff claimed
+          let mutated = false;
+          const sanitized = parsed.map((o: any) => {
+            if (!o.assignedStaffId && (o.status === 'READY_FOR_PICKUP' || o.status === 'READY_FOR_CASH_HANDOVER')) {
+              mutated = true;
+              return { ...o, status: 'ORDER_PLACED' };
+            }
+            return o;
+          });
+          if (mutated) {
+            localStorage.setItem('local_user_orders', JSON.stringify(sanitized));
+          }
+
+          userLocalOrders = sanitized.filter((o: any) => {
             return (o.userId && o.userId === user.id) ||
               (o.userEmail && o.userEmail?.toLowerCase() === user.email?.toLowerCase()) ||
               (o.customerEmail && o.customerEmail?.toLowerCase() === user.email?.toLowerCase()) ||
@@ -76,10 +92,24 @@ export default function DashboardOverview() {
   }
 
   const apiOrders = summary?.recentOrders || [];
-  const combinedOrders = [...userLocalOrders];
+  // Prioritize real database apiOrders over local storage orders
+  const combinedOrders: any[] = [];
   apiOrders.forEach(ao => {
-    if (!combinedOrders.some(co => co.id === ao.id || co.orderNumber === ao.orderNumber)) {
-      combinedOrders.push(ao);
+    const matchingLocal = userLocalOrders.find(lo => lo.id === ao.id || lo.orderNumber === ao.orderNumber);
+    combinedOrders.push({
+      ...(matchingLocal || {}),
+      ...ao,
+      // Prefer real API status & assigned staff
+      status: ao.status,
+      assignedStaffId: ao.assignedStaffId,
+      fulfillmentStatus: ao.fulfillmentStatus,
+      items: (ao.items && ao.items.length > 0) ? ao.items : (matchingLocal?.items || []),
+    });
+  });
+
+  userLocalOrders.forEach(lo => {
+    if (!combinedOrders.some(co => co.id === lo.id || co.orderNumber === lo.orderNumber)) {
+      combinedOrders.push(lo);
     }
   });
 
@@ -461,22 +491,98 @@ export default function DashboardOverview() {
                         <span className="text-[10px] text-slate-400 font-semibold uppercase">Total INR</span>
                       </div>
 
-                      {ord.status === 'READY_FOR_PICKUP' ? (
-                        <span className="px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
-                          <Building2 className="w-3.5 h-3.5 text-amber-700" />
-                          <span>Ready at Branch</span>
-                        </span>
-                      ) : ord.status === 'COMPLETED' ? (
-                        <span className="px-3 py-1.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold flex items-center gap-1.5">
-                          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Fulfilled</span>
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1.5 rounded-xl bg-blue-100 border border-blue-300 text-blue-900 text-xs font-extrabold flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-blue-600" />
-                          <span>In Processing</span>
-                        </span>
-                      )}
+                      {(() => {
+                        const norm = (ord.status || '').toUpperCase();
+                        const isClaimed = Boolean(ord.assignedStaffId || ord.assignedAt);
+
+                        // 1. Fulfilled / Completed
+                        if (norm === 'COMPLETED' || norm === 'DELIVERED' || norm === 'FULFILLED') {
+                          return (
+                            <span className="px-3 py-1.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Fulfilled</span>
+                            </span>
+                          );
+                        }
+
+                        // 2. Cancelled / Rejected
+                        if (norm === 'CANCELLED' || norm === 'REJECTED') {
+                          return (
+                            <span className="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-300 text-slate-700 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                              <XCircle className="w-3.5 h-3.5 text-slate-500" />
+                              <span>Cancelled</span>
+                            </span>
+                          );
+                        }
+
+                        // 3. Cancel Requested
+                        if (ord.cancelRequested || norm === 'CANCEL_REQUESTED') {
+                          return (
+                            <span className="px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                              <Clock className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Cancel Requested</span>
+                            </span>
+                          );
+                        }
+
+                        // 4. Truly Ready at Branch (ONLY if staff has claimed AND cash allocated/ready in vault)
+                        if (isClaimed && (ord.fulfillmentStatus === 'READY_FOR_PICKUP' || norm === 'READY_FOR_PICKUP')) {
+                          return (
+                            <span className="px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-amber-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                              <Building2 className="w-3.5 h-3.5 text-amber-700" />
+                              <span>Ready at Branch</span>
+                            </span>
+                          );
+                        }
+
+                        // 5. Out for Delivery (home delivery)
+                        if (isClaimed && (ord.fulfillmentStatus === 'READY_FOR_DELIVERY_ASSIGNMENT' || norm === 'OUT_FOR_DELIVERY' || norm === 'DISPATCHED')) {
+                          return (
+                            <span className="px-3 py-1.5 rounded-xl bg-blue-100 border border-blue-300 text-blue-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                              <Truck className="w-3.5 h-3.5 text-blue-600" />
+                              <span>Out for Delivery</span>
+                            </span>
+                          );
+                        }
+
+                        // 6. In Processing (ONLY if staff HAS claimed the lead and is actively processing)
+                        if (isClaimed && (norm === 'PROCESSING' || norm === 'IN_PROCESSING' || norm === 'IN_BRANCH_PROCESSING' || norm === 'UNDER_REVIEW')) {
+                          return (
+                            <span className="px-3 py-1.5 rounded-xl bg-blue-100 border border-blue-300 text-blue-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                              <Clock className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+                              <span>In Processing</span>
+                            </span>
+                          );
+                        }
+
+                        // 7. Payment Pending
+                        if (norm === 'PAYMENT_PENDING' || norm === 'PENDING_PAYMENT') {
+                          return (
+                            <span className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                              <Clock className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Payment Pending</span>
+                            </span>
+                          );
+                        }
+
+                        // 8. Action Required / KYC Verification Pending
+                        if (norm === 'PENDING_KYC' || norm === 'ACTION_REQUIRED' || norm === 'KYC_REQUIRED') {
+                          return (
+                            <span className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Action Required</span>
+                            </span>
+                          );
+                        }
+
+                        // 9. Lead Unclaimed / Newly Placed Order (real status before staff claim)
+                        return (
+                          <span className="px-3 py-1.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-extrabold flex items-center gap-1.5 shadow-2xs">
+                            <Package className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Order Placed</span>
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}

@@ -23,7 +23,19 @@ export const ordersApi = {
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed)) {
-            localOrders = currentUser ? parsed.filter((o: any) => {
+            let mutated = false;
+            const sanitized = parsed.map((o: any) => {
+              if (!o.assignedStaffId && (o.status === 'READY_FOR_PICKUP' || o.status === 'READY_FOR_CASH_HANDOVER')) {
+                mutated = true;
+                return { ...o, status: 'ORDER_PLACED' };
+              }
+              return o;
+            });
+            if (mutated) {
+              localStorage.setItem('local_user_orders', JSON.stringify(sanitized));
+            }
+
+            localOrders = currentUser ? sanitized.filter((o: any) => {
               return (o.userId && o.userId === currentUser.id) ||
                 (o.userEmail && o.userEmail?.toLowerCase() === currentUser.email?.toLowerCase()) ||
                 (o.customerEmail && o.customerEmail?.toLowerCase() === currentUser.email?.toLowerCase()) ||
@@ -37,11 +49,23 @@ export const ordersApi = {
       console.error(e);
     }
 
-    // Merge API orders and local orders without duplicates
-    const combined = [...localOrders];
+    // Real API orders take precedence over local storage
+    const combined: Order[] = [];
     apiOrders.forEach(ao => {
-      if (!combined.some(co => co.id === ao.id || co.orderNumber === ao.orderNumber)) {
-        combined.push(ao);
+      const matchingLocal = localOrders.find(lo => lo.id === ao.id || lo.orderNumber === ao.orderNumber);
+      combined.push({
+        ...(matchingLocal || {}),
+        ...ao,
+        status: ao.status,
+        assignedStaffId: ao.assignedStaffId,
+        fulfillmentStatus: ao.fulfillmentStatus,
+        items: (ao.items && ao.items.length > 0) ? ao.items : (matchingLocal?.items || []),
+      });
+    });
+
+    localOrders.forEach(lo => {
+      if (!combined.some(co => co.id === lo.id || co.orderNumber === lo.orderNumber)) {
+        combined.push(lo);
       }
     });
 

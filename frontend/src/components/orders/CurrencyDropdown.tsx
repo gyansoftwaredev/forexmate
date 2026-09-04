@@ -154,6 +154,7 @@ export function CurrencyDropdown({
   const dropdownPanel = mounted && isOpen && dropdownPos.width > 0 ? createPortal(
     <div
       ref={dropdownRef}
+      onMouseDown={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',
         top: `${dropdownPos.top}px`,
@@ -210,6 +211,7 @@ export function CurrencyDropdown({
               <button
                 key={curr.code}
                 type="button"
+                onMouseDown={(e) => e.stopPropagation()}
                 onClick={() => {
                   onChange(curr.code);
                   setIsOpen(false);

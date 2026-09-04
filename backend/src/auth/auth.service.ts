@@ -178,7 +178,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { email: data.email },
-      include: { roleRef: true, sessions: { orderBy: { createdAt: 'desc' }, take: 1 } },
+      include: { roleRef: true, profiles: true, sessions: { orderBy: { createdAt: 'desc' }, take: 1 } },
     });
 
     if (!user) {
@@ -291,6 +291,8 @@ export class AuthService {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        mobile: user.mobile,
+        pan: user.profiles?.panNumber || null,
         role: user.roleRef?.name || 'CUSTOMER',
       },
     };
@@ -736,7 +738,7 @@ export class AuthService {
 
     let user = await this.prisma.user.findUnique({
       where: { email: payload.email },
-      include: { roleRef: true },
+      include: { roleRef: true, profiles: true },
     });
 
     if (!user) {
@@ -757,14 +759,14 @@ export class AuthService {
           include: { roleRef: true },
         });
 
-        await tx.customerProfile.create({
+        const newProfile = await tx.customerProfile.create({
           data: {
             userId: newUser.id,
             riskCategory: 'LOW',
           },
         });
 
-        return newUser;
+        return { ...newUser, profiles: newProfile };
       });
     }
 
@@ -800,6 +802,8 @@ export class AuthService {
         id: user.id,
         email: user.email,
         fullName: user.fullName,
+        mobile: user.mobile,
+        pan: user.profiles?.panNumber || null,
         role: user.roleRef?.name || 'CUSTOMER',
       },
     };
@@ -824,7 +828,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { roleRef: true, staffProfile: true },
+      include: { roleRef: true, staffProfile: true, profiles: true },
     });
 
     if (!user) return null;
@@ -835,6 +839,7 @@ export class AuthService {
       email: user.email,
       fullName: user.fullName,
       mobile: user.mobile,
+      pan: user.profiles?.panNumber || null,
       role: user.roleRef?.name || 'CUSTOMER',
       roleId: user.roleId,
       sessionId: session.id,

@@ -111,7 +111,11 @@ export default function RatesPage() {
                         </td>
                         <td className="p-4 text-right font-medium text-gray-900">₹{rate.buyRate}</td>
                         <td className="p-4 text-right font-medium text-gray-900">₹{rate.sellRate}</td>
-                        <td className="p-4 text-right font-medium text-blue-600">₹{rate.cardRate}</td>
+                        <td className="p-4 text-right font-medium text-blue-600">
+                          <Link href={`/forex-cards?currency=${rate.currency}`} className="hover:underline">
+                            ₹{rate.cardRate}
+                          </Link>
+                        </td>
                         <td className="p-4 text-center">
                           <div className="flex items-center justify-center gap-1.5">
                             <Link href={`/buy-forex?tab=buy&type=notes&currency=${rate.currency}`}>
@@ -124,7 +128,7 @@ export default function RatesPage() {
                                 Sell
                               </button>
                             </Link>
-                            <Link href={`/buy-forex?tab=buy&type=card&currency=${rate.currency}`}>
+                            <Link href={`/forex-cards?currency=${rate.currency}`}>
                               <button className="text-xs bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-semibold py-1.5 px-2.5 rounded-md transition-colors border border-indigo-200">
                                 Card
                               </button>

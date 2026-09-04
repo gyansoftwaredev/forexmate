@@ -53,9 +53,14 @@ export function MobileExchangeTab({
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3 | 4>(1);
   const [paymentMethod, setPaymentMethod] = useState<'UPI' | 'CARD' | 'NETBANKING' | 'COD'>('UPI');
-  const [travelerName, setTravelerName] = useState(user?.fullName || 'Alex Harrison');
-  const [travelerMobile, setTravelerMobile] = useState(user?.mobile || '9876543210');
+  const [travelerName, setTravelerName] = useState(user?.fullName || '');
+  const [travelerMobile, setTravelerMobile] = useState(user?.mobile || '');
   const [kycUploaded, setKycUploaded] = useState(false);
+
+  useEffect(() => {
+    if (user?.fullName && !travelerName) setTravelerName(user.fullName);
+    if (user?.mobile && !travelerMobile) setTravelerMobile(user.mobile);
+  }, [user]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<any>(null);

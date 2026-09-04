@@ -14,6 +14,7 @@ import { getActiveBranches, getServiceCharges } from '@/lib/api-public';
 import { ALL_CURRENCIES_MAP, getCurrencyFlag, getCurrencyName } from '@/lib/currencyMetadata';
 import { useRates } from '@/hooks/useRates';
 import { useAuth } from '@/context/AuthContext';
+import { useProfile } from '@/features/profile/hooks/useProfile';
 
 
 interface RbiDocRequirement {
@@ -250,6 +251,7 @@ export function validateIndianPan(panStr: string): { isValid: boolean; message: 
 export function BookMyForexCheckoutEngine() {
   const { sessionId, draftState, updateDraft, clearSession } = useTransactionStore();
   const { user } = useAuth();
+  const { data: userProfile } = useProfile(user?.id || '');
   const currentStep = draftState.checkoutStep || 2; // Default to step 2 when continuing from step 1
 
   // Product Detection
@@ -259,35 +261,54 @@ export function BookMyForexCheckoutEngine() {
   const isCard = product === 'CARD';
   const isCash = product === 'CASH';
 
+  const clean10DigitPhone = (val?: string | null) => {
+    if (!val) return '';
+    const digits = val.replace(/\D/g, '');
+    return digits.length > 10 ? digits.slice(-10) : digits;
+  };
+
   // Check if draftState belongs to a different user
   const isDraftFromDifferentUser = Boolean(
     user?.email && draftState.email && draftState.email.toLowerCase() !== user.email.toLowerCase()
   );
 
-  const initialTravellerName = isDraftFromDifferentUser 
-    ? (user?.fullName || '') 
-    : (draftState.travellerName || user?.fullName || '');
+  let cachedUser: any = null;
+  if (typeof window !== 'undefined') {
+    try {
+      const c = localStorage.getItem('forexmate_user') || localStorage.getItem('user');
+      if (c) cachedUser = JSON.parse(c);
+    } catch (_) {}
+  }
 
-  const userMobile = (user as any)?.mobile || (user as any)?.phone || '';
+  const effectiveUser = user || cachedUser;
+  const userMobile = clean10DigitPhone(effectiveUser?.mobile || effectiveUser?.phone);
+  const userPan = ((effectiveUser as any)?.pan || (effectiveUser as any)?.panNumber || '').trim().toUpperCase();
+
+  const initialTravellerName = isDraftFromDifferentUser 
+    ? (effectiveUser?.fullName || '') 
+    : (draftState.travellerName || effectiveUser?.fullName || '');
+
   const initialPhone = isDraftFromDifferentUser 
     ? userMobile 
-    : (draftState.phone || userMobile || '');
+    : (draftState.phone ? clean10DigitPhone(draftState.phone) : userMobile || '');
 
   const initialEmail = isDraftFromDifferentUser 
-    ? (user?.email || '') 
-    : (draftState.email || user?.email || '');
+    ? (effectiveUser?.email || '') 
+    : (draftState.email || effectiveUser?.email || '');
 
   const initialPan = isDraftFromDifferentUser 
-    ? '' 
-    : (draftState.pan || '');
+    ? (userPan || '') 
+    : (draftState.pan ? draftState.pan.trim().toUpperCase() : userPan || '');
+
+  const initialPanValidation = initialPan ? validateIndianPan(initialPan) : { isValid: false, message: '' };
 
   // Customer Details State - Only prefill if user is logged in or already entered in draftState
   const [travellerName, setTravellerName] = useState(initialTravellerName);
   const [phone, setPhone] = useState(initialPhone);
   const [email, setEmail] = useState(initialEmail);
   const [pan, setPan] = useState(initialPan);
-  const [panTouched, setPanTouched] = useState(false);
-  const [panValidation, setPanValidation] = useState<{ isValid: boolean; message: string }>({ isValid: false, message: '' });
+  const [panTouched, setPanTouched] = useState(Boolean(initialPan && initialPanValidation.isValid));
+  const [panValidation, setPanValidation] = useState<{ isValid: boolean; message: string }>(initialPanValidation);
   
   // Travel Specific State
   const [destinationCountries, setDestinationCountries] = useState<string[]>(() => {
@@ -402,29 +423,143 @@ export function BookMyForexCheckoutEngine() {
       const isMismatch = Boolean(
         draftState.email && draftState.email.toLowerCase() !== user.email.toLowerCase()
       );
-      const currMobile = (user as any).mobile || (user as any).phone || '';
+      const currMobile = clean10DigitPhone((user as any).mobile || (user as any).phone);
+      const currPan = ((user as any).pan || (user as any).panNumber || '').trim().toUpperCase();
 
       if (isMismatch) {
         setTravellerName(user.fullName || '');
         setEmail(user.email || '');
         setPhone(currMobile);
-        setPan('');
+        setPan(currPan);
+        if (currPan) {
+          const res = validateIndianPan(currPan);
+          setPanValidation(res);
+          if (res.isValid) setPanTouched(true);
+        }
         updateDraft({
           travellerName: user.fullName || '',
           email: user.email || '',
           phone: currMobile,
-          pan: '',
+          pan: currPan,
         });
       } else {
-        if (!travellerName && user.fullName) setTravellerName(user.fullName);
-        if (!phone && currMobile) setPhone(currMobile);
-        if (!email && user.email) setEmail(user.email);
+        if (!travellerName && user.fullName) {
+          setTravellerName(user.fullName);
+          updateDraft({ travellerName: user.fullName });
+        }
+        if (!phone && currMobile) {
+          setPhone(currMobile);
+          updateDraft({ phone: currMobile });
+        }
+        if (!email && user.email) {
+          setEmail(user.email);
+          updateDraft({ email: user.email });
+        }
+        if (!pan && currPan) {
+          setPan(currPan);
+          const res = validateIndianPan(currPan);
+          setPanValidation(res);
+          if (res.isValid) setPanTouched(true);
+          updateDraft({ pan: currPan });
+        }
       }
 
       if (!payoutAccountHolder && user.fullName) setPayoutAccountHolder(user.fullName);
       if (!coordPhone && currMobile) setCoordPhone(currMobile);
     }
   }, [user, draftState.email]);
+
+  // Synchronize detailed customer profile from database
+  useEffect(() => {
+    if (!userProfile) return;
+
+    const profileFullName = userProfile.fullName || userProfile.user?.fullName || '';
+    const profileEmail = userProfile.email || userProfile.user?.email || '';
+    const profileMobile = clean10DigitPhone(userProfile.mobile || userProfile.user?.mobile);
+    const profilePan = (userProfile.profiles?.panNumber || userProfile.panNumber || '').trim().toUpperCase();
+
+    const updates: any = {};
+
+    if (profileFullName && (!travellerName || travellerName === 'Customer')) {
+      setTravellerName(profileFullName);
+      updates.travellerName = profileFullName;
+      if (isSell && (!payoutAccountHolder || payoutAccountHolder === 'Customer')) {
+        setPayoutAccountHolder(profileFullName);
+        updates.payoutAccountHolder = profileFullName;
+      }
+    }
+
+    if (profileMobile && !phone) {
+      setPhone(profileMobile);
+      updates.phone = profileMobile;
+    }
+
+    if (profileEmail && !email) {
+      setEmail(profileEmail);
+      updates.email = profileEmail;
+    }
+
+    if (profilePan && (!pan || isDraftFromDifferentUser)) {
+      setPan(profilePan);
+      const res = validateIndianPan(profilePan);
+      setPanValidation(res);
+      if (res.isValid) setPanTouched(true);
+      updates.pan = profilePan;
+    }
+
+    // Sell Forex bank account prefill from saved profile banks (Bank Accounts tab in profile)
+    if (isSell && userProfile.profiles?.banks && userProfile.profiles.banks.length > 0) {
+      const defaultBank = userProfile.profiles.banks[0];
+      if (!payoutBank && defaultBank.bankName) {
+        setPayoutBank(defaultBank.bankName);
+        updates.payoutBank = defaultBank.bankName;
+      }
+      if (!payoutAccountNo && defaultBank.accountNumber) {
+        setPayoutAccountNo(defaultBank.accountNumber);
+        setPayoutConfirmAccountNo(defaultBank.accountNumber);
+        updates.payoutAccountNo = defaultBank.accountNumber;
+        updates.payoutConfirmAccountNo = defaultBank.accountNumber;
+      }
+      if (!payoutIfsc && defaultBank.ifscCode) {
+        setPayoutIfsc(defaultBank.ifscCode);
+        updates.payoutIfsc = defaultBank.ifscCode;
+      }
+      if (!payoutAccountHolder && (defaultBank.holderName || profileFullName)) {
+        const holder = defaultBank.holderName || profileFullName;
+        setPayoutAccountHolder(holder);
+        updates.payoutAccountHolder = holder;
+      }
+    }
+
+    // Delivery Address prefill from saved profile addresses (Address Book tab in profile)
+    if (userProfile.profiles?.addresses && userProfile.profiles.addresses.length > 0) {
+      const defaultAddr = userProfile.profiles.addresses[0];
+      if (!streetAddress && defaultAddr.address) {
+        setStreetAddress(defaultAddr.address);
+        updates.deliveryAddress = defaultAddr.address;
+      }
+      if ((!deliveryCity || deliveryCity === 'Delhi') && defaultAddr.city) {
+        setDeliveryCity(defaultAddr.city);
+        updates.city = defaultAddr.city;
+      }
+      if ((!deliveryState || deliveryState === 'Delhi') && defaultAddr.state) {
+        setDeliveryState(defaultAddr.state);
+        updates.state = defaultAddr.state;
+      }
+      if (!pincode && defaultAddr.pin) {
+        setPincode(defaultAddr.pin);
+        updates.pincode = defaultAddr.pin;
+      }
+      if (!landmark && defaultAddr.landmark) {
+        setLandmark(defaultAddr.landmark);
+        updates.landmark = defaultAddr.landmark;
+      }
+    }
+
+    if (Object.keys(updates).length > 0) {
+      updateDraft(updates);
+    }
+  }, [userProfile, isSell]);
 
   // Document Uploads State for Step 3
   const IDENTITY_DOC_IDS = ['pan_card', 'passport_front', 'passport_back'];
@@ -474,7 +609,14 @@ export function BookMyForexCheckoutEngine() {
     draftState.appliedDiscount || draftState.appliedOffer?.discountAmount || 0
   );
   const [addSimCard, setAddSimCard] = useState<boolean>(false);
-  const [rateTimerSeconds, setRateTimerSeconds] = useState<number>(300);
+  // Synchronized Rate Lock Countdown (runs in unison with Step 1 via draftState.rateLockExpiresAt)
+  const [rateTimerSeconds, setRateTimerSeconds] = useState<number>(() => {
+    if (draftState.rateLockExpiresAt) {
+      const diff = Math.floor((draftState.rateLockExpiresAt - Date.now()) / 1000);
+      if (diff > 0) return diff;
+    }
+    return 300;
+  });
   const [isOrderConfirmed, setIsOrderConfirmed] = useState<boolean>(false);
   const [bookingRef, setBookingRef] = useState<string>(draftState.bookingRef || '');
 
@@ -501,20 +643,35 @@ export function BookMyForexCheckoutEngine() {
       .catch(() => {});
   }, []);
 
-  // Rate Timer countdown
   useEffect(() => {
-    if (currentStep === 5 && !isOrderConfirmed && rateTimerSeconds > 0) {
-      const timer = setInterval(() => {
-        setRateTimerSeconds((prev) => (prev > 0 ? prev - 1 : 0));
-      }, 1000);
-      return () => clearInterval(timer);
+    if (!draftState.rateLockExpiresAt || draftState.rateLockExpiresAt <= Date.now()) {
+      const newExpiry = Date.now() + 300 * 1000;
+      updateDraft({ rateLockExpiresAt: newExpiry });
+      setRateTimerSeconds(300);
+    } else {
+      const diff = Math.max(0, Math.floor((draftState.rateLockExpiresAt - Date.now()) / 1000));
+      setRateTimerSeconds(diff);
     }
-  }, [currentStep, isOrderConfirmed, rateTimerSeconds]);
+  }, [draftState.rateLockExpiresAt]);
+
+  // Synchronized countdown - runs continuously across checkout steps 2-5
+  useEffect(() => {
+    if (isOrderConfirmed) return;
+    const timer = setInterval(() => {
+      if (draftState.rateLockExpiresAt) {
+        const diff = Math.max(0, Math.floor((draftState.rateLockExpiresAt - Date.now()) / 1000));
+        setRateTimerSeconds(diff);
+      } else {
+        setRateTimerSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [draftState.rateLockExpiresAt, isOrderConfirmed]);
 
   const formatTimerMinSec = (totalSec: number) => {
-    const mins = Math.floor(totalSec / 60);
-    const secs = totalSec % 60;
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    const mins = String(Math.floor(totalSec / 60)).padStart(2, '0');
+    const secs = String(totalSec % 60).padStart(2, '0');
+    return `${mins} MIN : ${secs} SEC`;
   };
 
   const handleApplyCoupon = () => {
@@ -538,13 +695,22 @@ export function BookMyForexCheckoutEngine() {
         const u = JSON.parse(storedUser);
         // Only load stored user if it matches the current logged in user (prevent cross-user leak)
         if (!user || (u.email && u.email.toLowerCase() === user.email.toLowerCase())) {
-          if (u.name && !draftState.travellerName) {
-            setTravellerName(u.name);
-            setPayoutAccountHolder(u.name);
+          const uName = u.fullName || u.name;
+          const uPhone = clean10DigitPhone(u.mobile || u.phone);
+          const uPan = (u.pan || u.panNumber || '').trim().toUpperCase();
+
+          if (uName && !draftState.travellerName) {
+            setTravellerName(uName);
+            setPayoutAccountHolder(uName);
           }
-          if (u.phone && !draftState.phone) setPhone(u.phone);
+          if (uPhone && !draftState.phone) setPhone(uPhone);
           if (u.email && !draftState.email) setEmail(u.email);
-          if (u.pan && !draftState.pan) setPan(u.pan);
+          if (uPan && !draftState.pan) {
+            setPan(uPan);
+            const res = validateIndianPan(uPan);
+            setPanValidation(res);
+            if (res.isValid) setPanTouched(true);
+          }
         }
       }
 
@@ -926,7 +1092,9 @@ export function BookMyForexCheckoutEngine() {
         createdAt: new Date().toISOString(),
         items: allOrderItems,
         totalAmountInr: isSell ? netInrPayout : Math.round(finalTotalPayable),
-        status: isSell ? 'READY_FOR_CASH_HANDOVER' : isRemittance ? 'WAITING_WIRE_SETTLEMENT' : isBranchPickup ? 'READY_FOR_PICKUP' : 'PAYMENT_PENDING',
+        status: 'ORDER_PLACED',
+        assignedStaffId: null,
+        fulfillmentStatus: null,
         deliveryMethod: isRemittance ? 'WIRE_TRANSFER' : isBranchPickup ? 'BRANCH_PICKUP' : 'HOME_DELIVERY',
         branchName: pickupBranch || 'Connaught Place Vault Branch, Delhi',
         travellerName,
@@ -941,7 +1109,13 @@ export function BookMyForexCheckoutEngine() {
       };
 
       const existingOrders = JSON.parse(localStorage.getItem('local_user_orders') || '[]');
-      localStorage.setItem('local_user_orders', JSON.stringify([newOrder, ...existingOrders.filter((o: any) => o.orderNumber !== generatedRef)]));
+      const sanitizedExisting = existingOrders.map((o: any) => {
+        if (!o.assignedStaffId && (o.status === 'READY_FOR_PICKUP' || o.status === 'READY_FOR_CASH_HANDOVER')) {
+          return { ...o, status: 'ORDER_PLACED' };
+        }
+        return o;
+      });
+      localStorage.setItem('local_user_orders', JSON.stringify([newOrder, ...sanitizedExisting.filter((o: any) => o.orderNumber !== generatedRef)]));
     } catch (e) {
       console.error(e);
     }
@@ -958,6 +1132,22 @@ export function BookMyForexCheckoutEngine() {
   return (
     <div className="w-full max-w-4xl mx-auto py-6 px-3 sm:px-6 space-y-4">
       
+      {/* --- LIVE RATE LOCK GUARANTEE BANNER (Synchronized with Step 1) --- */}
+      {!isOrderConfirmed && (
+        <div className="bg-white border-2 border-amber-400 rounded-2xl p-3.5 sm:px-5 flex items-center justify-between shadow-md animate-in fade-in">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-black text-slate-900">
+            <div className="p-1.5 bg-amber-100 text-amber-600 rounded-xl">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <span className="text-slate-950 font-black tracking-tight">Guaranteed Live Exchange Rate Locked for:</span>
+          </div>
+          <div className="font-mono text-xs sm:text-sm font-black text-amber-950 bg-amber-100/80 px-3.5 py-1.5 rounded-xl border border-amber-300 shadow-2xs flex items-center gap-1.5">
+            <span>⏱</span>
+            <span className="tracking-wide">{formatTimerMinSec(rateTimerSeconds)}</span>
+          </div>
+        </div>
+      )}
+
       {/* --- SECTION 1: ORDER DETAILS SUMMARY HEADER --- */}
       <div className={`bg-white rounded-2xl border transition-all duration-300 shadow-sm ${currentStep === 1 ? 'border-amber-400 ring-2 ring-amber-400/20' : 'border-emerald-200 bg-emerald-50/20'}`}>
         <div className="p-4 sm:p-5 flex items-center justify-between gap-4">
@@ -982,14 +1172,16 @@ export function BookMyForexCheckoutEngine() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => updateDraft({ checkoutStep: 1 })}
-            className="flex items-center gap-1 text-xs font-extrabold text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl transition-colors shrink-0"
-          >
-            <Edit3 className="w-3.5 h-3.5" />
-            <span>Edit</span>
-          </button>
+          {!isOrderConfirmed && (
+            <button
+              type="button"
+              onClick={() => updateDraft({ checkoutStep: 1 })}
+              className="flex items-center gap-1.5 text-xs font-black text-black hover:text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl transition-all shrink-0 shadow-2xs cursor-pointer active:scale-95"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-black" />
+              <span>Edit</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1015,13 +1207,13 @@ export function BookMyForexCheckoutEngine() {
             </div>
           </div>
 
-          {currentStep > 2 && (
+          {!isOrderConfirmed && currentStep > 2 && (
             <button
               type="button"
               onClick={() => updateDraft({ checkoutStep: 2 })}
-              className="flex items-center gap-1 text-xs font-extrabold text-blue-600 hover:text-blue-800 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl transition-colors shrink-0"
+              className="flex items-center gap-1.5 text-xs font-black text-black hover:text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl transition-all shrink-0 shadow-2xs cursor-pointer active:scale-95"
             >
-              <Edit3 className="w-3.5 h-3.5" />
+              <Edit3 className="w-3.5 h-3.5 text-black" />
               <span>Edit</span>
             </button>
           )}
@@ -1257,13 +1449,14 @@ export function BookMyForexCheckoutEngine() {
             </h3>
           </div>
 
-          {currentStep > 3 && (
+          {!isOrderConfirmed && currentStep > 3 && (
             <button
               type="button"
               onClick={() => updateDraft({ checkoutStep: 3 })}
-              className="text-xs font-bold text-blue-600 hover:underline"
+              className="flex items-center gap-1.5 text-xs font-black text-black hover:text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl transition-all shrink-0 shadow-2xs cursor-pointer active:scale-95"
             >
-              Edit
+              <Edit3 className="w-3.5 h-3.5 text-black" />
+              <span>Edit</span>
             </button>
           )}
         </div>
@@ -1827,13 +2020,14 @@ export function BookMyForexCheckoutEngine() {
             </h3>
           </div>
 
-          {currentStep > 4 && (
+          {!isOrderConfirmed && currentStep > 4 && (
             <button
               type="button"
               onClick={() => updateDraft({ checkoutStep: 4 })}
-              className="text-xs font-bold text-blue-600 hover:underline"
+              className="flex items-center gap-1.5 text-xs font-black text-black hover:text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 px-3 py-1.5 rounded-xl transition-all shrink-0 shadow-2xs cursor-pointer active:scale-95"
             >
-              Edit
+              <Edit3 className="w-3.5 h-3.5 text-black" />
+              <span>Edit</span>
             </button>
           )}
         </div>
@@ -2202,16 +2396,6 @@ export function BookMyForexCheckoutEngine() {
             /* --- REVIEW DETAILS SCREEN --- */
             <div className="p-4 sm:p-6 space-y-6 animate-in fade-in duration-200">
               
-              {/* Rate Guarantee Timer Banner */}
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between shadow-2xs">
-                <div className="flex items-center gap-2 text-xs text-amber-900 font-bold">
-                  <Sparkles className="w-4 h-4 text-amber-600" />
-                  <span>Guaranteed Live Exchange Rate Locked for:</span>
-                </div>
-                <div className="font-mono text-sm font-black text-amber-700 bg-white px-2.5 py-0.5 rounded-lg border border-amber-200">
-                  ⏱ {formatTimerMinSec(rateTimerSeconds)}
-                </div>
-              </div>
 
               {/* SELL FOREX SUMMARY CARD */}
               {isSell ? (

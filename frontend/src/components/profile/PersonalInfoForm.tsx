@@ -61,6 +61,21 @@ export function PersonalInfoForm() {
         userId: user.id,
         data: formData
       });
+
+      // Synchronize into localStorage forexmate_user cache immediately
+      try {
+        const cachedStr = localStorage.getItem('forexmate_user');
+        if (cachedStr) {
+          const cached = JSON.parse(cachedStr);
+          cached.fullName = formData.fullName;
+          cached.mobile = formData.phone;
+          cached.phone = formData.phone;
+          cached.pan = formData.panNumber;
+          cached.panNumber = formData.panNumber;
+          localStorage.setItem('forexmate_user', JSON.stringify(cached));
+        }
+      } catch (_) {}
+
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 4000);
     } catch (e: any) {

@@ -70,10 +70,11 @@ export const useTransactionStore = create<TransactionState>()(
             method: 'POST',
           });
           const session = await apiJson<TransactionSession>(res);
+          const currentDraft = get().draftState || {};
           set({
             sessionId: session.id,
             status: session.status || 'CREATED',
-            draftState: session.draftState || {},
+            draftState: { ...currentDraft, ...(session.draftState || {}) },
           });
           await get().fetchWorkflow();
         } catch (err) {
@@ -82,7 +83,7 @@ export const useTransactionStore = create<TransactionState>()(
           set({
             sessionId: `fxm_sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
             status: 'CREATED',
-            draftState: {},
+            draftState: get().draftState || {},
           });
         }
       },

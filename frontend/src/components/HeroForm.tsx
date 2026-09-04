@@ -20,13 +20,13 @@ const REMITTANCE_PURPOSES = [
   { id: 'GIFT', label: '🎁 Gift & Emigration', tcs: '20% TCS over ₹7L' },
 ];
 
-export default function HeroForm({ defaultTab = 'buy' }: { defaultTab?: string }) {
+export default function HeroForm({ defaultTab = 'buy', initialCity }: { defaultTab?: string; initialCity?: string }) {
   const [activeTab, setActiveTab] = useState<'buy' | 'sell' | 'remittance' | 'card'>(defaultTab as any);
   const [currencyCode, setCurrencyCode] = useState<string>('USD');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [foreignAmount, setForeignAmount] = useState<string>('1000');
   
-  const [selectedCity, setSelectedCity] = useState('Delhi');
+  const [selectedCity, setSelectedCity] = useState(initialCity || 'Delhi');
   const [isCityModalOpen, setIsCityModalOpen] = useState(false);
   const [isDeliveryPolicyOpen, setIsDeliveryPolicyOpen] = useState(false);
   const [isCashbackModalOpen, setIsCashbackModalOpen] = useState(false);

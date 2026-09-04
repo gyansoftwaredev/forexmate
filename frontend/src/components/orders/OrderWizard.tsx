@@ -15,7 +15,19 @@ export function OrderWizard() {
 
   // Reset to step 1 if the user navigates with new query params or previous order was converted
   useEffect(() => {
-    const hasParams = searchParams && (searchParams.get('currency') || searchParams.get('amount') || searchParams.get('tab'));
+    const hasParams = Boolean(
+      searchParams && (
+        searchParams.get('currency') || 
+        searchParams.get('amount') || 
+        searchParams.get('tab') ||
+        searchParams.get('city') ||
+        searchParams.get('country') ||
+        searchParams.get('countryCode') ||
+        searchParams.get('product') ||
+        searchParams.get('type') ||
+        searchParams.get('intent')
+      )
+    );
     if (hasParams || draftState.status === 'CONVERTED' || draftState.checkoutStep === 5) {
       updateDraft({
         checkoutStep: 1,

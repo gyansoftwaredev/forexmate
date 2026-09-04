@@ -9,6 +9,8 @@ interface User {
   role: string;
   mobile?: string | null;
   phone?: string | null;
+  pan?: string | null;
+  panNumber?: string | null;
 }
 
 

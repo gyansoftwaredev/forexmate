@@ -24,7 +24,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
         </div>
 
         <div className="-mt-20 md:-mt-28 relative z-10 px-4 sm:px-6">
-           <HeroForm />
+           <HeroForm initialCity={city} />
         </div>
 
         <div className="max-w-6xl mx-auto py-20 px-6">
