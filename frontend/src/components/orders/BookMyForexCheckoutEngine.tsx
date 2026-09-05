@@ -1003,13 +1003,13 @@ export function BookMyForexCheckoutEngine() {
         }))
       ];
 
-      await fetch(`${API_URL}/orders/direct-checkout`, {
+      await authFetch(`${API_URL}/orders/direct-checkout`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(localStorage.getItem('token') ? { 'Authorization': `Bearer ${localStorage.getItem('token')}` } : {})
         },
         body: JSON.stringify({
+          userId: user?.id || undefined,
           orderNumber: generatedRef,
           travellerName: travellerName || user?.fullName || 'Customer',
           phone: phone || (user as any)?.mobile || (user as any)?.phone || '9876543210',

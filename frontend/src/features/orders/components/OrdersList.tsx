@@ -4,6 +4,7 @@ import { formatCurrencyINR, formatDate } from '@/lib/utils';
 import { PackageOpen, Loader2, ShoppingBag, ArrowRight, ExternalLink, Calendar, ShieldCheck, Banknote } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { OrderStatusBadge } from '@/components/dashboard/OrderStatusBadge';
 
 export function OrdersList() {
   const { data: orders, isLoading, error } = useOrders();
@@ -72,6 +73,7 @@ export function OrdersList() {
               <th className="p-4">Date</th>
               <th className="p-4">Product Details</th>
               <th className="p-4">Amount (INR)</th>
+              <th className="p-4">Status</th>
               <th className="p-4 pr-6 text-right">Action</th>
             </tr>
           </thead>
@@ -108,6 +110,9 @@ export function OrdersList() {
                     </div>
                   </td>
                   <td className="p-4 font-extrabold text-slate-900">{formatCurrencyINR(order.totalAmountInr)}</td>
+                  <td className="p-4">
+                    <OrderStatusBadge status={order.status || 'ORDER_PLACED'} />
+                  </td>
                   <td className="p-4 pr-6 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-2">
                       <button 

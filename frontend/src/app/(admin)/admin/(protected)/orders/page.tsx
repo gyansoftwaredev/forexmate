@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 const STATUS_COLORS: Record<string, string> = {
+  ORDER_PLACED: 'bg-indigo-100 text-indigo-800 border-indigo-200',
   PENDING: 'bg-amber-100 text-amber-800 border-amber-200',
   KYC_SUBMITTED: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   KYC_APPROVED: 'bg-teal-100 text-teal-800 border-teal-200',
@@ -38,7 +39,7 @@ const PRODUCT_ICONS: Record<string, string> = {
 };
 
 const ALL_STATUSES = [
-  'PENDING', 'KYC_SUBMITTED', 'KYC_APPROVED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED',
+  'ORDER_PLACED', 'PENDING', 'KYC_SUBMITTED', 'KYC_APPROVED', 'PAYMENT_PENDING', 'PAYMENT_COMPLETED',
   'DISPATCHED', 'DELIVERED', 'COMPLETED', 'CANCELLED', 'REJECTED',
   'READY_TO_FORWARD', 'FORWARDED_TO_PARTNER', 'PARTNER_PROCESSING', 'TRANSFER_COMPLETED',
 ];

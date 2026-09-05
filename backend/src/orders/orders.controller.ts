@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { OrdersService } from './orders.service';
 import { CreateOrderDto, UpdateOrderStatusDto } from './dto/order.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { PermissionsGuard } from '../auth/permissions.guard';
 import { Permissions } from '../auth/permissions.decorator';
 
@@ -11,11 +12,12 @@ import { Permissions } from '../auth/permissions.decorator';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('direct-checkout')
   @ApiOperation({ summary: 'Direct customer order checkout' })
   @ApiResponse({ status: 201, description: 'Order created in real-time' })
   directCheckout(@Body() body: any, @Request() req: any) {
-    const authUserId = req.user?.id || null;
+    const authUserId = req.user?.id || body.userId || null;
     return this.ordersService.createDirectCheckout(authUserId, body);
   }
 

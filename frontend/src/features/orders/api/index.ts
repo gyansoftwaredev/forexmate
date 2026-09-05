@@ -1,11 +1,11 @@
-import { authFetch, apiJson } from '@/lib/api';
+import API_URL, { authFetch, apiJson } from '@/lib/api';
 import { Order } from '../types';
 
 export const ordersApi = {
   getOrders: async (): Promise<Order[]> => {
     let apiOrders: Order[] = [];
     try {
-      const response = await authFetch('/api/v1/orders');
+      const response = await authFetch(`${API_URL}/orders`);
       if (response.ok) {
         apiOrders = await apiJson<Order[]>(response);
       }
@@ -16,7 +16,7 @@ export const ordersApi = {
     let localOrders: Order[] = [];
     try {
       if (typeof window !== 'undefined') {
-        const storedUser = localStorage.getItem('auth_user') || localStorage.getItem('user');
+        const storedUser = localStorage.getItem('forexmate_user') || localStorage.getItem('user') || localStorage.getItem('auth_user');
         const currentUser = storedUser ? JSON.parse(storedUser) : null;
         
         const stored = localStorage.getItem('local_user_orders');
@@ -35,13 +35,14 @@ export const ordersApi = {
               localStorage.setItem('local_user_orders', JSON.stringify(sanitized));
             }
 
+            const uMobile = currentUser?.mobile ? currentUser.mobile.replace(/\D/g, '').slice(-10) : (currentUser?.phone ? currentUser.phone.replace(/\D/g, '').slice(-10) : '');
             localOrders = currentUser ? sanitized.filter((o: any) => {
+              const oMobile = (o.mobile || o.phone || '').replace(/\D/g, '').slice(-10);
               return (o.userId && o.userId === currentUser.id) ||
                 (o.userEmail && o.userEmail?.toLowerCase() === currentUser.email?.toLowerCase()) ||
                 (o.customerEmail && o.customerEmail?.toLowerCase() === currentUser.email?.toLowerCase()) ||
-                (o.mobile && currentUser.mobile && o.mobile.replace(/\D/g, '') === currentUser.mobile.replace(/\D/g, '')) ||
-                (o.phone && currentUser.mobile && o.phone.replace(/\D/g, '') === currentUser.mobile.replace(/\D/g, ''));
-            }) : [];
+                (uMobile && oMobile && uMobile === oMobile);
+            }) : sanitized;
           }
         }
       }
@@ -56,7 +57,7 @@ export const ordersApi = {
       combined.push({
         ...(matchingLocal || {}),
         ...ao,
-        status: ao.status,
+        status: ao.status || matchingLocal?.status || 'ORDER_PLACED',
         assignedStaffId: ao.assignedStaffId,
         fulfillmentStatus: ao.fulfillmentStatus,
         items: (ao.items && ao.items.length > 0) ? ao.items : (matchingLocal?.items || []),
@@ -74,7 +75,7 @@ export const ordersApi = {
 
   getOrderById: async (id: string): Promise<Order> => {
     try {
-      const response = await authFetch(`/api/v1/orders/${id}`);
+      const response = await authFetch(`${API_URL}/orders/${id}`);
       if (response.ok) {
         return await apiJson<Order>(response);
       }
@@ -97,7 +98,7 @@ export const ordersApi = {
 
   requestCancel: async (id: string, reason: string): Promise<Order> => {
     try {
-      const response = await authFetch(`/api/v1/orders/${id}/request-cancel`, {
+      const response = await authFetch(`${API_URL}/orders/${id}/request-cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason })

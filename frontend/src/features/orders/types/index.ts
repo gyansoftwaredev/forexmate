@@ -54,4 +54,8 @@ export interface Order {
   history?: any[];
   cancelRequested?: boolean;
   cancelReason?: string | null;
+  assignedStaffId?: string | null;
+  fulfillmentStatus?: string | null;
+  productType?: string;
+  [key: string]: any;
 }

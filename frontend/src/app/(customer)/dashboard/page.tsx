@@ -77,12 +77,13 @@ export default function DashboardOverview() {
             localStorage.setItem('local_user_orders', JSON.stringify(sanitized));
           }
 
+          const uMob = (user.mobile || (user as any).phone || '').replace(/\D/g, '').slice(-10);
           userLocalOrders = sanitized.filter((o: any) => {
+            const oMob = (o.mobile || o.phone || '').replace(/\D/g, '').slice(-10);
             return (o.userId && o.userId === user.id) ||
               (o.userEmail && o.userEmail?.toLowerCase() === user.email?.toLowerCase()) ||
               (o.customerEmail && o.customerEmail?.toLowerCase() === user.email?.toLowerCase()) ||
-              (o.mobile && user.mobile && o.mobile.replace(/\D/g, '') === user.mobile.replace(/\D/g, '')) ||
-              (o.phone && user.mobile && o.phone.replace(/\D/g, '') === user.mobile.replace(/\D/g, ''));
+              (uMob && oMob && uMob === oMob);
           });
         }
       }

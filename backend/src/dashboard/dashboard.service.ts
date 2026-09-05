@@ -7,12 +7,36 @@ export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
   async getSummary(userId: string) {
-    const profile = await this.prisma.customerProfile.findUnique({
+    let profile = await this.prisma.customerProfile.findUnique({
       where: { userId },
     });
 
     if (!profile) {
-      throw new NotFoundException('Customer profile not found');
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (user) {
+        try {
+          profile = await this.prisma.customerProfile.create({
+            data: {
+              userId: user.id,
+              travelPurpose: 'TOURISM'
+            }
+          });
+        } catch (_) {}
+      }
+    }
+
+    if (!profile) {
+      return {
+        totalOrders: 0,
+        activeForexCards: 0,
+        lrsUsage: 0,
+        kycStatus: 'PENDING',
+        pendingOrders: 0,
+        completedOrders: 0,
+        activeQuotes: 0,
+        lastOrderDate: null,
+        recentOrders: []
+      };
     }
 
     const profileId = profile.id;

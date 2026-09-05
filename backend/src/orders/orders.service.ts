@@ -397,11 +397,58 @@ export class OrdersService {
   }
 
   async findAllForUser(userId: string) {
-    const profile = await this.prisma.customerProfile.findUnique({
+    let profile = await this.prisma.customerProfile.findUnique({
       where: { userId }
     });
     
+    if (!profile) {
+      const userRecord = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (userRecord) {
+        try {
+          profile = await this.prisma.customerProfile.create({
+            data: {
+              userId: userRecord.id,
+              travelPurpose: 'TOURISM'
+            }
+          });
+        } catch (_) {}
+      }
+    }
+
     if (!profile) return [];
+
+    // Also look up any guest orders created with this user's email or mobile and adopt them to current profile
+    try {
+      const currentUser = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (currentUser) {
+        const cleanMob = currentUser.mobile ? currentUser.mobile.replace(/\D/g, '') : '';
+        const last10 = cleanMob.length >= 10 ? cleanMob.slice(-10) : '';
+
+        const matchingUsers = await this.prisma.user.findMany({
+          where: {
+            id: { not: userId },
+            OR: [
+              { email: currentUser.email.toLowerCase() },
+              ...(last10 ? [{ mobile: { endsWith: last10 } }] : [])
+            ]
+          },
+          include: { profiles: true }
+        });
+
+        const orphanProfileIds = matchingUsers
+          .map(u => u.profiles?.id)
+          .filter(Boolean) as string[];
+
+        if (orphanProfileIds.length > 0) {
+          await this.prisma.order.updateMany({
+            where: { profileId: { in: orphanProfileIds } },
+            data: { profileId: profile.id }
+          });
+        }
+      }
+    } catch (err) {
+      // Non-blocking catch
+    }
 
     const orders = await this.prisma.order.findMany({
       where: { profileId: profile.id },
@@ -575,6 +622,15 @@ export class OrdersService {
     if (!user) {
       user = await this.prisma.user.findFirst({
         where: { OR: [{ email }, { mobile: cleanMobile }] }
+      });
+    }
+
+    if (!user && cleanMobile.length >= 10) {
+      const last10 = cleanMobile.slice(-10);
+      user = await this.prisma.user.findFirst({
+        where: {
+          mobile: { endsWith: last10 }
+        }
       });
     }
 
