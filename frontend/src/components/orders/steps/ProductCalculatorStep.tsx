@@ -1070,7 +1070,7 @@ export function ProductCalculatorStep() {
 
               <button
                 type="button"
-                onClick={() => router.push('/support')}
+                onClick={() => router.push('/dashboard/support')}
                 className="w-full px-4 py-3.5 rounded-2xl text-sm sm:text-[15px] font-semibold text-slate-300 hover:text-white hover:bg-white/[0.07] transition-all flex items-center gap-3.5 cursor-pointer text-left"
               >
                 <Headphones className="w-5 h-5 text-slate-400 shrink-0" />
