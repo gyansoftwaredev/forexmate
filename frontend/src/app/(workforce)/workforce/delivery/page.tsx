@@ -53,8 +53,8 @@ export default function DeliveryDashboard() {
   if (authLoading || loading) return <LoadingScreen message="Loading your workspace..." />;
   if (!employee) return null;
 
-  const pending = orders.filter(o => !['COMPLETED', 'CANCELLED', 'REJECTED', 'DELIVERED'].includes(o.status));
-  const delivered = orders.filter(o => o.status === 'DELIVERED');
+  const pending = orders.filter(o => !['COMPLETED', 'CANCELLED', 'REJECTED', 'DELIVERED'].includes(o.status) && o.fulfillmentStatus !== 'DELIVERY_COMPLETED');
+  const delivered = orders.filter(o => ['DELIVERED', 'COMPLETED'].includes(o.status) || o.fulfillmentStatus === 'DELIVERY_COMPLETED');
   const inTransit = orders.filter(o => o.status === 'DISPATCHED');
 
   return (

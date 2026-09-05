@@ -58,6 +58,9 @@ export function OrderCard({ order, onClick, theme = 'indigo' }: OrderCardProps) 
   const amount = order.items?.[0]?.amount;
   const customerName = order.profile?.user?.fullName || 'Customer';
 
+  const isDelivered = (order.status === 'DELIVERED' || order.status === 'COMPLETED') && (order.deliveryMethod?.includes('DELIVERY') || order.fulfillmentStatus === 'DELIVERY_COMPLETED');
+  const badgeStatus = isDelivered ? 'DELIVERED' : order.status;
+
   const statusColors: Record<string, { bg: string; color: string }> = {
     PENDING: { bg: '#fef9c3', color: '#854d0e' },
     DISPATCHED: { bg: '#dbeafe', color: '#1d4ed8' },
@@ -65,7 +68,7 @@ export function OrderCard({ order, onClick, theme = 'indigo' }: OrderCardProps) 
     COMPLETED: { bg: '#dcfce7', color: '#166534' },
     CANCELLED: { bg: '#fee2e2', color: '#991b1b' },
   };
-  const sc = statusColors[order.status] || { bg: '#f3f4f6', color: '#374151' };
+  const sc = statusColors[badgeStatus] || statusColors[order.status] || { bg: '#f3f4f6', color: '#374151' };
 
   return (
     <button onClick={onClick} style={{ width: '100%', background: 'white', border: '1.5px solid #f1f5f9', borderRadius: 16, padding: '16px', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: 10, boxShadow: '0 1px 8px rgba(0,0,0,0.04)', transition: 'box-shadow 0.2s' }}>
@@ -74,7 +77,7 @@ export function OrderCard({ order, onClick, theme = 'indigo' }: OrderCardProps) 
           <p style={{ fontSize: 11, fontWeight: 700, color: accentColor, margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{order.orderNumber}</p>
           <p style={{ fontSize: 15, fontWeight: 800, color: '#111827', margin: 0 }}>{customerName}</p>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, ...sc }}>{order.status}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, ...sc }}>{badgeStatus}</span>
       </div>
       {currency && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

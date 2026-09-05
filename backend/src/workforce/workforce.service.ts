@@ -438,13 +438,42 @@ export class WorkforceService {
     }
 
     if (role === 'DELIVERY_PARTNER') {
-      const dp = await this.prisma.deliveryPartner.findUnique({ where: { employeeCode: employee.employeeCode } });
-      if (!dp) return [];
+      const dp = await this.prisma.deliveryPartner.findFirst({
+        where: {
+          OR: [
+            { employeeCode: employee.employeeCode },
+            { id: employee.id },
+          ]
+        }
+      });
+      const validPartnerIds = [
+        employee.id,
+        employee.employeeCode,
+        ...(dp ? [dp.id, dp.employeeCode] : [])
+      ].filter(Boolean);
+
+      const branchClause = employee.branchId
+        ? [{ OR: [{ currentBranchId: employee.branchId }, { branchId: employee.branchId }] }]
+        : [];
 
       return this.prisma.order.findMany({
         where: {
-          deliveryPartnerId: dp.id,
-          status: { in: ['COMPLETED', 'CANCELLED', 'REJECTED'] },
+          OR: [
+            { deliveryPartnerId: { in: validPartnerIds } },
+            {
+              AND: [
+                ...branchClause,
+                {
+                  OR: [
+                    { deliveryMethod: { in: ['HOME_DELIVERY', 'DELIVERY', 'DOORSTEP', 'EXPRESS'] } },
+                    { requiresDelivery: true },
+                    { workflowType: { contains: 'DELIVERY' } },
+                  ]
+                }
+              ]
+            }
+          ],
+          status: { in: ['COMPLETED', 'CANCELLED', 'REJECTED', 'DELIVERED'] },
         },
         include: this.orderIncludes(),
         orderBy: { updatedAt: 'desc' },

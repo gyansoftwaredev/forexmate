@@ -47,8 +47,8 @@ export default function DeliveryOrdersListPage() {
   if (authLoading || loading) return <LoadingScreen message="Loading deliveries..." />;
 
   const filtered = orders.filter(o => {
-    if (filter === 'ACTIVE') return !['COMPLETED', 'CANCELLED', 'REJECTED', 'DELIVERED'].includes(o.status);
-    if (filter === 'DELIVERED') return o.status === 'DELIVERED';
+    if (filter === 'ACTIVE') return !['COMPLETED', 'CANCELLED', 'REJECTED', 'DELIVERED'].includes(o.status) && o.fulfillmentStatus !== 'DELIVERY_COMPLETED';
+    if (filter === 'DELIVERED') return ['DELIVERED', 'COMPLETED'].includes(o.status) || o.fulfillmentStatus === 'DELIVERY_COMPLETED';
     return true;
   });
 
